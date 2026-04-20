@@ -19,15 +19,15 @@ export class AppComponent implements OnInit {
   @ViewChild("myGrid") myGrid!: DbGridComponent;
 
   basicColumnDefs = [
-    { field: "id", headerName: "ID", width: 80, sortable: true, resizable: true },
-    { field: "name", headerName: "姓名", width: 150, sortable: true, resizable: true },
-    { field: "age", headerName: "年龄", width: 100, sortable: true },
-    { field: "email", headerName: "邮箱", width: 220, resizable: true },
-    { field: "department", headerName: "部门", width: 150, sortable: true },
-    { field: "position", headerName: "职位", width: 150, resizable: true },
-    { field: "salary", headerName: "薪资", width: 120, sortable: true },
-    { field: "startDate", headerName: "入职日期", width: 130, sortable: true },
-    { field: "status", headerName: "状态", width: 100 },
+    { field: "id", headerName: "ID", width: 80, sortable: true, resizable: true, filter: false },
+    { field: "name", headerName: "姓名", width: 150, sortable: true, resizable: true, filter: "text" },
+    { field: "age", headerName: "年龄", width: 100, sortable: true, resizable: true, filter: "number" },
+    { field: "email", headerName: "邮箱", width: 220, sortable: true, resizable: true, filter: "text" },
+    { field: "department", headerName: "部门", width: 150, sortable: true, resizable: true, filter: "set" },
+    { field: "position", headerName: "职位", width: 150, sortable: true, resizable: true, filter: "set" },
+    { field: "salary", headerName: "薪资", width: 120, sortable: true, resizable: true, filter: "number" },
+    { field: "startDate", headerName: "入职日期", width: 130, sortable: true, resizable: true, filter: "date" },
+    { field: "status", headerName: "状态", width: 100, sortable: true, resizable: true, filter: "set" },
   ];
 
   basicRowData = this.generateEmployeeData(100);
@@ -35,11 +35,11 @@ export class AppComponent implements OnInit {
 
   // Tree data
   treeColumnDefs = [
-    { field: "name", headerName: "组织架构", width: 300, sortable: true },
-    { field: "type", headerName: "类型", width: 120 },
-    { field: "manager", headerName: "负责人", width: 150 },
-    { field: "employees", headerName: "员工数", width: 100 },
-    { field: "budget", headerName: "预算", width: 120 },
+    { field: "name", headerName: "组织架构", width: 300, sortable: true, filter: "text" },
+    { field: "type", headerName: "类型", width: 120, filter: "set" },
+    { field: "manager", headerName: "负责人", width: 150, filter: "text" },
+    { field: "employees", headerName: "员工数", width: 100, filter: "number" },
+    { field: "budget", headerName: "预算", width: 120, filter: "text" },
   ];
 
   treeRowData = [
@@ -74,13 +74,13 @@ export class AppComponent implements OnInit {
 
   // Group data
   groupColumnDefs = [
-    { field: "product", headerName: "产品", width: 150, sortable: true },
-    { field: "category", headerName: "分类", width: 120, sortable: true },
-    { field: "region", headerName: "地区", width: 120, sortable: true },
-    { field: "quarter", headerName: "季度", width: 100, sortable: true },
-    { field: "sales", headerName: "销售额", width: 120, sortable: true },
-    { field: "profit", headerName: "利润", width: 100, sortable: true },
-    { field: "quantity", headerName: "数量", width: 100 },
+    { field: "product", headerName: "产品", width: 150, sortable: true, filter: "text" },
+    { field: "category", headerName: "分类", width: 120, sortable: true, filter: "set" },
+    { field: "region", headerName: "地区", width: 120, sortable: true, filter: "set" },
+    { field: "quarter", headerName: "季度", width: 100, sortable: true, filter: "set" },
+    { field: "sales", headerName: "销售额", width: 120, sortable: true, filter: "number" },
+    { field: "profit", headerName: "利润", width: 100, sortable: true, filter: "number" },
+    { field: "quantity", headerName: "数量", width: 100, filter: "number" },
   ];
 
   groupRowData = this.generateSalesData(50);
@@ -89,16 +89,16 @@ export class AppComponent implements OnInit {
 
   // Excel data
   excelColumnDefs = [
-    { field: "id", headerName: "编号", width: 80 },
-    { field: "productName", headerName: "产品名称", width: 200 },
-    { field: "category", headerName: "类别", width: 150 },
-    { field: "price", headerName: "单价", width: 100 },
-    { field: "quantity", headerName: "数量", width: 100 },
-    { field: "amount", headerName: "金额", width: 120 },
-    { field: "customer", headerName: "客户", width: 150 },
-    { field: "salesman", headerName: "业务员", width: 120 },
-    { field: "orderDate", headerName: "订单日期", width: 130 },
-    { field: "status", headerName: "状态", width: 100 },
+    { field: "id", headerName: "编号", width: 80, filter: "number" },
+    { field: "productName", headerName: "产品名称", width: 200, filter: "text" },
+    { field: "category", headerName: "类别", width: 150, filter: "set" },
+    { field: "price", headerName: "单价", width: 100, filter: "number" },
+    { field: "quantity", headerName: "数量", width: 100, filter: "number" },
+    { field: "amount", headerName: "金额", width: 120, filter: "number" },
+    { field: "customer", headerName: "客户", width: 150, filter: "text" },
+    { field: "salesman", headerName: "业务员", width: 120, filter: "text" },
+    { field: "orderDate", headerName: "订单日期", width: 130, filter: "date" },
+    { field: "status", headerName: "状态", width: 100, filter: "set" },
   ];
 
   excelRowData = this.generateSalesOrderData(200);
@@ -106,13 +106,13 @@ export class AppComponent implements OnInit {
 
   // Span data
   spanColumnDefs = [
-    { field: "region", headerName: "地区", width: 150 },
-    { field: "product", headerName: "产品", width: 150 },
-    { field: "q1", headerName: "Q1销售额", width: 120 },
-    { field: "q2", headerName: "Q2销售额", width: 120 },
-    { field: "q3", headerName: "Q3销售额", width: 120 },
-    { field: "q4", headerName: "Q4销售额", width: 120 },
-    { field: "total", headerName: "年度总计", width: 130 },
+    { field: "region", headerName: "地区", width: 150, filter: "set" },
+    { field: "product", headerName: "产品", width: 150, filter: "set" },
+    { field: "q1", headerName: "Q1销售额", width: 120, filter: "number" },
+    { field: "q2", headerName: "Q2销售额", width: 120, filter: "number" },
+    { field: "q3", headerName: "Q3销售额", width: 120, filter: "number" },
+    { field: "q4", headerName: "Q4销售额", width: 120, filter: "number" },
+    { field: "total", headerName: "年度总计", width: 130, filter: "number" },
   ];
 
   spanRowData = this.generateRegionalData();
@@ -120,29 +120,29 @@ export class AppComponent implements OnInit {
 
   // ========== 行内编辑数据 ==========
   editColumnDefs = [
-    { field: "id", headerName: "ID", width: 80, editable: false },
-    { field: "name", headerName: "姓名", width: 150, editable: true, sortable: true },
-    { field: "age", headerName: "年龄", width: 100, editable: true, cellEditor: "number" },
-    { field: "email", headerName: "邮箱", width: 220, editable: true },
-    { field: "department", headerName: "部门", width: 150, editable: true, cellEditor: "select", cellEditorParams: { values: ["技术部", "产品部", "市场部", "人力资源部", "财务部", "研发部", "运营部", "客服部"] } },
-    { field: "position", headerName: "职位", width: 150, editable: true },
-    { field: "salary", headerName: "薪资", width: 120, editable: true, cellEditor: "number" },
-    { field: "status", headerName: "状态", width: 100, editable: true, cellEditor: "select", cellEditorParams: { values: ["在职", "出差", "休假", "离职"] } },
+    { field: "id", headerName: "ID", width: 80, editable: false, filter: "number" },
+    { field: "name", headerName: "姓名", width: 150, editable: true, sortable: true, filter: "text" },
+    { field: "age", headerName: "年龄", width: 100, editable: true, sortable: true, cellEditor: "number", filter: "number" },
+    { field: "email", headerName: "邮箱", width: 220, editable: true, filter: "text" },
+    { field: "department", headerName: "部门", width: 150, editable: true, filter: "set", cellEditor: "select", cellEditorParams: { values: ["技术部", "产品部", "市场部", "人力资源部", "财务部", "研发部", "运营部", "客服部"] } },
+    { field: "position", headerName: "职位", width: 150, editable: true, filter: "set" },
+    { field: "salary", headerName: "薪资", width: 120, editable: true, cellEditor: "number", filter: "number" },
+    { field: "status", headerName: "状态", width: 100, editable: true, filter: "set", cellEditor: "select", cellEditorParams: { values: ["在职", "出差", "休假", "离职"] } },
   ];
   editRowData = this.generateEmployeeData(30);
   editOptions = { rowSelection: "multiple" };
 
   // ========== 列固定数据 ==========
   pinColumnDefs = [
-    { field: "id", headerName: "ID", width: 80, pinnedLeft: true },
-    { field: "name", headerName: "姓名", width: 150, pinnedLeft: true },
-    { field: "age", headerName: "年龄", width: 100 },
-    { field: "email", headerName: "邮箱", width: 220 },
-    { field: "department", headerName: "部门", width: 150 },
-    { field: "position", headerName: "职位", width: 150 },
-    { field: "salary", headerName: "薪资", width: 120 },
-    { field: "startDate", headerName: "入职日期", width: 130 },
-    { field: "status", headerName: "状态", width: 100, pinnedRight: true },
+    { field: "id", headerName: "ID", width: 80, pinnedLeft: true, filter: "number" },
+    { field: "name", headerName: "姓名", width: 150, pinnedLeft: true, filter: "text" },
+    { field: "age", headerName: "年龄", width: 100, filter: "number" },
+    { field: "email", headerName: "邮箱", width: 220, filter: "text" },
+    { field: "department", headerName: "部门", width: 150, filter: "set" },
+    { field: "position", headerName: "职位", width: 150, filter: "set" },
+    { field: "salary", headerName: "薪资", width: 120, filter: "number" },
+    { field: "startDate", headerName: "入职日期", width: 130, filter: "date" },
+    { field: "status", headerName: "状态", width: 100, pinnedRight: true, filter: "set" },
   ];
   pinOptions = { rowSelection: "multiple" };
 
