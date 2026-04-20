@@ -1,0 +1,226 @@
+<div class="demo-container">
+  <!-- 工具栏 -->
+  <div class="toolbar">
+    <h1>DB Grid Demo</h1>
+    <div class="demo-tabs">
+      <button [class.active]="currentDemo() === 'basic'" (click)="switchDemo('basic')">基础表格</button>
+      <button [class.active]="currentDemo() === 'tree'" (click)="switchDemo('tree')">树形数据</button>
+      <button [class.active]="currentDemo() === 'group'" (click)="switchDemo('group')">行分组</button>
+      <button [class.active]="currentDemo() === 'excel'" (click)="switchDemo('excel')">Excel导出</button>
+      <button [class.active]="currentDemo() === 'span'" (click)="switchDemo('span')">单元格合并</button>
+      <button [class.active]="currentDemo() === 'edit'" (click)="switchDemo('edit')">行内编辑</button>
+      <button [class.active]="currentDemo() === 'pin'" (click)="switchDemo('pin')">列固定</button>
+      <button [class.active]="currentDemo() === 'pagination'" (click)="switchDemo('pagination')">分页</button>
+      <button [class.active]="currentDemo() === 'drag'" (click)="switchDemo('drag')">拖拽排序</button>
+      <button [class.active]="currentDemo() === 'p0'" (click)="switchDemo('p0')">P0功能</button>
+    </div>
+  </div>
+
+  <!-- 功能按钮 -->
+  <div class="action-bar">
+    <div class="quick-filter">
+      <input
+        type="text"
+        placeholder="🔍 快速搜索..."
+        [value]="quickFilter()"
+        (input)="onQuickFilterChange($any($event.target).value)"
+      />
+      @if (quickFilter()) {
+        <button class="clear-btn" (click)="onQuickFilterChange('')">✕</button>
+      }
+    </div>
+    <button (click)="exportCsv()">导出 CSV</button>
+    <button (click)="exportExcel()">导出 Excel</button>
+    <button (click)="expandAll()">展开全部</button>
+    <button (click)="collapseAll()">折叠全部</button>
+    <button (click)="selectAll()">全选</button>
+    <button (click)="clearSelection()">清除选择</button>
+    @if (currentDemo() === 'pagination') {
+      <button (click)="firstPage()">首页</button>
+      <button (click)="prevPage()">上一页</button>
+      <span class="page-info">第 {{ currentPage() }} / {{ totalPages() }} 页</span>
+      <button (click)="nextPage()">下一页</button>
+      <button (click)="lastPage()">末页</button>
+    }
+    <span class="selected-info">已选: {{ selectedCount() }} 行</span>
+    <span class="api-status">API: {{ apiStatus() }}</span>
+  </div>
+
+  <!-- Grid 容器 -->
+  <div class="grid-wrapper">
+    @if (currentDemo() === 'basic') {
+      <db-grid
+        #myGrid
+        [columnDefs]="basicColumnDefs"
+        [rowData]="basicRowData"
+        [gridOptions]="basicOptions"
+        [rowHeight]="40"
+        [headerHeight]="40"
+        [theme]="'alpine'"
+        [rowSelection]="'multiple'"
+        (gridReady)="onGridReady($event)"
+        (rowClicked)="onRowClicked($event)"
+        (sortChanged)="onSortChanged($event)"
+        (selectionChanged)="onSelectionChanged($event)"
+      />
+    }
+    @if (currentDemo() === 'tree') {
+      <db-grid
+        #myGrid
+        [columnDefs]="treeColumnDefs"
+        [rowData]="treeRowData"
+        [gridOptions]="treeOptions"
+        [rowHeight]="40"
+        [headerHeight]="40"
+        [theme]="'alpine'"
+        [treeData]="true"
+        [treeConfig]="treeConfig"
+        [rowSelection]="'multiple'"
+        (gridReady)="onGridReady($event)"
+        (nodeExpanded)="onNodeExpanded($event)"
+        (nodeCollapsed)="onNodeCollapsed($event)"
+        (selectionChanged)="onSelectionChanged($event)"
+      />
+    }
+    @if (currentDemo() === 'group') {
+      <db-grid
+        #myGrid
+        [columnDefs]="groupColumnDefs"
+        [rowData]="groupRowData"
+        [gridOptions]="groupOptions"
+        [rowHeight]="40"
+        [headerHeight]="40"
+        [theme]="'alpine'"
+        [enableGrouping]="true"
+        [groupConfig]="groupConfig"
+        (gridReady)="onGridReady($event)"
+        (groupExpanded)="onGroupExpanded($event)"
+        (groupCollapsed)="onGroupCollapsed($event)"
+      />
+    }
+    @if (currentDemo() === 'excel') {
+      <db-grid
+        #myGrid
+        [columnDefs]="excelColumnDefs"
+        [rowData]="excelRowData"
+        [gridOptions]="excelOptions"
+        [rowHeight]="40"
+        [headerHeight]="40"
+        [theme]="'balham'"
+        [rowSelection]="'multiple'"
+        (gridReady)="onGridReady($event)"
+        (selectionChanged)="onSelectionChanged($event)"
+      />
+    }
+    @if (currentDemo() === 'span') {
+      <db-grid
+        #myGrid
+        [columnDefs]="spanColumnDefs"
+        [rowData]="spanRowData"
+        [gridOptions]="spanOptions"
+        [rowHeight]="40"
+        [headerHeight]="40"
+        [theme]="'material'"
+        (gridReady)="onGridReady($event)"
+      />
+    }
+    @if (currentDemo() === 'edit') {
+      <db-grid
+        #myGrid
+        [columnDefs]="editColumnDefs"
+        [rowData]="editRowData"
+        [gridOptions]="editOptions"
+        [rowHeight]="40"
+        [headerHeight]="40"
+        [theme]="'alpine'"
+        [rowSelection]="'multiple'"
+        [enableCellEdit]="true"
+        [editOnDoubleClick]="true"
+        (gridReady)="onGridReady($event)"
+        (selectionChanged)="onSelectionChanged($event)"
+      />
+    }
+    @if (currentDemo() === 'pin') {
+      <db-grid
+        #myGrid
+        [columnDefs]="pinColumnDefs"
+        [rowData]="basicRowData"
+        [gridOptions]="pinOptions"
+        [rowHeight]="40"
+        [headerHeight]="40"
+        [theme]="'material'"
+        [rowSelection]="'multiple'"
+        [pinnedLeftColumns]="['id', 'name']"
+        [pinnedRightColumns]="['status']"
+        (gridReady)="onGridReady($event)"
+      />
+    }
+    @if (currentDemo() === 'pagination') {
+      <db-grid
+        #myGrid
+        [columnDefs]="basicColumnDefs"
+        [rowData]="basicRowData"
+        [gridOptions]="basicOptions"
+        [rowHeight]="40"
+        [headerHeight]="40"
+        [theme]="'balham'"
+        [rowSelection]="'multiple'"
+        [pagination]="true"
+        [paginationPageSize]="20"
+        [paginationPageSizeOptions]="[10, 20, 50, 100]"
+        (gridReady)="onGridReady($event)"
+        (selectionChanged)="onSelectionChanged($event)"
+      />
+    }
+    @if (currentDemo() === 'drag') {
+      <db-grid
+        #myGrid
+        [columnDefs]="basicColumnDefs"
+        [rowData]="dragRowData"
+        [gridOptions]="dragOptions"
+        [rowHeight]="40"
+        [headerHeight]="40"
+        [theme]="'alpine'"
+        [rowSelection]="'multiple'"
+        [rowDragEnabled]="true"
+        (gridReady)="onGridReady($event)"
+        (selectionChanged)="onSelectionChanged($event)"
+      />
+    }
+    @if (currentDemo() === 'p0') {
+      <div class="p0-demo-panel">
+        <div class="p0-info">
+          <h3>P0 功能演示：筛选器 + 编辑器 + 多列排序</h3>
+          <p>💡 <strong>使用提示：</strong></p>
+          <ul>
+            <li>点击列标题旁的 ⫴ 图标打开筛选器</li>
+            <li>双击单元格进入编辑模式</li>
+            <li>按住 Shift 点击多列进行多列排序</li>
+          </ul>
+          <div class="filter-status">
+            <strong>当前筛选条件：</strong>
+            <pre>{{ p0FilterModel() }}</pre>
+            <button (click)="clearAllFilters()">清除所有筛选</button>
+          </div>
+        </div>
+        <db-grid
+          #myGrid
+          [columnDefs]="p0ColumnDefs"
+          [rowData]="p0RowData"
+          [gridOptions]="p0Options"
+          [rowHeight]="40"
+          [headerHeight]="40"
+          [theme]="'alpine'"
+          [rowSelection]="'multiple'"
+          [enableCellEdit]="true"
+          [editOnDoubleClick]="true"
+          (gridReady)="onGridReady($event)"
+          (rowClicked)="onRowClicked($event)"
+          (sortChanged)="onSortChanged($event)"
+          (filterChanged)="onFilterChanged($event)"
+          (selectionChanged)="onSelectionChanged($event)"
+        />
+      </div>
+    }
+  </div>
+</div>

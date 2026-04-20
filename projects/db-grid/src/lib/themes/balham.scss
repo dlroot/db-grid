@@ -1,0 +1,267 @@
+/**
+ * Balham 主题
+ * 经典企业风格，浅灰色调
+ */
+
+// CSS 变量定义
+:root {
+  --db-grid-balham-bg: #ffffff;
+  --db-grid-balham-header-bg: #e0e0e0;
+  --db-grid-balham-odd-row-bg: #ffffff;
+  --db-grid-balham-even-row-bg: #fafafa;
+  --db-grid-balham-selected-row-bg: #d4d4d4;
+  --db-grid-balham-hover-row-bg: #e8e8e8;
+  --db-grid-balham-border-color: #999999;
+  --db-grid-balham-text-color: #222222;
+  --db-grid-balham-secondary-text: #666666;
+  --db-grid-balham-cell-border-color: #d0d0d0;
+  --db-grid-balham-header-text-color: #222222;
+  --db-grid-balham-checkbox-checked: #333333;
+  --db-grid-balham-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --db-grid-balham-font-size: 13px;
+  --db-grid-balham-row-height: 36px;
+  --db-grid-balham-header-height: 36px;
+  --db-grid-balham-cell-padding: 6px;
+}
+
+// Grid 容器
+.db-grid-theme-balham {
+  --db-grid-bg: var(--db-grid-balham-bg);
+  --db-grid-border-color: var(--db-grid-balham-border-color);
+  --db-grid-text-color: var(--db-grid-balham-text-color);
+  --db-grid-font-family: var(--db-grid-balham-font-family);
+  --db-grid-font-size: var(--db-grid-balham-font-size);
+  --db-grid-row-height: var(--db-grid-balham-row-height);
+  --db-grid-header-bg: var(--db-grid-balham-header-bg);
+  --db-grid-header-text-color: var(--db-grid-balham-header-text-color);
+
+  border: 1px solid var(--db-grid-balham-border-color);
+  border-radius: 2px;
+  font-family: var(--db-grid-balham-font-family);
+  font-size: var(--db-grid-balham-font-size);
+
+  // 表头样式
+  .db-grid-header {
+    background: var(--db-grid-balham-header-bg);
+    border-bottom: 2px solid var(--db-grid-balham-border-color);
+
+    .db-grid-header-cell {
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--db-grid-balham-header-text-color);
+      border-right: 1px solid var(--db-grid-balham-border-color);
+      background: linear-gradient(to bottom, #f0f0f0, #e0e0e0);
+
+      &:last-child {
+        border-right: none;
+      }
+
+      &:hover {
+        background: linear-gradient(to bottom, #e8e8e8, #d8d8d8);
+      }
+
+      &.db-grid-header-sortable:hover {
+        cursor: pointer;
+        background: linear-gradient(to bottom, #e0e0e0, #d0d0d0);
+      }
+
+      &.db-grid-header-sorted-asc,
+      &.db-grid-header-sorted-desc {
+        background: linear-gradient(to bottom, #d8d8d8, #c8c8c8);
+      }
+
+      .db-grid-header-label {
+        font-size: 12px;
+      }
+
+      .db-grid-sort-icon {
+        font-size: 10px;
+        color: var(--db-grid-balham-secondary-text);
+        margin-left: 4px;
+        opacity: 0.6;
+
+        &.db-grid-sort-icon-inactive {
+          opacity: 0.3;
+        }
+      }
+
+      .db-grid-filter-icon-active {
+        color: #333;
+        opacity: 1;
+      }
+    }
+  }
+
+  // 行样式
+  .db-grid-row {
+    border-bottom: 1px solid var(--db-grid-balham-cell-border-color);
+    background: var(--db-grid-balham-odd-row-bg);
+
+    &.db-grid-row-odd {
+      background: var(--db-grid-balham-even-row-bg);
+    }
+
+    &:hover {
+      background: var(--db-grid-balham-hover-row-bg);
+    }
+
+    &.db-grid-row-selected {
+      background: var(--db-grid-balham-selected-row-bg);
+      color: #000;
+
+      &:hover {
+        background: var(--db-grid-balham-selected-row-bg);
+      }
+    }
+
+    &.db-grid-row-floating {
+      background: #e6e6e6;
+      border-bottom: 1px solid #ccc;
+    }
+
+    &.db-grid-row-highlight {
+      animation: balham-highlight 0.5s ease;
+    }
+  }
+
+  // 单元格样式
+  .db-grid-cell {
+    border-right: 1px solid var(--db-grid-balham-cell-border-color);
+    padding: 0 var(--db-grid-balham-cell-padding);
+    color: var(--db-grid-balham-text-color);
+    font-size: var(--db-grid-balham-font-size);
+    line-height: var(--db-grid-balham-row-height);
+
+    &:last-child {
+      border-right: none;
+    }
+
+    &.db-grid-cell-editing {
+      padding: 0;
+      background: #fff;
+      outline: 2px solid #333;
+      outline-offset: -2px;
+    }
+  }
+
+  // 编辑器样式
+  .db-grid-cell-editor {
+    width: 100%;
+    height: 100%;
+    border: none;
+    outline: none;
+    padding: 0 var(--db-grid-balham-cell-padding);
+    font-family: inherit;
+    font-size: inherit;
+
+    &.db-grid-cell-editor-text,
+    &.db-grid-cell-editor-number,
+    &.db-grid-cell-editor-date {
+      background: transparent;
+    }
+  }
+
+  // 复选框样式
+  .db-grid-checkbox {
+    width: 14px;
+    height: 14px;
+    margin: 0;
+    cursor: pointer;
+    accent-color: var(--db-grid-balham-checkbox-checked);
+  }
+
+  // 动作按钮
+  .db-grid-action-btn {
+    background: #f5f5f5;
+    border: 1px solid #ccc;
+    border-radius: 2px;
+    padding: 2px 8px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    &:hover {
+      background: #e0e0e0;
+      border-color: #999;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  // 无数据提示
+  .db-grid-no-rows {
+    color: var(--db-grid-balham-secondary-text);
+    font-size: 13px;
+    font-style: italic;
+  }
+
+  // 加载动画
+  .db-grid-overlay {
+    background: rgba(255, 255, 255, 0.85);
+
+    .db-grid-spinner {
+      color: #333;
+      font-size: 24px;
+    }
+  }
+
+  // 拖拽和调整大小
+  .db-grid-resize-handle {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 5px;
+    cursor: col-resize;
+    background: transparent;
+
+    &:hover {
+      background: #333;
+    }
+  }
+
+  .db-grid-drag-handle {
+    color: #999;
+    font-size: 10px;
+    margin-left: 4px;
+
+    &:hover {
+      color: #333;
+    }
+  }
+
+  // 滚动条样式
+  ::-webkit-scrollbar {
+    width: 14px;
+    height: 14px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #ebebeb;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #c0c0c0;
+    border: 2px solid #ebebeb;
+    border-radius: 7px;
+
+    &:hover {
+      background: #a0a0a0;
+    }
+  }
+}
+
+// 高亮动画
+@keyframes balham-highlight {
+  0% {
+    background: #ffffcc;
+  }
+  100% {
+    background: transparent;
+  }
+}

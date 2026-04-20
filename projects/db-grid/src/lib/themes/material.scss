@@ -1,0 +1,314 @@
+/**
+ * Material Design 主题
+ * Google Material Design 风格，扁平化设计
+ */
+
+// CSS 变量定义
+:root {
+  --db-grid-material-primary: #6200ee;
+  --db-grid-material-primary-variant: #3700b3;
+  --db-grid-material-secondary: #03dac6;
+  --db-grid-material-surface: #ffffff;
+  --db-grid-material-background: #ffffff;
+  --db-grid-material-error: #b00020;
+  --db-grid-material-on-primary: #ffffff;
+  --db-grid-material-on-surface: #000000;
+  --db-grid-material-on-background: #000000;
+  --db-grid-material-header-bg: #f5f5f5;
+  --db-grid-material-odd-row-bg: #ffffff;
+  --db-grid-material-even-row-bg: #fafafa;
+  --db-grid-material-selected-row-bg: #ede7f6;
+  --db-grid-material-hover-row-bg: #f5f5f5;
+  --db-grid-material-border-color: #e0e0e0;
+  --db-grid-material-text-color: rgba(0, 0, 0, 0.87);
+  --db-grid-material-secondary-text: rgba(0, 0, 0, 0.6);
+  --db-grid-material-cell-border-color: #e0e0e0;
+  --db-grid-material-font-family: 'Roboto', 'Segoe UI', sans-serif;
+  --db-grid-material-font-size: 14px;
+  --db-grid-material-row-height: 48px;
+  --db-grid-material-header-height: 56px;
+  --db-grid-material-cell-padding: 16px;
+}
+
+// Grid 容器
+.db-grid-theme-material {
+  --db-grid-bg: var(--db-grid-material-background);
+  --db-grid-border-color: transparent;
+  --db-grid-text-color: var(--db-grid-material-text-color);
+  --db-grid-font-family: var(--db-grid-material-font-family);
+  --db-grid-font-size: var(--db-grid-material-font-size);
+  --db-grid-row-height: var(--db-grid-material-row-height);
+  --db-grid-header-bg: var(--db-grid-material-header-bg);
+  --db-grid-header-text-color: var(--db-grid-material-text-color);
+
+  border: none;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.2), 0 4px 5px 0 rgba(0, 0, 0, 0.14), 0 1px 10px 0 rgba(0, 0, 0, 0.12);
+  font-family: var(--db-grid-material-font-family);
+  font-size: var(--db-grid-material-font-size);
+  overflow: hidden;
+
+  // 表头样式
+  .db-grid-header {
+    background: var(--db-grid-material-header-bg);
+    border-bottom: 1px solid var(--db-grid-material-border-color);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+
+    .db-grid-header-cell {
+      font-weight: 500;
+      font-size: 12px;
+      color: var(--db-grid-material-secondary-text);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      border-right: 1px solid var(--db-grid-material-border-color);
+      transition: background 0.2s ease;
+
+      &:last-child {
+        border-right: none;
+      }
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.04);
+      }
+
+      &.db-grid-header-sortable:hover {
+        cursor: pointer;
+        background: rgba(0, 0, 0, 0.06);
+      }
+
+      &.db-grid-header-sorted-asc,
+      &.db-grid-header-sorted-desc {
+        background: rgba(98, 0, 238, 0.08);
+        color: var(--db-grid-material-primary);
+      }
+
+      .db-grid-header-label {
+        font-size: 12px;
+      }
+
+      .db-grid-sort-icon {
+        font-size: 14px;
+        color: var(--db-grid-material-primary);
+        margin-left: 4px;
+        transition: transform 0.2s ease;
+
+        &.db-grid-sort-icon-inactive {
+          color: var(--db-grid-material-secondary-text);
+          opacity: 0.5;
+        }
+      }
+
+      .db-grid-filter-icon-active {
+        color: var(--db-grid-material-primary);
+      }
+    }
+  }
+
+  // 行样式
+  .db-grid-row {
+    border-bottom: 1px solid var(--db-grid-material-cell-border-color);
+    background: var(--db-grid-material-odd-row-bg);
+    transition: background 0.15s ease;
+
+    &.db-grid-row-odd {
+      background: var(--db-grid-material-even-row-bg);
+    }
+
+    &:hover {
+      background: var(--db-grid-material-hover-row-bg);
+    }
+
+    &.db-grid-row-selected {
+      background: var(--db-grid-material-selected-row-bg);
+
+      &:hover {
+        background: var(--db-grid-material-selected-row-bg);
+      }
+    }
+
+    &.db-grid-row-floating {
+      background: #fff3e0;
+    }
+
+    &.db-grid-row-highlight {
+      animation: material-highlight 0.4s ease;
+    }
+  }
+
+  // 单元格样式
+  .db-grid-cell {
+    border-right: 1px solid var(--db-grid-material-cell-border-color);
+    padding: 0 var(--db-grid-material-cell-padding);
+    color: var(--db-grid-material-text-color);
+    font-size: var(--db-grid-material-font-size);
+    line-height: var(--db-grid-material-row-height);
+
+    &:last-child {
+      border-right: none;
+    }
+
+    &.db-grid-cell-editing {
+      padding: 0;
+      background: var(--db-grid-material-surface);
+      outline: 2px solid var(--db-grid-material-primary);
+      outline-offset: -2px;
+      box-shadow: inset 0 0 0 1px var(--db-grid-material-primary);
+    }
+  }
+
+  // 编辑器样式
+  .db-grid-cell-editor {
+    width: 100%;
+    height: 100%;
+    border: none;
+    outline: none;
+    padding: 0 var(--db-grid-material-cell-padding);
+    font-family: inherit;
+    font-size: inherit;
+    background: transparent;
+
+    &.db-grid-cell-editor-text,
+    &.db-grid-cell-editor-number,
+    &.db-grid-cell-editor-date {
+      background: transparent;
+    }
+  }
+
+  // 复选框样式
+  .db-grid-checkbox {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    cursor: pointer;
+    accent-color: var(--db-grid-material-primary);
+  }
+
+  // 动作按钮
+  .db-grid-action-btn {
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--db-grid-material-primary);
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: background 0.2s ease;
+
+    &:hover {
+      background: rgba(98, 0, 238, 0.08);
+    }
+
+    &:disabled {
+      opacity: 0.38;
+      cursor: not-allowed;
+    }
+  }
+
+  // 无数据提示
+  .db-grid-no-rows {
+    color: var(--db-grid-material-secondary-text);
+    font-size: 16px;
+    font-weight: 400;
+  }
+
+  // 加载动画
+  .db-grid-overlay {
+    background: rgba(255, 255, 255, 0.9);
+
+    .db-grid-spinner {
+      color: var(--db-grid-material-primary);
+    }
+  }
+
+  // 拖拽和调整大小
+  .db-grid-resize-handle {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    cursor: col-resize;
+
+    &:hover {
+      background: var(--db-grid-material-primary);
+    }
+  }
+
+  .db-grid-drag-handle {
+    color: var(--db-grid-material-secondary-text);
+    font-size: 10px;
+    margin-left: 4px;
+    opacity: 0.5;
+
+    &:hover {
+      opacity: 1;
+      color: var(--db-grid-material-primary);
+    }
+  }
+
+  // 滚动条样式 (Material Design)
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.26);
+    border-radius: 4px;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.38);
+    }
+  }
+}
+
+// Ripple 效果
+.db-grid-theme-material .db-grid-row {
+  position: relative;
+  overflow: hidden;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(98, 0, 238, 0.1);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.3s ease, height 0.3s ease;
+    pointer-events: none;
+  }
+}
+
+// 高亮动画
+@keyframes material-highlight {
+  0% {
+    background: rgba(98, 0, 238, 0.12);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
+// Ripple 点击效果
+@keyframes material-ripple {
+  0% {
+    width: 0;
+    height: 0;
+    opacity: 0.5;
+  }
+  100% {
+    width: 400px;
+    height: 400px;
+    opacity: 0;
+  }
+}
