@@ -422,6 +422,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     if (!isPlatformBrowser(this.platformId)) return;
     const bodyHeight = this.bodyContainer.nativeElement.clientHeight;
     this.dataService.setScrollConfig({ viewportHeight: bodyHeight, rowHeight: this.rowHeight });
+    
+    // 初始化数据（首次渲染时 rowData 已传入但 ngOnChanges 不会触发 firstChange）
+    if (this.rowData && this.rowData.length > 0) {
+      this.setRowData(this.rowData);
+    }
+    
     this.renderHeader();
     this.renderRows();
 
@@ -938,7 +944,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     (headerElement as HTMLElement).style.height = `${this.headerHeight}px`;
     container.innerHTML = '';
     container.appendChild(headerElement);
-    headerElement.addEventListener('headerClick', ((e: CustomEvent) => { this.onHeaderClick(e.detail.colDef); }) as EventListener);
+    headerElement.addEventListener('headerClick', ((e: CustomEvent) => { this.onHeaderClick(e.detail); }) as EventListener);
     headerElement.addEventListener('filterClick', ((e: CustomEvent) => {
       const { colDef, event } = e.detail;
       this.ngZone.run(() => this.openFilterPopup(colDef, event));
@@ -957,7 +963,16 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     const visibleData = this.dataService.getVisibleRows();
     visibleData.forEach((data, i) => {
       const rowIndex = viewport.startIndex + i;
-      const rowNode = this.dataService.getRowNode(this.getRowId?.(data) || `row-${rowIndex}`);
+      // 使用和 dataService 相同的 ID 生成逻辑
+      let rowId: string;
+      if (this.getRowId) {
+        rowId = this.getRowId(data);
+      } else if (data.id !== undefined) {
+        rowId = String(data.id);
+      } else {
+        rowId = `row-${rowIndex}`;
+      }
+      const rowNode = this.dataService.getRowNode(rowId);
       if (rowNode) {
         const { rowElement } = this.rowRenderer.render(rowIndex, data, rowNode);
         rowsContainer.appendChild(rowElement);
