@@ -1,40 +1,50 @@
 /**
  * db-grid daily git push script
- * Run from db-grid directory, pushes all changes to GitHub
+ * Run: node _daily_push.js
+ * Uses SSH (no token needed) if SSH key is added to GitHub.
  */
 const { execSync } = require('child_process');
-const fs = require('fs');
 const path = require('path');
 
 const repoDir = 'C:\\Users\\will\\.qclaw\\workspace\\db-grid';
-const today = new Date().toISOString().slice(0, 10); // yyyy-mm-dd
+const today = new Date().toISOString().slice(0, 10);
+
+function run(cmd, opts = {}) {
+  return execSync(cmd, { cwd: repoDir, encoding: 'utf8', ...opts });
+}
 
 try {
-  // Check if there are uncommitted changes
-  const status = execSync('git status --porcelain', { cwd: repoDir, encoding: 'utf8' });
-  
+  // 1. Ensure SSH remote
+  const remote = run('git remote get-url origin').trim();
+  if (!remote.includes('git@github.com')) {
+    run('git remote set-url origin git@github.com:dlroot/db-grid.git');
+    console.log('[db-grid] Switched to SSH remote');
+  }
+
+  // 2. Check uncommitted changes
+  const status = run('git status --porcelain');
   if (!status.trim()) {
-    console.log('[db-grid-push] No changes to commit.');
+    console.log(`[db-grid] ${today} - No changes to commit.`);
     process.exit(0);
   }
 
-  console.log('[db-grid-push] Changes detected, committing and pushing...');
-  console.log('Status:', status.trim().slice(0, 200));
+  console.log(`[db-grid] ${today} - Changes detected, committing...`);
+  console.log('Changes:', status.trim().slice(0, 200).replace(/\n/g, ' | '));
 
-  // Stage all changes
-  execSync('git add -A', { cwd: repoDir });
-  
-  // Commit with date
-  const commitMsg = `auto: daily push ${today}`;
-  execSync(`git commit -m "${commitMsg}"`, { cwd: repoDir });
-  console.log(`[db-grid-push] Committed: "${commitMsg}"`);
-  
-  // Push
-  execSync('git push', { cwd: repoDir });
-  console.log('[db-grid-push] ✅ Pushed to GitHub successfully!');
-  
+  // 3. Stage all
+  run('git add -A');
+
+  // 4. Commit
+  const msg = `auto: daily push ${today}`;
+  run(`git commit -m "${msg}"`);
+  console.log(`[db-grid] Committed: "${msg}"`);
+
+  // 5. Push
+  const pushOut = run('git push origin master 2>&1');
+  console.log('[db-grid] ✅ Pushed:', pushOut.trim());
+
 } catch (e) {
-  const err = e.stderr || e.stdout || e.message;
-  console.error('[db-grid-push] ❌ Failed:', err.slice(0, 500));
+  const err = (e.stderr || e.stdout || e.message || '').slice(0, 500);
+  console.error('[db-grid] ❌ Failed:', err);
   process.exit(1);
 }
