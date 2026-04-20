@@ -987,15 +987,20 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.renderRows();
   }
 
-  private onHeaderClick(colDef: ColDef): void {
+  private onHeaderClick(detail: { colDef: any; colId: string; column: any; shiftKey?: boolean }): void {
+    const colDef = detail.colDef;
     if (!colDef.sortable) return;
-    let newSort: 'asc' | 'desc' | null = 'asc';
-    if (colDef.sort === 'asc') newSort = 'desc';
-    else if (colDef.sort === 'desc') newSort = null;
-    colDef.sort = newSort;
-    this.dataService.sort(this.columnDefs);
+    const multiSort = detail.shiftKey ?? false;
+    // 使用 dataService.toggleSort 处理多列排序
+    const newSortModel = this.dataService.toggleSort(colDef.colId || colDef.field, multiSort);
+    // 同步 colDef.sort 状态
+    this.columnDefs.forEach(cd => {
+      const state = this.dataService.getColumnSortState(cd.colId || cd.field);
+      cd.sort = state.sort;
+      cd.sortIndex = state.sortIndex ?? undefined;
+    });
     this.refreshView();
-    this.sortChanged.emit({ type: 'sortChanged', colDef, column: colDef, columns: this.columnDefs, source: 'ui', api: this.gridApi });
+    this.sortChanged.emit({ type: 'sortChanged', colDef, column: colDef, columns: this.columnDefs, source: 'ui', api: this.gridApi } as any);
   }
 
   private setupRowEvents(rowElement: HTMLElement, rowIndex: number, data: any, rowNode: any): void {

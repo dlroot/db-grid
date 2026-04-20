@@ -281,13 +281,14 @@ export class HeaderRendererService {
         return;
       }
 
-      // 触发排序事件
+      // 触发排序事件（传递 shiftKey 支持多列排序）
       const event = new CustomEvent('headerClick', {
         bubbles: true,
         detail: {
           colDef,
           colId,
           column: colDef,
+          shiftKey: e.shiftKey,
         },
       });
       header.dispatchEvent(event);

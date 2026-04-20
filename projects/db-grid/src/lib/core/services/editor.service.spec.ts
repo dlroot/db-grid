@@ -16,37 +16,37 @@ describe('EditorService', () => {
   describe('Editor Type Resolution', () => {
     it('should resolve text editor', () => {
       const colDef: ColDef = { field: 'name', cellEditor: 'text' };
-      expect(service.resolveEditorType(colDef)).toBe('text');
+      expect(service.resolveEditorType(colDef)).toBe('agTextCellEditor');
     });
 
     it('should resolve number editor', () => {
       const colDef: ColDef = { field: 'age', cellEditor: 'number' };
-      expect(service.resolveEditorType(colDef)).toBe('number');
+      expect(service.resolveEditorType(colDef)).toBe('agNumberCellEditor');
     });
 
     it('should resolve select editor', () => {
       const colDef: ColDef = { field: 'status', cellEditor: 'select' };
-      expect(service.resolveEditorType(colDef)).toBe('select');
+      expect(service.resolveEditorType(colDef)).toBe('agSelectCellEditor');
     });
 
     it('should resolve date editor', () => {
       const colDef: ColDef = { field: 'date', cellEditor: 'date' };
-      expect(service.resolveEditorType(colDef)).toBe('date');
+      expect(service.resolveEditorType(colDef)).toBe('agDateCellEditor');
     });
 
     it('should resolve checkbox editor', () => {
       const colDef: ColDef = { field: 'active', cellEditor: 'checkbox' };
-      expect(service.resolveEditorType(colDef)).toBe('checkbox');
+      expect(service.resolveEditorType(colDef)).toBe('agCheckboxCellEditor');
     });
 
     it('should resolve textarea editor', () => {
-      const colDef: ColDef = { field: 'notes', cellEditor: 'textarea' };
-      expect(service.resolveEditorType(colDef)).toBe('textarea');
+      const colDef: ColDef = { field: 'notes', cellEditor: 'largeText' };
+      expect(service.resolveEditorType(colDef)).toBe('agLargeTextCellEditor');
     });
 
     it('should resolve richSelect editor', () => {
       const colDef: ColDef = { field: 'category', cellEditor: 'richSelect' };
-      expect(service.resolveEditorType(colDef)).toBe('richSelect');
+      expect(service.resolveEditorType(colDef)).toBe('agRichSelectCellEditor');
     });
 
     it('should default to text editor', () => {
@@ -61,7 +61,7 @@ describe('EditorService', () => {
       const session = service.startEditing('row-1', colDef, 'test value');
 
       expect(session).toBeTruthy();
-      expect(session?.editorType).toBe('text');
+      expect(session?.editorType).toBe('agTextCellEditor');
       expect(session?.originalValue).toBe('test value');
     });
 

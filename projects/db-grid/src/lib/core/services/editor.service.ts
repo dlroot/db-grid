@@ -211,7 +211,18 @@ export class EditorService {
    */
   resolveEditorType(colDef: ColDef): EditorType {
     if (colDef.cellEditor) {
-      return colDef.cellEditor as EditorType;
+      // 支持简化名映射
+      const aliasMap: Record<string, EditorType> = {
+        'text': 'agTextCellEditor',
+        'number': 'agNumberCellEditor',
+        'select': 'agSelectCellEditor',
+        'date': 'agDateCellEditor',
+        'checkbox': 'agCheckboxCellEditor',
+        'largeText': 'agLargeTextCellEditor',
+        'richSelect': 'agRichSelectCellEditor',
+      };
+      const raw = String(colDef.cellEditor);
+      return aliasMap[raw] || (raw as EditorType);
     }
 
     // 根据 cellType 自动推断
