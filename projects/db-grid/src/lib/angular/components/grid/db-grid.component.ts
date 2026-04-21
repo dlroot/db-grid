@@ -68,6 +68,7 @@ import {
   SideBarService,
   StatusBarService,
   MasterDetailService,
+  UndoRedoService,
 } from '../../../core/services';
 
 import { DbCellEditorComponent } from '../cell-editor/db-cell-editor.component';
@@ -286,6 +287,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   private sidebarService: SideBarService;
   private statusBarService: StatusBarService;
   private masterDetailService: MasterDetailService;
+  private undoRedoService: UndoRedoService;
   private _dataTypesApplied = false;
 
   // ============ State ============
@@ -342,6 +344,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.sidebarService = new SideBarService();
     this.statusBarService = new StatusBarService();
     this.masterDetailService = new MasterDetailService();
+    this.undoRedoService = new UndoRedoService();
   }
 
   // ============ Lifecycle ============
@@ -556,6 +559,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.sidebarService.destroy();
     this.statusBarService.destroy();
     this.masterDetailService.destroy();
+    this.undoRedoService.destroy();
   }
 
   // ============ Grid API ============
@@ -692,6 +696,13 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       toggleDetail: (nodeId: string, data?: any) => this.masterDetailService.toggleDetail(nodeId, data),
       isDetailExpanded: (nodeId: string) => this.masterDetailService.isDetailExpanded(nodeId),
       getMasterDetailService: () => this.masterDetailService,
+
+      // ========== 撤销/重做 ==========
+      undo: () => this.undo(),
+      redo: () => this.redo(),
+      canUndo: () => this.undoRedoService.canUndo(),
+      canRedo: () => this.undoRedoService.canRedo(),
+      getUndoRedoService: () => this.undoRedoService,
 
       // ========== 拖拽排序 ==========
       startDrag: (rowNodes: any[], event: MouseEvent) => this.startDrag(rowNodes, event),
@@ -1061,6 +1072,64 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     }
   }
 
+  // ========== 撤销/重做 API ==========
+
+  undo(): void {
+    const action = this.undoRedoService.undo();
+    if (action) {
+      this.applyUndoAction(action);
+    }
+  }
+
+  redo(): void {
+    const action = this.undoRedoService.redo();
+    if (action) {
+      this.applyRedoAction(action);
+    }
+  }
+
+  private applyUndoAction(action: any): void {
+    switch (action.type) {
+      case 'edit':
+        // 恢复旧值
+        const rowNode = this.dataService.getRowNode(action.rowIndex);
+        if (rowNode && action.colId) {
+          rowNode.data[action.colId] = action.oldValue;
+          this.refreshView();
+        }
+        break;
+      case 'rowAdd':
+        // 撤销添加 = 删除行
+        // TODO: 实现行删除
+        break;
+      case 'rowDelete':
+        // 撤销删除 = 添加行
+        // TODO: 实现行添加
+        break;
+    }
+  }
+
+  private applyRedoAction(action: any): void {
+    switch (action.type) {
+      case 'edit':
+        // 重做新值
+        const rowNode = this.dataService.getRowNode(action.rowIndex);
+        if (rowNode && action.colId) {
+          rowNode.data[action.colId] = action.newValue;
+          this.refreshView();
+        }
+        break;
+      case 'rowAdd':
+        // 重做添加
+        // TODO: 实现行添加
+        break;
+      case 'rowDelete':
+        // 重做删除
+        // TODO: 实现行删除
+        break;
+    }
+  }
+
   // ========== 选择 API ==========
 
   selectAll(): void {
@@ -1095,6 +1164,37 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   /** 键盘事件处理 */
   onKeyDown(event: KeyboardEvent): void {
+    // 撤销/重做快捷键
+    if (event.ctrlKey || event.metaKey) {
+      if (event.key === 'z' || event.key === 'Z') {
+        if (event.shiftKey) {
+          // Ctrl+Shift+Z = Redo
+          if (this.undoRedoService.canRedo()) {
+            this.redo();
+            event.preventDefault();
+            event.stopPropagation();
+          }
+        } else {
+          // Ctrl+Z = Undo
+          if (this.undoRedoService.canUndo()) {
+            this.undo();
+            event.preventDefault();
+            event.stopPropagation();
+          }
+        }
+        return;
+      }
+      if (event.key === 'y' || event.key === 'Y') {
+        // Ctrl+Y = Redo
+        if (this.undoRedoService.canRedo()) {
+          this.redo();
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        return;
+      }
+    }
+
     if (!this.keyboardNavigationService) return;
     const result = this.keyboardNavigationService.handleKeyDown(event);
     if (result.consumed) {
