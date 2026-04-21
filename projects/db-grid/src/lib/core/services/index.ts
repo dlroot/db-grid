@@ -27,3 +27,4 @@ export * from './animation.service';
 export * from './aggregation.service';
 export * from './filter.service';
 export * from './editor.service';
+export * from './cell-data-type.service';

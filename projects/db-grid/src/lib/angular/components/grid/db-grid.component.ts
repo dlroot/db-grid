@@ -59,6 +59,7 @@ import {
   EditorService,
   TreeNodeConfig,
   GroupConfig,
+  CellDataTypeService,
 } from '../../../core/services';
 
 import { DbCellEditorComponent } from '../cell-editor/db-cell-editor.component';
@@ -255,6 +256,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   private dragDropService: DragDropService;
   private filterService: FilterService;
   private editorService: EditorService;
+  private cellDataTypeService: CellDataTypeService;
+  private _dataTypesApplied = false;
 
   // ============ State ============
   private destroy$ = new Subject<void>();
@@ -301,6 +304,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.dragDropService = new DragDropService();
     this.filterService = new FilterService();
     this.editorService = new EditorService();
+    this.cellDataTypeService = new CellDataTypeService();
   }
 
   // ============ Lifecycle ============
@@ -311,6 +315,13 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.dataService.setScrollConfig({ rowHeight: this.rowHeight, viewportHeight: 400, bufferSize: 5 });
     // 注入筛选服务（支持列筛选 + 快速筛选）
     this.dataService.setFilterService(this.filterService);
+
+    // 自动推断列数据类型（Cell Data Types）
+    if (this.rowData && this.rowData.length > 0) {
+      this.cellDataTypeService.applyAutoTypes(this.columnDefs, this.rowData, this.gridOptions);
+      // 重新初始化列服务（类型推断可能修改了 columnDefs）
+      this.columnService.initialize(this.columnDefs);
+    }
 
     // 初始化选择服务
     const rowSelection = this.gridOptions.rowSelection;
@@ -535,6 +546,9 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       getCellSpanService: () => this.cellSpanService,
       getAllSpans: () => this.cellSpanService.getAllSpans(),
 
+      // ========== Cell Data Types ==========
+      getCellDataTypeService: () => this.cellDataTypeService,
+
       // ========== Excel 导出 ==========
       exportDataAsCsv: (params?: any) => this.exportDataAsCsv(params),
       downloadExcel: (options?: any) => this.downloadExcel(options),
@@ -582,6 +596,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   // --- 数据 ---
   setRowData(rowData: any[]): void {
+    // 首次加载数据时自动推断列类型
+    if (rowData && rowData.length > 0 && !this._dataTypesApplied) {
+      this.cellDataTypeService.applyAutoTypes(this.columnDefs, rowData, this.gridOptions);
+      this._dataTypesApplied = true;
+    }
+
     // 更新分页服务的总行数
     if (this.pagination) {
       this.paginationService.setTotalRows(rowData.length);
