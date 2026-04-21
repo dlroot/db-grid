@@ -62,6 +62,7 @@ import {
   CellDataTypeService,
   KeyboardNavigationService,
   AccessibilityService,
+  AggregationService,
 } from '../../../core/services';
 
 import { DbCellEditorComponent } from '../cell-editor/db-cell-editor.component';
@@ -274,6 +275,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   private cellDataTypeService: CellDataTypeService;
   private keyboardNavigationService: KeyboardNavigationService;
   private accessibilityService: AccessibilityService;
+  private aggregationService: AggregationService;
   private _dataTypesApplied = false;
 
   // ============ State ============
@@ -306,7 +308,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.columnService = new ColumnService();
     this.selectionService = new SelectionService();
     this.treeService = new TreeService();
-    this.groupService = new GroupService();
+    this.aggregationService = new AggregationService();
+    this.groupService = new GroupService(this.aggregationService);
     this.excelExportService = new ExcelExportService();
     this.cellSpanService = new CellSpanService();
     this.cellRenderer = new CellRendererService();
@@ -533,6 +536,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.dragDropService.destroy();
     this.keyboardNavigationService.destroy();
     this.accessibilityService.destroy();
+    this.aggregationService.destroy();
   }
 
   // ============ Grid API ============
@@ -612,6 +616,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       getCellDataTypeService: () => this.cellDataTypeService,
       getKeyboardNavigationService: () => this.keyboardNavigationService,
       getAccessibilityService: () => this.accessibilityService,
+      getAggregationService: () => this.aggregationService,
 
       // ========== Excel 导出 ==========
       exportDataAsCsv: (params?: any) => this.exportDataAsCsv(params),

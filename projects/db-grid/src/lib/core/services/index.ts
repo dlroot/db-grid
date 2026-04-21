@@ -30,3 +30,4 @@ export * from './editor.service';
 export * from './cell-data-type.service';
 export * from './keyboard-navigation.service';
 export * from './accessibility.service';
+export * from './aggregation.service';

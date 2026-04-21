@@ -82,6 +82,17 @@ export interface ColDef {
   sortIndex?: number;
   sortOrder?: number;
 
+  // 聚合
+  aggregation?: string | string[] | {
+    type: string | string[];
+    precision?: number;
+    aggregator?: (values: any[], node: any) => any;
+    formatter?: (value: any, node: any) => string;
+    showInGroup?: boolean;
+    prefix?: string;
+    suffix?: string;
+  };
+
   // 动作列
   actions?: Array<{
     name: string;

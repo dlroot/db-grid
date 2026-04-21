@@ -1,10 +1,11 @@
 /**
  * 行分组服务
- * 基于列值自动创建分组行，支持多级分组
+ * 基于列值自动创建分组行，支持多级分组和聚合
  */
 
 import { Injectable } from '@angular/core';
 import { RowNode, ColDef, createEmptyRowNode } from '../models';
+import { AggregationService, GroupAggregations } from './aggregation.service';
 
 export interface GroupConfig {
   groupFields: string[];
@@ -12,6 +13,10 @@ export interface GroupConfig {
   groupColumnId?: string;
   groupColumnHeader?: string;
   expandAll?: boolean;
+  /** 是否启用聚合 */
+  enableAggregation?: boolean;
+  /** 聚合列配置（覆盖 ColDef.aggregation） */
+  aggregationFields?: string[];
 }
 
 export interface GroupResult {
@@ -35,10 +40,18 @@ export class GroupService {
   private originalRowData: any[] = [];
   private onGroupChange: ((event: GroupChangeEvent) => void) | null = null;
 
-  initialize(rowData: any[], config: GroupConfig): void {
+  constructor(private aggregationService: AggregationService) {}
+
+  initialize(rowData: any[], config: GroupConfig, columnDefs?: ColDef[]): void {
     this.config = config;
     this.originalRowData = rowData;
     this.groupNodes.clear();
+
+    // 注册聚合配置
+    if (config.enableAggregation !== false && columnDefs) {
+      this.aggregationService.registerColumns(columnDefs);
+    }
+
     this.createGroupColumnDefs();
     this.doGrouping(rowData);
   }
@@ -106,6 +119,9 @@ export class GroupService {
         groupNode.allChildrenCount = rows.length;
         groupNode.siblingGroups = [];
 
+        // 收集叶子节点用于聚合计算
+        const leafNodes: RowNode[] = [];
+
         this.groupNodes.set(groupId, groupNode);
         this.flatNodes.push(groupNode);
 
@@ -126,10 +142,18 @@ export class GroupService {
             leafNode.firstChild = i === 0;
             leafNode.lastChild = i === rows.length - 1;
             groupNode.children.push(leafNode);
+            leafNodes.push(leafNode);
             this.flatNodes.push(leafNode);
           });
           groupNode.allChildrenCount = rows.length;
         }
+
+        // 计算聚合值
+        if (this.config?.enableAggregation !== false && leafNodes.length > 0) {
+          const aggregations = this.aggregationService.calculateAggregations(groupNode, leafNodes);
+          groupNode.data.__aggregations = aggregations;
+        }
+
         groupIndex++;
       });
     };

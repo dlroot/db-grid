@@ -1,203 +1,221 @@
-import { Injectable } from '@angular/core';
-import { ColDef } from '../models';
-
 /**
- * 数据聚合服务 — 分组后的聚合计算（sum/avg/min/max/count）
- * AG Grid 对应功能：Aggregation (Enterprise)
+ * 聚合服务
+ * 计算分组行的聚合值（sum/avg/count/min/max）
+ *
+ * 用法：
+ *   ColDef 配置:
+ *   { field: 'price', aggregation: { type: 'sum', precision: 2 } }
+ *   { field: 'quantity', aggregation: ['sum', 'avg'] }
  */
-@Injectable({ providedIn: 'root' })
+
+import { Injectable } from '@angular/core';
+import { ColDef, RowNode } from '../models';
+
+export type AggregationType = 'sum' | 'avg' | 'count' | 'min' | 'max' | 'first' | 'last';
+
+export interface AggregationConfig {
+  /** 聚合类型 */
+  type: AggregationType | AggregationType[];
+  /** 小数位数 */
+  precision?: number;
+  /** 自定义聚合函数 */
+  aggregator?: (values: any[], node: RowNode) => any;
+  /** 格式化函数 */
+  formatter?: (value: any, node: RowNode) => string;
+  /** 是否在分组行显示 */
+  showInGroup?: boolean;
+  /** 聚合值前缀 */
+  prefix?: string;
+  /** 聚合值后缀 */
+  suffix?: string;
+}
+
+export interface AggregationResult {
+  field: string;
+  type: AggregationType;
+  value: any;
+  formatted: string;
+}
+
+export interface GroupAggregations {
+  [field: string]: {
+    [type: string]: AggregationResult;
+  };
+}
+
+@Injectable()
 export class AggregationService {
-  private enabled = false;
-  private aggColumns: Map<string, AggConfig> = new Map();
-  private customAggFunctions: Map<string, CustomAggFunction> = new Map();
-  private results: Map<string, AggResult> = new Map();
+  /** 聚合配置缓存 */
+  private aggregationConfigs: Map<string, AggregationConfig> = new Map();
 
-  private onAggregationChanged: ((results: Map<string, AggResult>) => void) | null = null;
+  /** 聚合值缓存 */
+  private aggregationCache: Map<string, GroupAggregations> = new Map();
 
-  /** 初始化 */
-  initialize(columnDefs: ColDef[], config: AggregationConfig = {}): void {
-    this.enabled = config.enabled ?? false;
-    this.aggColumns.clear();
+  /** 注册列聚合配置 */
+  registerColumn(colDef: ColDef): void {
+    if (!colDef.aggregation) return;
 
-    for (const col of columnDefs) {
-      const aggFunc = (col as any).aggFunc;
-      if (aggFunc) {
-        const colId = col.field ?? col.colId ?? '';
-        this.aggColumns.set(colId, {
-          field: colId,
-          aggFunc: typeof aggFunc === 'string' ? aggFunc as AggFuncType : 'custom',
-          customFn: typeof aggFunc === 'function' ? aggFunc : undefined
-        });
-      }
-    }
+    const field = colDef.field || colDef.colId;
+    if (!field) return;
 
-    // 注册内置聚合函数
-    this.registerBuiltInFunctions();
+    const config: AggregationConfig =
+      typeof colDef.aggregation === 'string'
+        ? { type: colDef.aggregation as AggregationType }
+        : Array.isArray(colDef.aggregation)
+          ? { type: colDef.aggregation as AggregationType[] }
+          : (colDef.aggregation as AggregationConfig);
+
+    this.aggregationConfigs.set(field, config);
   }
 
-  /** 是否启用 */
-  isEnabled(): boolean { return this.enabled; }
-
-  /** 启用 */
-  enable(): void { this.enabled = true; }
-
-  /** 禁用 */
-  disable(): void { this.enabled = false; this.results.clear(); }
-
-  /** 设置列的聚合函数 */
-  setColumnAggFunc(colId: string, aggFunc: AggFuncType | CustomAggFunction): void {
-    this.aggColumns.set(colId, {
-      field: colId,
-      aggFunc: typeof aggFunc === 'string' ? aggFunc : 'custom',
-      customFn: typeof aggFunc === 'function' ? aggFunc : undefined
-    });
+  /** 批量注册列聚合配置 */
+  registerColumns(columnDefs: ColDef[]): void {
+    columnDefs.forEach(col => this.registerColumn(col));
   }
 
-  /** 移除列的聚合 */
-  removeColumnAgg(colId: string): void {
-    this.aggColumns.delete(colId);
-    this.results.delete(colId);
-  }
+  /** 计算分组节点的聚合值 */
+  calculateAggregations(groupNode: RowNode, leafNodes: RowNode[]): GroupAggregations {
+    const result: GroupAggregations = {};
 
-  /** 注册自定义聚合函数 */
-  registerAggFunction(name: string, fn: CustomAggFunction): void {
-    this.customAggFunctions.set(name, fn);
-  }
+    if (leafNodes.length === 0) return result;
 
-  /** 计算聚合 */
-  aggregate(rowData: any[], groupKey?: string): Map<string, AggResult> {
-    if (!this.enabled) return new Map();
+    this.aggregationConfigs.forEach((config, field) => {
+      const types = Array.isArray(config.type) ? config.type : [config.type];
 
-    this.results.clear();
+      result[field] = {};
 
-    for (const [colId, config] of this.aggColumns) {
-      const values = rowData
-        .map(r => Number(r[colId]))
-        .filter(v => !isNaN(v));
+      types.forEach(type => {
+        const values = leafNodes.map(node => node.data?.[field]).filter(v => v !== undefined && v !== null);
+        let value: any;
 
-      if (values.length === 0) {
-        this.results.set(colId, { value: null, count: 0 });
-        continue;
-      }
+        if (config.aggregator) {
+          value = config.aggregator(values, groupNode);
+        } else {
+          value = this.aggregate(values, type);
+        }
 
-      let result: number;
-      const fn = config.customFn ?? this.customAggFunctions.get(config.aggFunc as string);
+        // 应用精度
+        if (typeof value === 'number' && config.precision !== undefined) {
+          value = Number(value.toFixed(config.precision));
+        }
 
-      if (fn) {
-        result = fn(values);
-      } else {
-        result = this.computeBuiltin(values, config.aggFunc as AggFuncType);
-      }
+        // 格式化
+        let formatted: string;
+        if (config.formatter) {
+          formatted = config.formatter(value, groupNode);
+        } else {
+          formatted = this.formatValue(value, type, config);
+        }
 
-      this.results.set(colId, {
-        value: result,
-        count: values.length,
-        formattedValue: this.formatAggValue(result, config.aggFunc as AggFuncType)
+        result[field][type] = {
+          field,
+          type,
+          value,
+          formatted,
+        };
       });
+    });
+
+    // 缓存结果
+    this.aggregationCache.set(groupNode.id, result);
+
+    return result;
+  }
+
+  /** 计算单个聚合值 */
+  private aggregate(values: any[], type: AggregationType): any {
+    if (values.length === 0) {
+      return type === 'count' ? 0 : null;
     }
 
-    if (this.onAggregationChanged) {
-      this.onAggregationChanged(new Map(this.results));
-    }
+    const numericValues = values.map(v => Number(v)).filter(v => !isNaN(v));
 
-    return new Map(this.results);
-  }
-
-  /** 分组聚合 */
-  aggregateGrouped(groupedData: Map<string, any[]>): Map<string, Map<string, AggResult>> {
-    const groupResults = new Map<string, Map<string, AggResult>>();
-    for (const [groupKey, rows] of groupedData) {
-      groupResults.set(groupKey, this.aggregate(rows, groupKey));
-    }
-    return groupResults;
-  }
-
-  /** 获取聚合结果 */
-  getResult(colId: string): AggResult | undefined {
-    return this.results.get(colId);
-  }
-
-  /** 获取所有聚合结果 */
-  getAllResults(): Map<string, AggResult> {
-    return new Map(this.results);
-  }
-
-  /** 注册变更回调 */
-  onAggregationChangedEvent(callback: (results: Map<string, AggResult>) => void): void {
-    this.onAggregationChanged = callback;
-  }
-
-  // ===== 内部方法 =====
-
-  private registerBuiltInFunctions(): void {
-    // sum, avg, min, max, count, first, last 已经内置
-    // 自定义函数通过 registerAggFunction 添加
-  }
-
-  private computeBuiltin(values: number[], func: AggFuncType): number {
-    switch (func) {
+    switch (type) {
       case 'sum':
-        return values.reduce((a, b) => a + b, 0);
+        return numericValues.reduce((a, b) => a + b, 0);
+
       case 'avg':
-        return values.reduce((a, b) => a + b, 0) / values.length;
-      case 'min':
-        return Math.min(...values);
-      case 'max':
-        return Math.max(...values);
+        return numericValues.length > 0
+          ? numericValues.reduce((a, b) => a + b, 0) / numericValues.length
+          : null;
+
       case 'count':
         return values.length;
+
+      case 'min':
+        return numericValues.length > 0 ? Math.min(...numericValues) : null;
+
+      case 'max':
+        return numericValues.length > 0 ? Math.max(...numericValues) : null;
+
       case 'first':
         return values[0];
+
       case 'last':
         return values[values.length - 1];
+
       default:
-        return values.reduce((a, b) => a + b, 0);
+        return null;
     }
   }
 
-  private formatAggValue(value: number, func: AggFuncType): string {
-    if (value === null) return '';
-    switch (func) {
-      case 'sum': return `合计: ${value.toLocaleString()}`;
-      case 'avg': return `平均: ${value.toFixed(2)}`;
-      case 'min': return `最小: ${value}`;
-      case 'max': return `最大: ${value}`;
-      case 'count': return `计数: ${value}`;
-      case 'first': return `首项: ${value}`;
-      case 'last': return `末项: ${value}`;
-      default: return String(value);
-    }
+  /** 格式化聚合值 */
+  private formatValue(value: any, type: AggregationType, config: AggregationConfig): string {
+    if (value === null || value === undefined) return '';
+
+    const prefix = config.prefix || '';
+    const suffix = config.suffix || '';
+
+    // 类型标签
+    const typeLabels: Record<AggregationType, string> = {
+      sum: '合计',
+      avg: '平均',
+      count: '计数',
+      min: '最小',
+      max: '最大',
+      first: '首个',
+      last: '末个',
+    };
+
+    const label = typeLabels[type] || '';
+    return `${label}: ${prefix}${value}${suffix}`;
   }
 
+  /** 获取分组节点的聚合值 */
+  getAggregations(nodeId: string): GroupAggregations | undefined {
+    return this.aggregationCache.get(nodeId);
+  }
+
+  /** 获取字段聚合值 */
+  getFieldValue(nodeId: string, field: string, type: AggregationType): any {
+    const aggregations = this.aggregationCache.get(nodeId);
+    return aggregations?.[field]?.[type]?.value;
+  }
+
+  /** 获取格式化的聚合值 */
+  getFormattedValue(nodeId: string, field: string, type: AggregationType): string {
+    const aggregations = this.aggregationCache.get(nodeId);
+    return aggregations?.[field]?.[type]?.formatted || '';
+  }
+
+  /** 获取所有聚合配置 */
+  getAggregationConfigs(): Map<string, AggregationConfig> {
+    return this.aggregationConfigs;
+  }
+
+  /** 检查列是否有聚合配置 */
+  hasAggregation(field: string): boolean {
+    return this.aggregationConfigs.has(field);
+  }
+
+  /** 清除缓存 */
+  clearCache(): void {
+    this.aggregationCache.clear();
+  }
+
+  /** 销毁 */
   destroy(): void {
-    this.aggColumns.clear();
-    this.customAggFunctions.clear();
-    this.results.clear();
-    this.onAggregationChanged = null;
+    this.aggregationConfigs.clear();
+    this.aggregationCache.clear();
   }
-}
-
-/** 聚合配置 */
-export interface AggregationConfig {
-  enabled?: boolean;
-}
-
-/** 列聚合配置 */
-export interface AggConfig {
-  field: string;
-  aggFunc: AggFuncType | 'custom';
-  customFn?: CustomAggFunction;
-}
-
-/** 内置聚合函数类型 */
-export type AggFuncType = 'sum' | 'avg' | 'min' | 'max' | 'count' | 'first' | 'last';
-
-/** 自定义聚合函数 */
-export type CustomAggFunction = (values: number[]) => number;
-
-/** 聚合结果 */
-export interface AggResult {
-  value: number | null;
-  count: number;
-  formattedValue?: string;
 }
