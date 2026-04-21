@@ -61,6 +61,7 @@ import {
   GroupConfig,
   CellDataTypeService,
   KeyboardNavigationService,
+  AccessibilityService,
 } from '../../../core/services';
 
 import { DbCellEditorComponent } from '../cell-editor/db-cell-editor.component';
@@ -272,6 +273,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   private editorService: EditorService;
   private cellDataTypeService: CellDataTypeService;
   private keyboardNavigationService: KeyboardNavigationService;
+  private accessibilityService: AccessibilityService;
   private _dataTypesApplied = false;
 
   // ============ State ============
@@ -321,6 +323,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.editorService = new EditorService();
     this.cellDataTypeService = new CellDataTypeService();
     this.keyboardNavigationService = new KeyboardNavigationService();
+    this.accessibilityService = new AccessibilityService();
   }
 
   // ============ Lifecycle ============
@@ -458,6 +461,23 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.renderHeader();
     this.renderRows();
 
+    // ========== 初始化 Accessibility Service ==========
+    if (this.gridContainer?.nativeElement) {
+      this.accessibilityService.setGridElement(this.gridContainer.nativeElement);
+
+      // 订阅焦点变化事件，播报焦点位置
+      this.keyboardNavigationService.onFocusChange.subscribe(event => {
+        this.ngZone.run(() => {
+          this.onFocusChanged(event.current);
+          const colIndex = this.columnService.getVisibleColumns().findIndex(
+            c => (c.colId || c.field) === event.current.colId
+          );
+          const value = this.dataService.getRowData(event.current.rowIndex)?.[event.current.colId];
+          this.accessibilityService.announceFocus(event.current.rowIndex, event.current.colId, value);
+        });
+      });
+    }
+
     // ========== 初始化 Keyboard Navigation Service ==========
     if (this.gridContainer?.nativeElement) {
       this.keyboardNavigationService.setGrid(
@@ -511,6 +531,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.paginationService.destroy();
     this.contextMenuService.destroy();
     this.dragDropService.destroy();
+    this.keyboardNavigationService.destroy();
+    this.accessibilityService.destroy();
   }
 
   // ============ Grid API ============
@@ -589,6 +611,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       // ========== Cell Data Types ==========
       getCellDataTypeService: () => this.cellDataTypeService,
       getKeyboardNavigationService: () => this.keyboardNavigationService,
+      getAccessibilityService: () => this.accessibilityService,
 
       // ========== Excel 导出 ==========
       exportDataAsCsv: (params?: any) => this.exportDataAsCsv(params),

@@ -123,6 +123,12 @@ export class HeaderRendererService {
     const header = document.createElement('div');
     header.className = 'db-grid-header-cell db-grid-header-group';
 
+    // ARIA 属性
+    header.setAttribute('role', 'columnheader');
+    header.setAttribute('aria-label', group.headerName || 'Group');
+    const leafCount = this.countLeafColumns([group]);
+    header.setAttribute('aria-colspan', String(leafCount));
+
     // 标题内容
     const label = document.createElement('span');
     label.className = 'db-grid-header-label db-grid-header-group-label';
@@ -190,6 +196,8 @@ export class HeaderRendererService {
   private createHeaderContainer(): HTMLElement {
     const container = document.createElement('div');
     container.className = 'db-grid-header';
+    container.setAttribute('role', 'rowgroup');
+    container.setAttribute('aria-label', '表头');
     container.style.cssText = `
       display: flex;
       flex-direction: column;
@@ -205,6 +213,7 @@ export class HeaderRendererService {
   private createHeaderRow(): HTMLElement {
     const row = document.createElement('div');
     row.className = 'db-grid-header-row';
+    row.setAttribute('role', 'row');
     row.style.cssText = `
       display: flex;
       align-items: center;
@@ -217,8 +226,16 @@ export class HeaderRendererService {
   private createColumnHeader(colDef: ColDef): HTMLElement {
     const header = document.createElement('div');
     header.className = this.getHeaderClass(colDef);
-    header.dataset['colId'] = colDef.colId || colDef.field || '';
+    const colId = colDef.colId || colDef.field || '';
+    header.dataset['colId'] = colId;
     header.style.cssText = this.getHeaderStyle(colDef);
+
+    // ARIA 属性
+    header.setAttribute('role', 'columnheader');
+    header.setAttribute('aria-colindex', String(this.columnService.getVisibleColumns().findIndex(c => (c.colId || c.field) === colId) + 1));
+    header.setAttribute('aria-label', colDef.headerName || colDef.field || '');
+    header.setAttribute('aria-sort', colDef.sort === 'asc' ? 'ascending' : colDef.sort === 'desc' ? 'descending' : 'none');
+    header.setAttribute('tabindex', '-1');
 
     // 标题内容
     const label = document.createElement('span');

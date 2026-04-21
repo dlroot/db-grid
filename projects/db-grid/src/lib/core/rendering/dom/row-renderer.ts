@@ -40,6 +40,15 @@ export class RowRendererService {
     row.dataset['rowIndex'] = String(rowIndex);
     row.dataset['rowId'] = rowNode.id;
 
+    // ARIA 属性
+    row.setAttribute('role', 'row');
+    row.setAttribute('aria-rowindex', String(rowIndex + 1)); // ARIA 是 1-indexed
+    const isSelected = rowNode.isSelected?.() ?? rowNode.selected;
+    row.setAttribute('aria-selected', String(!!isSelected));
+    if (rowNode.group) {
+      row.setAttribute('aria-label', `分组行第${rowIndex + 1}行`);
+    }
+
     // 添加行索引和层级
     if (rowNode.uiLevel !== undefined) {
       row.style.paddingLeft = `${rowNode.uiLevel * 20}px`;
@@ -100,8 +109,8 @@ export class RowRendererService {
     const cells = new Map<string, HTMLElement>();
     const columns = this.columnService.getVisibleColumns();
 
-    columns.forEach(colDef => {
-      const cellElement = this.renderCell(rowIndex, rowData, rowNode, colDef);
+    columns.forEach((colDef, colIndex) => {
+      const cellElement = this.renderCell(rowIndex, rowData, rowNode, colDef, colIndex);
       rowElement.appendChild(cellElement);
       cells.set(colDef.field || colDef.colId || '', cellElement);
     });
@@ -114,7 +123,8 @@ export class RowRendererService {
     rowIndex: number,
     rowData: any,
     rowNode: RowNode,
-    colDef: ColDef
+    colDef: ColDef,
+    colIndex: number
   ): HTMLElement {
     // 获取单元格值
     const value = this.getCellValue(rowData, colDef);
@@ -124,7 +134,8 @@ export class RowRendererService {
       rowIndex,
       colDef,
       value,
-      rowData
+      rowData,
+      colIndex
     );
 
     // 设置单元格位置

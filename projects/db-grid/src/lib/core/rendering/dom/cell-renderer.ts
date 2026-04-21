@@ -133,11 +133,26 @@ export class CellRendererService {
     rowIndex: number,
     colDef: ColDef,
     value: any,
-    data: any
+    data: any,
+    colIndex?: number
   ): HTMLElement {
     const cell = document.createElement('div');
     cell.className = this.getCellClass(colDef, value, data);
     cell.style.cssText = this.getCellStyleString(colDef);
+
+    // ARIA 属性
+    cell.setAttribute('role', 'gridcell');
+    cell.setAttribute('aria-rowindex', String(rowIndex + 1)); // ARIA 是 1-indexed
+    if (colIndex !== undefined) {
+      cell.setAttribute('aria-colindex', String(colIndex + 1));
+    }
+    cell.setAttribute('tabindex', '-1');
+    if (value !== undefined && value !== null) {
+      cell.setAttribute('aria-label', String(value));
+    }
+    if (colDef.editable === false) {
+      cell.setAttribute('aria-readonly', 'true');
+    }
 
     // 设置对齐方式
     if (colDef.cellAlign) {
