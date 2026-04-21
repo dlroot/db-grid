@@ -136,6 +136,35 @@ export class ColumnService {
     return this.columnDefs;
   }
 
+  /** 获取列分组树结构（用于渲染分组表头）
+   *  返回值中 ColGroupDef 表示分组（含 children），ColDef 表示叶子列
+   */
+  getColumnTree(): (ColDef | ColGroupDef)[] {
+    return this.columnDefs;
+  }
+
+  /** 判断列定义是否有分组（至少一个 ColGroupDef） */
+  hasColumnGroups(): boolean {
+    return this.columnDefs.some(c => 'children' in c && (c as ColGroupDef).children?.length > 0);
+  }
+
+  /** 获取分组的最大深度（1=无分组，2=一级分组，3=二级嵌套...） */
+  getGroupDepth(): number {
+    return this.getDepth(this.columnDefs);
+  }
+
+  private getDepth(colDefs: (ColDef | ColGroupDef)[]): number {
+    let max = 1;
+    for (const col of colDefs) {
+      if ('children' in col) {
+        const children = (col as ColGroupDef).children || [];
+        const childDepth = this.getDepth(children);
+        max = Math.max(max, 1 + childDepth);
+      }
+    }
+    return max;
+  }
+
   /** 获取所有扁平化列 */
   getAllColumns(): ColDef[] {
     return Array.from(this.columnsMap.values());

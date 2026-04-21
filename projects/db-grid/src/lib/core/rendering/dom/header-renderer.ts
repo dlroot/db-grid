@@ -27,21 +27,163 @@ export class HeaderRendererService {
     const headerElement = this.createHeaderContainer();
     const columnHeaders = new Map<string, HTMLElement>();
 
-    // 获取所有可见列
-    const columns = this.columnService.getVisibleColumns();
+    const columnTree = this.columnService.getColumnTree();
+    const hasGroups = this.columnService.hasColumnGroups();
 
-    // 创建表头行
-    const headerRow = this.createHeaderRow();
+    if (hasGroups) {
+      // ========== 分组表头：多行渲染 ==========
+      const depth = this.columnService.getGroupDepth();
+      headerElement.style.height = `${depth * this.headerHeight}px`;
 
-    columns.forEach(colDef => {
-      const colHeader = this.createColumnHeader(colDef);
-      headerRow.appendChild(colHeader);
-      columnHeaders.set(colDef.field || colDef.colId || '', colHeader);
-    });
+      // 构建行数组：每行包含一组 cell
+      const rows: HTMLElement[][] = [];
+      for (let i = 0; i < depth; i++) {
+        rows.push([]);
+      }
 
-    headerElement.appendChild(headerRow);
+      // 递归填充
+      this.buildGroupCells(columnTree, rows, 0, depth);
+
+      // 渲染每行
+      rows.forEach((cells, rowIndex) => {
+        const row = this.createHeaderRow();
+        cells.forEach(cell => row.appendChild(cell));
+        headerElement.appendChild(row);
+      });
+    } else {
+      // ========== 扁平表头：单行渲染 ==========
+      headerElement.style.height = `${this.headerHeight}px`;
+      const columns = this.columnService.getVisibleColumns();
+      const headerRow = this.createHeaderRow();
+
+      columns.forEach(colDef => {
+        const colHeader = this.createColumnHeader(colDef);
+        headerRow.appendChild(colHeader);
+        columnHeaders.set(colDef.field || colDef.colId || '', colHeader);
+      });
+
+      headerElement.appendChild(headerRow);
+    }
 
     return { headerElement, columnHeaders };
+  }
+
+  /**
+   * 递归构建分组表头单元格
+   * @param colDefs 当前列定义列表
+   * @param rows 行数组（每行是一个 HTMLElement[]）
+   * @param currentRow 当前行索引
+   * @param totalDepth 总深度
+   */
+  private buildGroupCells(
+    colDefs: (ColDef | ColGroupDef)[],
+    rows: HTMLElement[][],
+    currentRow: number,
+    totalDepth: number
+  ): void {
+    for (const colDef of colDefs) {
+      if ('children' in colDef && (colDef as ColGroupDef).children?.length > 0) {
+        const group = colDef as ColGroupDef;
+
+        // 创建分组表头单元格
+        const groupHeader = this.createGroupHeader(group);
+        // 计算分组跨越的列数
+        const leafCount = this.countLeafColumns([group]);
+        const groupWidth = this.calculateGroupWidth(group);
+
+        groupHeader.style.width = `${groupWidth}px`;
+        groupHeader.style.minWidth = `${groupWidth}px`;
+        groupHeader.style.maxWidth = `${groupWidth}px`;
+
+        // 分组表头放在当前行，纵向跨 (totalDepth - currentRow - 1) 行
+        const rowSpan = totalDepth - currentRow;
+        groupHeader.style.height = `${rowSpan * this.headerHeight}px`;
+        rows[currentRow].push(groupHeader);
+
+        // 递归处理子列（从下一行开始）
+        this.buildGroupCells(group.children || [], rows, currentRow + 1, totalDepth);
+      } else {
+        // 叶子列 - 放在最底行
+        const leafDef = colDef as ColDef;
+        const colHeader = this.createColumnHeader(leafDef);
+
+        // 如果不是最底行，需要纵向跨行到底部
+        const rowSpan = totalDepth - currentRow;
+        if (rowSpan > 1) {
+          colHeader.style.height = `${rowSpan * this.headerHeight}px`;
+        }
+
+        rows[currentRow].push(colHeader);
+      }
+    }
+  }
+
+  /** 创建分组表头 */
+  private createGroupHeader(group: ColGroupDef): HTMLElement {
+    const header = document.createElement('div');
+    header.className = 'db-grid-header-cell db-grid-header-group';
+
+    // 标题内容
+    const label = document.createElement('span');
+    label.className = 'db-grid-header-label db-grid-header-group-label';
+    label.textContent = group.headerName || 'Group';
+    label.style.fontWeight = '600';
+    label.style.flex = '1';
+    header.appendChild(label);
+
+    header.style.cssText += `
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 12px;
+      box-sizing: border-box;
+      user-select: none;
+      position: relative;
+      border-bottom: 1px solid var(--db-grid-border-color, #ddd);
+    `;
+
+    // 分组分隔线
+    const separator = document.createElement('div');
+    separator.style.cssText = `
+      position: absolute;
+      right: 0;
+      top: 10%;
+      height: 80%;
+      width: 1px;
+      background: var(--db-grid-border-color, #ddd);
+    `;
+    header.appendChild(separator);
+
+    return header;
+  }
+
+  /** 计算分组下的叶子列数 */
+  private countLeafColumns(colDefs: (ColDef | ColGroupDef)[]): number {
+    let count = 0;
+    for (const col of colDefs) {
+      if ('children' in col) {
+        count += this.countLeafColumns((col as ColGroupDef).children || []);
+      } else {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  /** 计算分组的总宽度 */
+  private calculateGroupWidth(group: ColGroupDef): number {
+    let width = 0;
+    const children = group.children || [];
+    for (const child of children) {
+      if ('children' in child) {
+        width += this.calculateGroupWidth(child as ColGroupDef);
+      } else {
+        const colDef = child as ColDef;
+        const state = this.columnService.getColumnState(colDef);
+        width += state?.width || colDef.width || 200;
+      }
+    }
+    return width || group.width || 200;
   }
 
   /** 创建表头容器 */

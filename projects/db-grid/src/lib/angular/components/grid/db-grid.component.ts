@@ -60,6 +60,7 @@ import {
   TreeNodeConfig,
   GroupConfig,
   CellDataTypeService,
+  KeyboardNavigationService,
 } from '../../../core/services';
 
 import { DbCellEditorComponent } from '../cell-editor/db-cell-editor.component';
@@ -77,7 +78,8 @@ import {
   imports: [CommonModule, DbCellEditorComponent, DbFilterPopupComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div #gridContainer class="db-grid-container" [class]="themeClass()">
+    <div #gridContainer class="db-grid-container" [class]="themeClass()" (keydown)="onKeyDown($event)"
+         tabindex="0" style="outline: none;">
       <div #headerContainer class="db-grid-header-container"></div>
       <div #bodyContainer class="db-grid-body-container" (scroll)="onScroll($event)">
         <div #virtualScroll class="db-grid-virtual-scroll">
@@ -156,6 +158,18 @@ import {
       z-index: 100;
       box-shadow: 0 4px 16px rgba(0,0,0,0.15);
     }
+
+    /* ========== Keyboard Focus Styles ========== */
+    .db-grid-cell-focused {
+      background: var(--db-grid-range-selection-background, rgba(33, 150, 243, 0.15)) !important;
+      outline: 2px solid var(--db-grid-range-selection-border-color, #2196f3);
+      outline-offset: -2px;
+    }
+    .db-grid-cell-focused.db-grid-cell-editing {
+      outline: 2px solid var(--db-grid-cell-editing-border-color, #ff9800);
+      background: rgba(255, 152, 0, 0.08);
+    }
+    :host(:focus) { outline: none; }
   `],
 })
 export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewInit {
@@ -257,6 +271,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   private filterService: FilterService;
   private editorService: EditorService;
   private cellDataTypeService: CellDataTypeService;
+  private keyboardNavigationService: KeyboardNavigationService;
   private _dataTypesApplied = false;
 
   // ============ State ============
@@ -305,6 +320,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.filterService = new FilterService();
     this.editorService = new EditorService();
     this.cellDataTypeService = new CellDataTypeService();
+    this.keyboardNavigationService = new KeyboardNavigationService();
   }
 
   // ============ Lifecycle ============
@@ -442,6 +458,30 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.renderHeader();
     this.renderRows();
 
+    // ========== 初始化 Keyboard Navigation Service ==========
+    if (this.gridContainer?.nativeElement) {
+      this.keyboardNavigationService.setGrid(
+        this.gridApi,
+        this.gridContainer.nativeElement,
+        this.columnService,
+        this.rowRenderer
+      );
+      this.keyboardNavigationService.setRowHeight(this.rowHeight);
+      // 订阅焦点变化事件
+      this.keyboardNavigationService.onFocusChange.subscribe(event => {
+        this.ngZone.run(() => this.onFocusChanged(event.current));
+      });
+      // 订阅编辑事件
+      this.keyboardNavigationService.onCellEditStart.subscribe(pos => {
+        this.ngZone.run(() => this.startEditingCell(pos.rowIndex, pos.colId));
+      });
+      this.keyboardNavigationService.onCellEditStop.subscribe(() => {
+        this.ngZone.run(() => this.stopEditingCell(true));
+      });
+      // 默认聚焦第一个单元格
+      setTimeout(() => this.keyboardNavigationService.focusFirstCell(), 0);
+    }
+
     this.ngZone.runOutsideAngular(() => {
       fromEvent(window, 'resize')
         .pipe(debounceTime(100), takeUntil(this.destroy$))
@@ -548,6 +588,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
       // ========== Cell Data Types ==========
       getCellDataTypeService: () => this.cellDataTypeService,
+      getKeyboardNavigationService: () => this.keyboardNavigationService,
 
       // ========== Excel 导出 ==========
       exportDataAsCsv: (params?: any) => this.exportDataAsCsv(params),
@@ -956,6 +997,16 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   // ============ 渲染方法 ============
 
+  /** 键盘事件处理 */
+  onKeyDown(event: KeyboardEvent): void {
+    if (!this.keyboardNavigationService) return;
+    const result = this.keyboardNavigationService.handleKeyDown(event);
+    if (result.consumed) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }
+
   private refreshHeader(): void { this.renderHeader(); }
 
   private renderHeader(): void {
@@ -1123,6 +1174,39 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     };
     this.activeFilterPopup = null;
     this.cdr.detectChanges();
+  }
+
+  /** 通过 KeyboardNavigation 启动编辑 */
+  startEditingCell(rowIndex: number, colId: string): void {
+    const colDef = this.columnService.getColumn(colId) || this.columnDefs.find(c => (c.colId || c.field) === colId);
+    if (!colDef) return;
+    const rowData = this.dataService.getRowData(rowIndex);
+    const value = rowData?.[colDef.field ?? colId];
+    this.openCellEditor(rowIndex, colDef, value, { key: 'keyboard' });
+  }
+
+  /** 通过 KeyboardNavigation 停止编辑 */
+  stopEditingCell(commit: boolean): void {
+    if (this.activeCellEditor) {
+      if (commit) {
+        this.editorService.commitEdit();
+      } else {
+        this.editorService.cancelEdit();
+      }
+      this.activeCellEditor = null;
+      this.cdr.detectChanges();
+    }
+  }
+
+  /** 焦点单元格变化回调 */
+  onFocusChanged(cell: { rowIndex: number; colId: string }): void {
+    // 通知 rowRenderer 高亮焦点单元格
+    const bodyContainer = this.bodyContainer?.nativeElement;
+    if (bodyContainer) {
+      bodyContainer.querySelectorAll('.db-grid-cell-focused').forEach(el => el.classList.remove('db-grid-cell-focused'));
+      const selector = `.db-grid-row[data-row-index="${cell.rowIndex}"] > [data-col-id="${cell.colId}"]`;
+      bodyContainer.querySelector(selector)?.classList.add('db-grid-cell-focused');
+    }
   }
 
   /** 编辑器值变化 */
