@@ -590,7 +590,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     if (this.treeData && this.treeConfig) {
       this.isTreeMode = true;
       this.treeService.initialize(rowData, this.treeConfig);
-      this.dataService.initialize(this.treeService.getFlattenedNodes().map(n => n.data), this.gridOptions);
+      this.dataService.initialize(this.treeService.getFlattenedNodes().map(n => n.data), this.gridOptions, this.columnDefs);
       this.rowCount.set(this.treeService.getDisplayCount());
     } else if (this.enableGrouping && this.groupConfig) {
       this.isGroupMode = true;
@@ -603,12 +603,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         this.columnDefs = [...result.groupColumnDefs, ...this.columnDefs];
         this.columnService.initialize(this.columnDefs);
       }
-      this.dataService.initialize(result.flatNodes.map(n => n.data), this.gridOptions);
+      this.dataService.initialize(result.flatNodes.map(n => n.data), this.gridOptions, this.columnDefs);
       this.rowCount.set(this.groupService.getFlattenedNodes().length);
     } else {
       this.isTreeMode = false;
       this.isGroupMode = false;
-      this.dataService.initialize(rowData, this.gridOptions);
+      this.dataService.initialize(rowData, this.gridOptions, this.columnDefs);
       this.rowCount.set(this.dataService.getRowCount());
     }
     this.refreshView();
