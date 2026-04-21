@@ -67,6 +67,7 @@ import {
   RangeSelectionService,
   SideBarService,
   StatusBarService,
+  MasterDetailService,
 } from '../../../core/services';
 
 import { DbCellEditorComponent } from '../cell-editor/db-cell-editor.component';
@@ -284,6 +285,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   private rangeSelectionService: RangeSelectionService;
   private sidebarService: SideBarService;
   private statusBarService: StatusBarService;
+  private masterDetailService: MasterDetailService;
   private _dataTypesApplied = false;
 
   // ============ State ============
@@ -339,6 +341,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.rangeSelectionService = new RangeSelectionService();
     this.sidebarService = new SideBarService();
     this.statusBarService = new StatusBarService();
+    this.masterDetailService = new MasterDetailService();
   }
 
   // ============ Lifecycle ============
@@ -552,6 +555,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.rangeSelectionService.destroy();
     this.sidebarService.destroy();
     this.statusBarService.destroy();
+    this.masterDetailService.destroy();
   }
 
   // ============ Grid API ============
@@ -681,6 +685,13 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
       // ========== 状态栏 ==========
       getStatusBarService: () => this.statusBarService,
+
+      // ========== 主从表 ==========
+      expandDetail: (nodeId: string, data?: any) => this.masterDetailService.expandDetail(nodeId, data),
+      collapseDetail: (nodeId: string) => this.masterDetailService.collapseDetail(nodeId),
+      toggleDetail: (nodeId: string, data?: any) => this.masterDetailService.toggleDetail(nodeId, data),
+      isDetailExpanded: (nodeId: string) => this.masterDetailService.isDetailExpanded(nodeId),
+      getMasterDetailService: () => this.masterDetailService,
 
       // ========== 拖拽排序 ==========
       startDrag: (rowNodes: any[], event: MouseEvent) => this.startDrag(rowNodes, event),
