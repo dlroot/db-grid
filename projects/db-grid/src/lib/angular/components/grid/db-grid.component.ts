@@ -54,6 +54,7 @@ import {
   ColumnPinningService,
   PaginationService,
   ContextMenuService,
+  ColumnMenuService,
   DragDropService,
   FilterService,
   EditorService,
@@ -63,6 +64,9 @@ import {
   KeyboardNavigationService,
   AccessibilityService,
   AggregationService,
+  RangeSelectionService,
+  SideBarService,
+  StatusBarService,
 } from '../../../core/services';
 
 import { DbCellEditorComponent } from '../cell-editor/db-cell-editor.component';
@@ -269,6 +273,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   private pinningService: ColumnPinningService;
   private paginationService: PaginationService;
   private contextMenuService: ContextMenuService;
+  private columnMenuService: ColumnMenuService;
   private dragDropService: DragDropService;
   private filterService: FilterService;
   private editorService: EditorService;
@@ -276,6 +281,9 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   private keyboardNavigationService: KeyboardNavigationService;
   private accessibilityService: AccessibilityService;
   private aggregationService: AggregationService;
+  private rangeSelectionService: RangeSelectionService;
+  private sidebarService: SideBarService;
+  private statusBarService: StatusBarService;
   private _dataTypesApplied = false;
 
   // ============ State ============
@@ -321,12 +329,16 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.pinningService = new ColumnPinningService();
     this.paginationService = new PaginationService();
     this.contextMenuService = new ContextMenuService();
+    this.columnMenuService = new ColumnMenuService();
     this.dragDropService = new DragDropService();
     this.filterService = new FilterService();
     this.editorService = new EditorService();
     this.cellDataTypeService = new CellDataTypeService();
     this.keyboardNavigationService = new KeyboardNavigationService();
     this.accessibilityService = new AccessibilityService();
+    this.rangeSelectionService = new RangeSelectionService();
+    this.sidebarService = new SideBarService();
+    this.statusBarService = new StatusBarService();
   }
 
   // ============ Lifecycle ============
@@ -537,6 +549,9 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.keyboardNavigationService.destroy();
     this.accessibilityService.destroy();
     this.aggregationService.destroy();
+    this.rangeSelectionService.destroy();
+    this.sidebarService.destroy();
+    this.statusBarService.destroy();
   }
 
   // ============ Grid API ============
@@ -650,6 +665,22 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       showContextMenu: (position: any, context: any) => this.showContextMenu(position, context),
       hideContextMenu: () => this.hideContextMenu(),
       getContextMenuService: () => this.contextMenuService,
+      getColumnMenuService: () => this.columnMenuService,
+
+      // ========== 范围选择 & 剪贴板 ==========
+      copyToClipboard: (data?: any[], columns?: any[]) => this.copyToClipboard(data, columns),
+      cutToClipboard: (data?: any[], columns?: any[]) => this.cutToClipboard(data, columns),
+      pasteFromClipboard: () => this.pasteFromClipboard(),
+      getRangeSelectionService: () => this.rangeSelectionService,
+
+      // ========== 侧边栏 ==========
+      showSidebar: (panelId?: string) => this.sidebarService.show(panelId),
+      hideSidebar: () => this.sidebarService.hide(),
+      toggleSidebar: (panelId?: string) => this.toggleSidebar(panelId),
+      getSidebarService: () => this.sidebarService,
+
+      // ========== 状态栏 ==========
+      getStatusBarService: () => this.statusBarService,
 
       // ========== 拖拽排序 ==========
       startDrag: (rowNodes: any[], event: MouseEvent) => this.startDrag(rowNodes, event),
@@ -991,6 +1022,32 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   endDrag(targetIndex: number, event: MouseEvent): void {
     this.dragDropService.endRowDrag(targetIndex, event);
+  }
+
+  // ========== 范围选择 & 剪贴板 API ==========
+
+  copyToClipboard(data?: any[], columns?: any[]): void {
+    const rowData = data || this.getRowData();
+    const cols = columns || this.columnDefs;
+    this.rangeSelectionService.copyToClipboard(rowData, cols);
+  }
+
+  cutToClipboard(data?: any[], columns?: any[]): string {
+    const rowData = data || this.getRowData();
+    const cols = columns || this.columnDefs;
+    return this.rangeSelectionService.cutToClipboard(rowData, cols);
+  }
+
+  async pasteFromClipboard(): Promise<string[][]> {
+    return await this.rangeSelectionService.pasteFromClipboard();
+  }
+
+  toggleSidebar(panelId?: string): void {
+    if (this.sidebarService.isVisible()) {
+      this.sidebarService.hide();
+    } else {
+      this.sidebarService.show(panelId);
+    }
   }
 
   // ========== 选择 API ==========
