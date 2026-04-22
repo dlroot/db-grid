@@ -219,3 +219,146 @@ body {
     flex: 1;
   }
 }
+
+// 服务端数据演示样式
+.server-demo-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  .server-info {
+    padding: 16px;
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    color: white;
+    border-radius: 8px 8px 0 0;
+
+    h3 {
+      margin: 0 0 12px 0;
+      font-size: 18px;
+    }
+
+    p {
+      margin: 0 0 8px 0;
+      font-size: 14px;
+    }
+
+    ul {
+      margin: 0 0 12px 0;
+      padding-left: 20px;
+      font-size: 13px;
+      opacity: 0.9;
+
+      li {
+        margin-bottom: 4px;
+      }
+    }
+
+    .server-status {
+      display: flex;
+      gap: 20px;
+      background: rgba(255, 255, 255, 0.15);
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+  }
+
+  db-grid {
+    flex: 1;
+  }
+}
+
+// 主从表演示样式
+.master-demo-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  .master-info {
+    padding: 16px;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    border-radius: 8px 8px 0 0;
+
+    h3 {
+      margin: 0 0 8px 0;
+      font-size: 18px;
+    }
+
+    p {
+      margin: 0;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+  }
+
+  db-grid {
+    flex: 1;
+  }
+}
+
+// 撤销重做演示样式
+.undoredo-demo-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  .undoredo-info {
+    padding: 16px;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    border-radius: 8px 8px 0 0;
+
+    h3 {
+      margin: 0 0 12px 0;
+      font-size: 18px;
+    }
+
+    p {
+      margin: 0 0 8px 0;
+      font-size: 14px;
+    }
+
+    ul {
+      margin: 0 0 12px 0;
+      padding-left: 20px;
+      font-size: 13px;
+      opacity: 0.9;
+
+      li {
+        margin-bottom: 4px;
+      }
+    }
+
+    .undoredo-actions {
+      display: flex;
+      gap: 12px;
+
+      button {
+        padding: 8px 16px;
+        background: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+        color: #4facfe;
+        font-weight: 500;
+        transition: all 0.2s;
+
+        &:hover:not(:disabled) {
+          background: #f0f0f0;
+        }
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
+
+  db-grid {
+    flex: 1;
+  }
+}

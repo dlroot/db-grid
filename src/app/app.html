@@ -13,6 +13,9 @@
       <button [class.active]="currentDemo() === 'pagination'" (click)="switchDemo('pagination')">分页</button>
       <button [class.active]="currentDemo() === 'drag'" (click)="switchDemo('drag')">拖拽排序</button>
       <button [class.active]="currentDemo() === 'p0'" (click)="switchDemo('p0')">P0功能</button>
+      <button [class.active]="currentDemo() === 'server'" (click)="switchDemo('server')">服务端数据</button>
+      <button [class.active]="currentDemo() === 'master'" (click)="switchDemo('master')">主从表</button>
+      <button [class.active]="currentDemo() === 'undoredo'" (click)="switchDemo('undoredo')">撤销重做</button>
     </div>
   </div>
 
@@ -219,6 +222,86 @@
           (sortChanged)="onSortChanged($event)"
           (filterChanged)="onFilterChanged($event)"
           (selectionChanged)="onSelectionChanged($event)"
+        />
+      </div>
+    }
+    @if (currentDemo() === 'server') {
+      <div class="server-demo-panel">
+        <div class="server-info">
+          <h3>服务端数据演示：无限滚动 + 分块加载</h3>
+          <p>💡 <strong>模拟服务端数据源，支持：</strong></p>
+          <ul>
+            <li>按需加载 - 滚动到底部自动加载下一页</li>
+            <li>缓存管理 - 已加载的数据块会缓存</li>
+            <li>排序/筛选 - 服务端处理</li>
+          </ul>
+          <div class="server-status">
+            <span>加载状态: {{ serverLoading() ? '⏳ 加载中...' : '✅ 就绪' }}</span>
+            <span>已加载: {{ serverRowCount() >= 0 ? serverRowCount() + ' 行' : '-' }}</span>
+          </div>
+        </div>
+        <db-grid
+          #myGrid
+          [columnDefs]="serverColumnDefs"
+          [rowData]="[]"
+          [rowHeight]="40"
+          [headerHeight]="40"
+          [theme]="'alpine'"
+          [rowSelection]="'multiple'"
+          [serverSide]="true"
+          [serverSideDatasource]="serverSideDatasource"
+          [serverSideConfig]="serverConfig"
+          (gridReady)="onGridReady($event)"
+          (selectionChanged)="onSelectionChanged($event)"
+        />
+      </div>
+    }
+    @if (currentDemo() === 'master') {
+      <div class="master-demo-panel">
+        <div class="master-info">
+          <h3>主从表演示：订单详情展开</h3>
+          <p>💡 <strong>点击行展开按钮查看订单详情</strong></p>
+        </div>
+        <db-grid
+          #myGrid
+          [columnDefs]="masterColumnDefs"
+          [rowData]="masterRowData"
+          [rowHeight]="40"
+          [headerHeight]="40"
+          [theme]="'alpine'"
+          [masterDetail]="true"
+          [detailCellRendererParams]="masterDetailConfig.detailCellRendererParams"
+          (gridReady)="onGridReady($event)"
+        />
+      </div>
+    }
+    @if (currentDemo() === 'undoredo') {
+      <div class="undoredo-demo-panel">
+        <div class="undoredo-info">
+          <h3>撤销重做演示：编辑历史管理</h3>
+          <p>💡 <strong>使用提示：</strong></p>
+          <ul>
+            <li>双击单元格进行编辑</li>
+            <li>Ctrl+Z 撤销 / Ctrl+Y 重做</li>
+            <li>或使用下方按钮操作</li>
+          </ul>
+          <div class="undoredo-actions">
+            <button (click)="undo()" [disabled]="!canUndo()">↩ 撤销 ({{ undoStackSize() }})</button>
+            <button (click)="redo()" [disabled]="!canRedo()">↪ 重做 ({{ redoStackSize() }})</button>
+          </div>
+        </div>
+        <db-grid
+          #myGrid
+          [columnDefs]="undoRedoColumnDefs"
+          [rowData]="undoRedoRowData"
+          [gridOptions]="undoRedoOptions"
+          [rowHeight]="40"
+          [headerHeight]="40"
+          [theme]="'alpine'"
+          [enableCellEdit]="true"
+          [editOnDoubleClick]="true"
+          (gridReady)="onGridReady($event)"
+          (cellValueChanged)="updateUndoRedoState()"
         />
       </div>
     }

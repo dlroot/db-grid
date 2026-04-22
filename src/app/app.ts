@@ -173,6 +173,77 @@ export class AppComponent implements OnInit {
   };
   p0FilterModel = signal<string>("无");
 
+  // ========== 服务端数据演示 ==========
+  serverColumnDefs = [
+    { field: "id", headerName: "ID", width: 80, sortable: true, filter: "number" },
+    { field: "name", headerName: "姓名", width: 150, sortable: true, filter: "text" },
+    { field: "email", headerName: "邮箱", width: 220, filter: "text" },
+    { field: "department", headerName: "部门", width: 150, filter: "set" },
+    { field: "position", headerName: "职位", width: 150, filter: "set" },
+    { field: "salary", headerName: "薪资", width: 120, sortable: true, filter: "number" },
+    { field: "status", headerName: "状态", width: 100, filter: "set" },
+  ];
+  serverSideDatasource = {
+    getRows: (params: any) => {
+      // 模拟服务端延迟
+      setTimeout(() => {
+        const rows = this.generateEmployeeData(params.endRow - params.startRow).map((row, i) => ({
+          ...row,
+          id: params.startRow + i + 1,
+        }));
+        // 模拟总行数 1000
+        const lastRow = params.endRow >= 1000 ? 1000 : undefined;
+        params.successCallback(rows, lastRow);
+      }, 300);
+    }
+  };
+  serverConfig = { pageSize: 50, cacheBlockSize: 50, maxBlocksInCache: 10 };
+  serverLoading = signal<boolean>(false);
+  serverRowCount = signal<number>(-1);
+
+  // ========== Master-Detail 演示 ==========
+  masterColumnDefs = [
+    { field: "id", headerName: "订单ID", width: 100 },
+    { field: "customer", headerName: "客户", width: 150 },
+    { field: "date", headerName: "日期", width: 120 },
+    { field: "total", headerName: "总金额", width: 120 },
+    { field: "status", headerName: "状态", width: 100 },
+  ];
+  masterRowData = this.generateOrdersWithDetails(20);
+  detailColumnDefs = [
+    { field: "productId", headerName: "产品ID", width: 100 },
+    { field: "productName", headerName: "产品名称", width: 200 },
+    { field: "quantity", headerName: "数量", width: 100 },
+    { field: "price", headerName: "单价", width: 100 },
+    { field: "subtotal", headerName: "小计", width: 120 },
+  ];
+  masterDetailConfig = {
+    masterDetail: true,
+    detailCellRendererParams: {
+      detailGridOptions: {
+        columnDefs: this.detailColumnDefs,
+      },
+      getDetailRowData: (params: any) => {
+        params.successCallback(params.data.details);
+      },
+    },
+  };
+
+  // ========== Undo/Redo 演示 ==========
+  undoRedoColumnDefs = [
+    { field: "id", headerName: "ID", width: 80, editable: false },
+    { field: "name", headerName: "姓名", width: 150, editable: true },
+    { field: "age", headerName: "年龄", width: 100, editable: true, cellEditor: "number" },
+    { field: "department", headerName: "部门", width: 150, editable: true, cellEditor: "select", cellEditorParams: { values: ["技术部", "产品部", "市场部", "财务部"] } },
+    { field: "salary", headerName: "薪资", width: 120, editable: true, cellEditor: "number" },
+  ];
+  undoRedoRowData = this.generateEmployeeData(50);
+  undoRedoOptions = { enableCellEdit: true, editOnDoubleClick: true };
+  canUndo = signal<boolean>(false);
+  canRedo = signal<boolean>(false);
+  undoStackSize = signal<number>(0);
+  redoStackSize = signal<number>(0);
+
   // ========== 分页状态 ==========
   currentPage = signal<number>(1);
   totalPages = signal<number>(5);
@@ -185,6 +256,16 @@ export class AppComponent implements OnInit {
     if (this.currentDemo() === "span" && this.gridApi) {
       const service = this.gridApi.getCellSpanService?.();
       if (service) service.initialize(this.spanColumnDefs, this.spanRowData, { autoMerge: true, mergeColumns: ["region"] });
+    }
+    if (this.currentDemo() === "server" && this.gridApi) {
+      const ss = this.gridApi.getServerSideService?.();
+      if (ss) {
+        ss.onLoadingChangedEvent((loading: boolean) => this.serverLoading.set(loading));
+        ss.onRowsUpdatedEvent(() => this.serverRowCount.set(ss.getRowCount()));
+      }
+    }
+    if (this.currentDemo() === "undoredo" && this.gridApi) {
+      this.updateUndoRedoState();
     }
   }
 
@@ -332,6 +413,73 @@ export class AppComponent implements OnInit {
         salesman: salesmen[i % salesmen.length],
         orderDate: `2024-${String(month).padStart(2,"0")}-${String(day).padStart(2,"0")}`,
         status: statuses[i % statuses.length],
+      });
+    }
+    return data;
+  }
+
+  // ========== Undo/Redo 演示方法 ==========
+  undo(): void {
+    if (this.gridApi) {
+      this.gridApi.undo?.();
+      this.updateUndoRedoState();
+    }
+  }
+
+  redo(): void {
+    if (this.gridApi) {
+      this.gridApi.redo?.();
+      this.updateUndoRedoState();
+    }
+  }
+
+  private updateUndoRedoState(): void {
+    const undoRedoService = this.gridApi?.getUndoRedoService?.();
+    if (undoRedoService) {
+      this.canUndo.set(undoRedoService.canUndo());
+      this.canRedo.set(undoRedoService.canRedo());
+      this.undoStackSize.set(undoRedoService.getUndoStackSize());
+      this.redoStackSize.set(undoRedoService.getRedoStackSize());
+    }
+  }
+
+  private generateOrdersWithDetails(count: number): any[] {
+    const customers = ["阿里巴巴", "腾讯", "百度", "字节跳动", "美团", "京东", "拼多多", "网易"];
+    const statuses = ["已完成", "处理中", "待发货", "已取消"];
+    const products = [
+      { id: "P001", name: "笔记本电脑", price: 5999 },
+      { id: "P002", name: "显示器", price: 1299 },
+      { id: "P003", name: "键盘", price: 299 },
+      { id: "P004", name: "鼠标", price: 199 },
+      { id: "P005", name: "耳机", price: 899 },
+    ];
+    const data: any[] = [];
+    for (let i = 1; i <= count; i++) {
+      const details = [];
+      const itemCount = 1 + Math.floor(Math.random() * 3);
+      let total = 0;
+      for (let j = 0; j < itemCount; j++) {
+        const product = products[j % products.length];
+        const quantity = 1 + Math.floor(Math.random() * 5);
+        const subtotal = product.price * quantity;
+        total += subtotal;
+        details.push({
+          productId: product.id,
+          productName: product.name,
+          quantity,
+          price: product.price,
+          subtotal,
+        });
+      }
+      const month = (i % 12) + 1;
+      const day = (i % 28) + 1;
+      data.push({
+        id: `ORD${String(i).padStart(5, "0")}`,
+        customer: customers[i % customers.length],
+        date: `2024-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+        total: total.toLocaleString(),
+        status: statuses[i % statuses.length],
+        details,
       });
     }
     return data;
