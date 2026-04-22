@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from '@angular/core/testing';
 import { EditorService } from './editor.service';
 import { ColDef } from '../models';
 

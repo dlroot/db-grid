@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from '@angular/core/testing';
 import { FilterService, FilterType } from './filter.service';
 
 describe('FilterService', () => {
@@ -29,7 +29,7 @@ describe('FilterService', () => {
 
     it('should get column filter', () => {
       service.setColumnFilter('name', { filterType: 'text', type: 'contains', filter: 'test' });
-      const colFilter = service.getColumnFilter('name');
+      const colFilter = service.getColumnFilter('name') as any;
       expect(colFilter).toBeDefined();
       expect(colFilter?.filter).toBe('test');
     });
