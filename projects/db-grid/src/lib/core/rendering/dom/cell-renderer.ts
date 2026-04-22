@@ -5,6 +5,7 @@
 
 import { Injectable } from '@angular/core';
 import { ColDef, CellRendererParams, ValueFormatterParams, CellStyle } from '../../models';
+import { ColumnService } from '../../services/column.service';
 
 export interface CellRenderResult {
   value: any;
@@ -15,6 +16,8 @@ export interface CellRenderResult {
 
 @Injectable()
 export class CellRendererService {
+  constructor(private columnService: ColumnService) {}
+
   /** 单元格编辑状态 */
   private editingCells: Map<string, HTMLElement> = new Map();
 
@@ -296,8 +299,9 @@ export class CellRendererService {
   private getCellStyleString(colDef: ColDef): string {
     const styles: string[] = [];
 
-    // 单元格宽度 — 必须与表头宽度一致，否则列不对齐
-    const width = colDef.width || 200;
+    // 单元格宽度 — 必须与表头宽度一致，使用 columnService 获取实际宽度
+    const state = this.columnService.getColumnState(colDef);
+    const width = state?.width || colDef.width || 200;
     styles.push(`width: ${width}px`);
     styles.push(`min-width: ${width}px`);
     styles.push(`max-width: ${width}px`);

@@ -336,7 +336,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.groupService = new GroupService(this.aggregationService);
     this.excelExportService = new ExcelExportService();
     this.cellSpanService = new CellSpanService();
-    this.cellRenderer = new CellRendererService();
+    this.cellRenderer = new CellRendererService(this.columnService);
     this.rowRenderer = new RowRendererService(this.cellRenderer, this.columnService);
     this.headerRenderer = new HeaderRendererService(this.columnService);
 
