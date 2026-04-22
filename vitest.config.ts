@@ -1,13 +1,23 @@
 import { defineConfig } from 'vitest/config';
+import viteConfig from './vite.config';
 
 export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    include: ['projects/db-grid/src/lib/**/*.spec.ts'],
+    include: ['**/*.spec.ts'],
+    reporters: ['default'],
     coverage: {
-      reporter: ['text', 'html'],
-      exclude: ['node_modules/', 'projects/db-grid/src/test.ts']
-    }
-  }
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'node_modules/',
+        'dist/',
+        '**/*.spec.ts',
+        'src/test.ts',
+        'src/main.ts',
+      ],
+    },
+  },
+  ...viteConfig,
 });

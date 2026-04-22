@@ -53,7 +53,9 @@
             ],
             "styles": [
               "src/styles.scss"
-            ]
+            ],
+            "baseHref": "/db-grid/",
+            "deployUrl": "/db-grid/"
           },
           "configurations": {
             "production": {
@@ -94,8 +96,10 @@
         "test": {
           "builder": "@angular/build:karma",
           "options": {
-            "polyfills": ["zone.js/testing"],
             "tsConfig": "tsconfig.spec.json",
+            "polyfills": [
+              "zone.js/testing"
+            ],
             "inlineStyleLanguage": "scss",
             "assets": [
               {
