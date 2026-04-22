@@ -308,7 +308,6 @@ export class HeaderRendererService {
   private getHeaderStyle(colDef: ColDef): string {
     const state = this.columnService.getColumnState(colDef);
     const width = state?.width || colDef.width || 200;
-
     const styles: string[] = [
       `width: ${width}px`,
       `min-width: ${width}px`,

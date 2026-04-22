@@ -147,10 +147,10 @@ import {
       font-family: var(--db-grid-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
       font-size: var(--db-grid-font-size, 14px);
     }
-    .db-grid-header-container { flex-shrink: 0; overflow: hidden; }
+    .db-grid-header-container { flex-shrink: 0; overflow-x: auto; overflow-y: hidden; }
     .db-grid-body-container { flex: 1; overflow: auto; position: relative; }
-    .db-grid-virtual-scroll { position: relative; width: 100%; }
-    .db-grid-rows { display: flex; flex-direction: column; position: absolute; left: 0; right: 0; }
+    .db-grid-virtual-scroll { position: relative; min-width: 100%; }
+    .db-grid-rows { display: flex; flex-direction: column; position: absolute; left: 0; min-width: 100%; }
     .db-grid-footer-container { flex-shrink: 0; border-top: 1px solid var(--db-grid-border-color, #ddd); }
     .db-grid-overlay {
       position: absolute; top: 0; left: 0; right: 0; bottom: 0;
@@ -305,6 +305,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   // ============ State ============
   private destroy$ = new Subject<void>();
   private scrollTop = 0;
+  private scrollLeft = 0;
   private isDestroyed = false;
   private gridApi: any = null;
   private isTreeMode = false;
@@ -1273,6 +1274,14 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     if (this.enableServerSide && this.serverSideService.isEnabled()) {
       const totalHeight = this.serverSideService.getTotalHeight(this.rowHeight);
       virtualScroll.style.height = `${totalHeight}px`;
+
+      // 设置总列宽以支持横向滚动
+      const totalColWidth = this.calculateTotalColumnWidth();
+      if (totalColWidth > 0) {
+        virtualScroll.style.width = `${totalColWidth}px`;
+        rowsContainer.style.width = `${totalColWidth}px`;
+      }
+
       rowsContainer.innerHTML = '';
       rowsContainer.style.transform = `translateY(${viewport.offsetY}px)`;
 
@@ -1290,6 +1299,14 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
     const totalHeight = this.dataService.getTotalHeight();
     virtualScroll.style.height = `${totalHeight}px`;
+
+    // 计算总列宽，设置到 virtualScroll 和 rowsContainer 以支持横向滚动
+    const totalColWidth = this.calculateTotalColumnWidth();
+    if (totalColWidth > 0) {
+      virtualScroll.style.width = `${totalColWidth}px`;
+      rowsContainer.style.width = `${totalColWidth}px`;
+    }
+
     rowsContainer.innerHTML = '';
     rowsContainer.style.transform = `translateY(${viewport.offsetY}px)`;
 
@@ -1320,6 +1337,14 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   onScroll(event: Event): void {
     const target = event.target as HTMLElement;
     const newScrollTop = target.scrollTop;
+    const newScrollLeft = target.scrollLeft;
+
+    // 同步表头横向滚动
+    if (newScrollLeft !== this.scrollLeft) {
+      this.scrollLeft = newScrollLeft;
+      this.headerContainer.nativeElement.scrollLeft = newScrollLeft;
+    }
+
     if (newScrollTop !== this.scrollTop) {
       this.scrollTop = newScrollTop;
       this.dataService.setScrollTop(newScrollTop);
@@ -1340,6 +1365,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.dataService.setScrollConfig({ viewportHeight: bodyHeight });
     this.viewportInfo.set(this.dataService.getViewportInfo());
     this.renderRows();
+  }
+
+  /** 计算所有可见列的总宽度 */
+  private calculateTotalColumnWidth(): number {
+    const columns = this.columnService.getVisibleColumns();
+    return columns.reduce((total, col) => total + (col.width || 200), 0);
   }
 
   private onHeaderClick(detail: { colDef: any; colId: string; column: any; shiftKey?: boolean }): void {

@@ -299,13 +299,14 @@ export class CellRendererService {
   private getCellStyleString(colDef: ColDef): string {
     const styles: string[] = [];
 
-    // 单元格宽度 — 必须与表头宽度一致，使用 columnService 获取实际宽度
-    const state = this.columnService.getColumnState(colDef);
-    const width = state?.width || colDef.width || 200;
+    // 直接使用 colDef.width，避免依赖 columnService（可能存在初始化时序问题）
+    const width = colDef.width || 200;
+
     styles.push(`width: ${width}px`);
     styles.push(`min-width: ${width}px`);
     styles.push(`max-width: ${width}px`);
-    styles.push(`flex: none`); // 覆盖 CSS 的 flex:1，使用固定宽度
+    styles.push(`flex: none`);
+    styles.push(`box-sizing: border-box`); // 与 header 一致，padding 包含在 width 内
 
     if (colDef.cellStyle) {
       if (typeof colDef.cellStyle === 'object') {
