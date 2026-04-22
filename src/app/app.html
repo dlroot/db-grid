@@ -16,6 +16,8 @@
       <button [class.active]="currentDemo() === 'server'" (click)="switchDemo('server')">服务端数据</button>
       <button [class.active]="currentDemo() === 'master'" (click)="switchDemo('master')">主从表</button>
       <button [class.active]="currentDemo() === 'undoredo'" (click)="switchDemo('undoredo')">撤销重做</button>
+      <button [class.active]="currentDemo() === 'keyboard'" (click)="switchDemo('keyboard')">键盘导航</button>
+      <button [class.active]="currentDemo() === 'agg'" (click)="switchDemo('agg')">聚合</button>
     </div>
   </div>
 
@@ -302,6 +304,63 @@
           [editOnDoubleClick]="true"
           (gridReady)="onGridReady($event)"
           (cellValueChanged)="updateUndoRedoState()"
+        />
+      </div>
+    }
+    @if (currentDemo() === 'keyboard') {
+      <div class="keyboard-demo-panel">
+        <div class="keyboard-info">
+          <h3>键盘导航演示</h3>
+          <p>💡 <strong>使用键盘快捷键：</strong></p>
+          <ul>
+            <li><strong>方向键</strong> - 单元格导航</li>
+            <li><strong>Enter</strong> - 开始编辑</li>
+            <li><strong>Tab</strong> - 跳转到下一个单元格</li>
+            <li><strong>F2</strong> - 开始编辑当前单元格</li>
+            <li><strong>Escape</strong> - 取消编辑</li>
+            <li><strong>Page Up/Down</strong> - 上下翻页</li>
+            <li><strong>Home/End</strong> - 跳转到行首/行尾</li>
+          </ul>
+          <div class="keyboard-status">
+            <span>当前位置: {{ currentPosition() || '未选中' }}</span>
+          </div>
+        </div>
+        <db-grid
+          #myGrid
+          [columnDefs]="keyboardColumnDefs"
+          [rowData]="keyboardRowData"
+          [gridOptions]="keyboardOptions"
+          [rowHeight]="40"
+          [headerHeight]="40"
+          [theme]="'alpine'"
+          [enableCellEdit]="true"
+          [editOnDoubleClick]="true"
+          (gridReady)="onGridReady($event)"
+          (cellFocused)="onCellFocused($event)"
+        />
+      </div>
+    }
+    @if (currentDemo() === 'agg') {
+      <div class="agg-demo-panel">
+        <div class="agg-info">
+          <h3>聚合演示：自动计算汇总</h3>
+          <p>💡 <strong>功能说明：</strong></p>
+          <ul>
+            <li>拖动列标题到分组区域进行分组</li>
+            <li>自动计算 Sum（求和）、Avg（平均）、Min、Max</li>
+            <li>支持多级分组嵌套</li>
+          </ul>
+        </div>
+        <db-grid
+          #myGrid
+          [columnDefs]="aggColumnDefs"
+          [rowData]="aggRowData"
+          [gridOptions]="aggOptions"
+          [rowHeight]="40"
+          [headerHeight]="40"
+          [theme]="'alpine'"
+          [groupSelectsChildren]="true"
+          (gridReady)="onGridReady($event)"
         />
       </div>
     }

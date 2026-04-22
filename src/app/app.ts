@@ -244,6 +244,33 @@ export class AppComponent implements OnInit {
   undoStackSize = signal<number>(0);
   redoStackSize = signal<number>(0);
 
+  // ========== 键盘导航演示 ==========
+  keyboardColumnDefs = [
+    { field: "id", headerName: "ID", width: 80, sortable: true, filter: "number" },
+    { field: "name", headerName: "姓名", width: 150, sortable: true, filter: "text", editable: true },
+    { field: "email", headerName: "邮箱", width: 220, filter: "text", editable: true },
+    { field: "department", headerName: "部门", width: 150, filter: "set" },
+    { field: "position", headerName: "职位", width: 150, filter: "set" },
+    { field: "salary", headerName: "薪资", width: 120, filter: "number", editable: true, cellEditor: "number" },
+    { field: "status", headerName: "状态", width: 100, filter: "set" },
+  ];
+  keyboardRowData = this.generateEmployeeData(30);
+  keyboardOptions = { enableCellEdit: true, editOnDoubleClick: true };
+  keyboardHint = signal<string>("使用方向键导航，Enter编辑，Tab跳转，F2编辑，Escape取消");
+  currentPosition = signal<string>("");
+
+  // ========== 聚合演示 ==========
+  aggColumnDefs = [
+    { field: "product", headerName: "产品", width: 150, rowGroup: true, filter: "text" },
+    { field: "category", headerName: "分类", width: 120, rowGroup: true, filter: "set" },
+    { field: "region", headerName: "地区", width: 120, filter: "set" },
+    { field: "sales", headerName: "销售额", width: 120, aggFunc: "sum", filter: "number" },
+    { field: "profit", headerName: "利润", width: 120, aggFunc: "sum", filter: "number" },
+    { field: "quantity", headerName: "数量", width: 100, aggFunc: "avg", filter: "number" },
+  ];
+  aggRowData = this.generateSalesData(40);
+  aggOptions = {};
+
   // ========== 分页状态 ==========
   currentPage = signal<number>(1);
   totalPages = signal<number>(5);
@@ -300,6 +327,13 @@ export class AppComponent implements OnInit {
   clearSelection(): void { if (this.gridApi) this.gridApi.deselectAll(); }
   exportCsv(): void { if (this.gridApi) this.gridApi.downloadExcel({ exportMode: "csv", fileName: "db-grid-export.csv" }); }
   exportExcel(): void { if (this.gridApi) this.gridApi.downloadExcel({ exportMode: "xlsx", fileName: "db-grid-export.xlsx" }); }
+
+  // ========== 键盘导航方法 ==========
+  onCellFocused(event: any): void {
+    if (event?.column?.colId && event?.rowIndex !== undefined) {
+      this.currentPosition.set(`行: ${event.rowIndex + 1}, 列: ${event.column.colId}`);
+    }
+  }
 
   // ========== 分页方法 ==========
   firstPage(): void { if (this.gridApi) { this.gridApi.firstPage(); this.updatePaginationInfo(); } }
