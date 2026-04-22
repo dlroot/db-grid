@@ -1279,6 +1279,10 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     const container = this.headerContainer.nativeElement;
     const { headerElement } = this.headerRenderer.render();
     (headerElement as HTMLElement).style.height = `${this.headerHeight}px`;
+    // 设置表头宽度与内容区一致，确保横向滚动同步
+    const totalColWidth = this.calculateTotalColumnWidth();
+    (headerElement as HTMLElement).style.width = `${totalColWidth}px`;
+    (headerElement as HTMLElement).style.minWidth = `${totalColWidth}px`;
     container.innerHTML = '';
     container.appendChild(headerElement);
     headerElement.addEventListener('headerClick', ((e: CustomEvent) => { this.onHeaderClick(e.detail); }) as EventListener);
