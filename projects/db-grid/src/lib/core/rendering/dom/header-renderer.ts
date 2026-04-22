@@ -20,6 +20,15 @@ export class HeaderRendererService {
   /** 是否显示列分组 */
   private showGroupHeaders = false;
 
+  // ========== 列拖拽状态 ==========
+  private isDragging = false;
+  private dragColDef: ColDef | null = null;
+  private dragColId = '';
+  private dragStartX = 0;
+  private ghostEl: HTMLElement | null = null;
+  private dragIndicatorEl: HTMLElement | null = null;
+  private onColDragEnd?: (fromColId: string, toColId: string) => void;
+
   constructor(private columnService: ColumnService) {}
 
   /** 渲染表头 */
@@ -257,6 +266,7 @@ export class HeaderRendererService {
 
     // 列拖拽手柄
     const dragHandle = this.createDragHandle();
+    this.setupColumnDrag(dragHandle, colDef, colId);
     header.appendChild(dragHandle);
 
     // 调整大小手柄
@@ -593,9 +603,170 @@ export class HeaderRendererService {
     }, 0);
   }
 
+  // ========== 列拖拽实现 ==========
+
+  /** 设置列拖拽回调（由 DbGridComponent 调用） */
+  setOnColDragEnd(callback: (fromColId: string, toColId: string) => void): void {
+    this.onColDragEnd = callback;
+  }
+
+  /** 给拖拽手柄绑定事件 */
+  private setupColumnDrag(handle: HTMLElement, colDef: ColDef, colId: string): void {
+    handle.addEventListener('mousedown', (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      this.isDragging = true;
+      this.dragColDef = colDef;
+      this.dragColId = colId;
+      this.dragStartX = e.clientX;
+
+      const headerCell = handle.closest('.db-grid-header-cell') as HTMLElement;
+      if (!headerCell) return;
+
+      // 创建 ghost 元素（跟随鼠标的半透明副本）
+      this.createGhostElement(headerCell);
+
+      // 创建放置指示器（竖线）
+      this.createDragIndicator();
+
+      // 全局 mousemove / mouseup
+      const onMove = (ev: MouseEvent) => this.onDragMove(ev);
+      const onUp = (ev: MouseEvent) => this.onDragUp(ev, onMove, onUp);
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  }
+
+  /** 创建 ghost 拖拽元素 */
+  private createGhostElement(sourceHeader: HTMLElement): void {
+    this.ghostEl = sourceHeader.cloneNode(true) as HTMLElement;
+    this.ghostEl.className = 'db-grid-drag-ghost';
+    Object.assign(this.ghostEl.style, {
+      position: 'fixed',
+      pointerEvents: 'none',
+      zIndex: '10000',
+      opacity: '0.7',
+      width: sourceHeader.offsetWidth + 'px',
+      height: sourceHeader.offsetHeight + 'px',
+      background: getComputedStyle(sourceHeader).background || '#f0f0f0',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+      borderRadius: '4px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: '12px',
+      overflow: 'hidden',
+    });
+    document.body.appendChild(this.ghostEl);
+  }
+
+  /** 创建放置指示线 */
+  private createDragIndicator(): void {
+    this.dragIndicatorEl = document.createElement('div');
+    this.dragIndicatorEl.className = 'db-grid-drag-indicator';
+    Object.assign(this.dragIndicatorEl.style, {
+      position: 'fixed',
+      top: '0',
+      width: '3px',
+      height: '100vh',
+      background: '#1890ff',
+      zIndex: '9999',
+      display: 'none',
+      pointerEvents: 'none',
+      boxShadow: '0 0 6px rgba(24,144,255,0.5)',
+    });
+    document.body.appendChild(this.dragIndicatorEl);
+  }
+
+  /** 拖拽移动中 */
+  private onDragMove(e: MouseEvent): void {
+    if (!this.isDragging || !this.ghostEl) return;
+
+    // 移动 ghost
+    const gw = this.ghostEl.offsetWidth;
+    const gh = this.ghostEl.offsetHeight;
+    this.ghostEl.style.left = (e.clientX - gw / 2) + 'px';
+    this.ghostEl.style.top = (e.clientY - gh / 2) + 'px';
+
+    // 找到目标列，更新指示线位置
+    const targetInfo = this.findDropTarget(e.clientX);
+    if (targetInfo && this.dragIndicatorEl) {
+      this.dragIndicatorEl.style.display = 'block';
+      this.dragIndicatorEl.style.left = targetInfo.x + 'px';
+    } else if (this.dragIndicatorEl) {
+      this.dragIndicatorEl.style.display = 'none';
+    }
+  }
+
+  /** 根据鼠标 X 坐标找到放置目标 */
+  private findDropTarget(mouseX: number): { colId: string; x: number } | null {
+    const headers = document.querySelectorAll('.db-grid-header-cell[data-col-id]');
+    let bestTarget: { colId: string; x: number } | null = null;
+    let minDist = Infinity;
+
+    headers.forEach((h) => {
+      const el = h as HTMLElement;
+      const rect = el.getBoundingClientRect();
+      const colId = el.getAttribute('data-col-id') || '';
+
+      // 跳过自身
+      if (colId === this.dragColId) return;
+
+      // 鼠标在列范围内
+      if (mouseX >= rect.left && mouseX <= rect.right) {
+        const dist = Math.abs(mouseX - (rect.left + rect.width / 2));
+        if (dist < minDist) {
+          minDist = dist;
+          // 放在左边还是右边
+          const insertLeft = mouseX - rect.left < rect.width / 2;
+          bestTarget = { colId, x: insertLeft ? rect.left : rect.right };
+        }
+      }
+    });
+
+    return bestTarget;
+  }
+
+  /** 拖拽释放 */
+  private onDragUp(
+    e: MouseEvent,
+    onMove: (ev: MouseEvent) => void,
+    onUp: (ev: MouseEvent) => void,
+  ): void {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+
+    if (!this.isDragging) {
+      this.cleanupDrag();
+      return;
+    }
+
+    // 找到目标列
+    const target = this.findDropTarget(e.clientX);
+    if (target && this.dragColId && target.colId !== this.dragColId) {
+      // 触发回调通知 DbGridComponent 重排
+      this.onColDragEnd?.(this.dragColId, target.colId);
+    }
+
+    this.cleanupDrag();
+  }
+
+  /** 清理拖拽状态 */
+  private cleanupDrag(): void {
+    this.isDragging = false;
+    this.dragColDef = null;
+    this.dragColId = '';
+    this.ghostEl?.remove();
+    this.ghostEl = null;
+    this.dragIndicatorEl?.remove();
+    this.dragIndicatorEl = null;
+  }
+
   /** 销毁 */
   destroy(): void {
-    // 清理菜单等
+    this.cleanupDrag();
     document.querySelectorAll('.db-grid-header-menu').forEach(menu => menu.remove());
   }
 }

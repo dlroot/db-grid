@@ -230,6 +230,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   @Output() filterChanged = new EventEmitter<FilterChangedEvent>();
   @Output() selectionChanged = new EventEmitter<SelectionChangedEvent>();
   @Output() columnResized = new EventEmitter<ColumnResizedEvent>();
+  @Output() colDragMoved = new EventEmitter<{ fromIndex: number; toIndex: number; column: any }>();
   @Output() nodeExpanded = new EventEmitter<any>();
   @Output() nodeCollapsed = new EventEmitter<any>();
   @Output() groupExpanded = new EventEmitter<any>();
@@ -1252,6 +1253,28 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   private refreshHeader(): void { this.renderHeader(); }
 
+  /** 列拖拽重排：将 fromColId 移动到 toColId 的位置 */
+  private reorderColumn(fromColId: string, toColId: string): void {
+    const colDefs = this.columnDefs;
+    if (!colDefs) return;
+
+    const fromIdx = colDefs.findIndex(c => (c.colId || c.field) === fromColId);
+    const toIdx = colDefs.findIndex(c => (c.colId || c.field) === toColId);
+    if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return;
+
+    // 移动列定义
+    const [moved] = colDefs.splice(fromIdx, 1);
+    // 如果向右拖，toIdx 需要减1（因为已经移除了一个元素）
+    const insertIdx = fromIdx < toIdx ? toIdx - 1 : toIdx;
+    colDefs.splice(insertIdx, 0, moved);
+
+    // 触发事件
+    this.colDragMoved.emit({ fromIndex: fromIdx, toIndex: insertIdx, column: moved });
+
+    // 重新渲染
+    this.refreshView();
+  }
+
   private renderHeader(): void {
     const container = this.headerContainer.nativeElement;
     const { headerElement } = this.headerRenderer.render();
@@ -1263,6 +1286,11 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       const { colDef, event } = e.detail;
       this.ngZone.run(() => this.openFilterPopup(colDef, event));
     }) as EventListener);
+
+    // 列拖拽回调
+    this.headerRenderer.setOnColDragEnd((fromColId, toColId) => {
+      this.reorderColumn(fromColId, toColId);
+    });
   }
 
   private renderRows(): void {
