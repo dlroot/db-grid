@@ -827,10 +827,10 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   setSort(field: string, direction: 'asc' | 'desc' | null): void {
     const colDef = this.columnDefs.find(c => c.field === field);
-    if (colDef) { colDef.sort = direction; this.dataService.sort(this.columnDefs); this.refreshView(); }
+    if (colDef) { colDef.sort = direction; this.dataService.sort(this.columnDefs); this.refreshHeader(); this.refreshView(); }
   }
 
-  clearSort(): void { this.columnDefs.forEach(c => c.sort = undefined); this.dataService.sort(this.columnDefs); this.refreshView(); }
+  clearSort(): void { this.columnDefs.forEach(c => c.sort = undefined); this.dataService.sort(this.columnDefs); this.refreshHeader(); this.refreshView(); }
 
   // --- 筛选 ---
   setFilterModel(model: Record<string, any>): void {
@@ -1354,6 +1354,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       cd.sort = state.sort;
       cd.sortIndex = state.sortIndex ?? undefined;
     });
+    this.refreshHeader(); // 刷新表头以更新排序图标 (▲/▼/⇅)
     this.refreshView();
     this.sortChanged.emit({ type: 'sortChanged', colDef, column: colDef, columns: this.columnDefs, source: 'ui', api: this.gridApi } as any);
   }
