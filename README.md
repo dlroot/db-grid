@@ -8,7 +8,7 @@
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Bundle Size](https://img.shields.io/badge/Bundle-≤2MB-green.svg)]()
 
-[Documentation](https://github.com/dlroot/db-grid#readme) · [Examples](https://github.com/dlroot/db-grid/tree/main/projects/demo) · [Contributing](CONTRIBUTING.md)
+[Documentation](https://github.com/dlroot/db-grid#readme) · [Live Demo](https://dlroot.github.io/db-grid/) · [Contributing](CONTRIBUTING.md)
 
 </div>
 
@@ -95,39 +95,67 @@ All `ColDef`, `GridOptions`, and `GridApi` interfaces are **100% compatible** wi
 
 ## 🗺️ Roadmap
 
+### ✅ P0 — Core Features
 - [x] Core grid rendering with virtual scrolling
 - [x] Column definitions (AG Grid compatible)
 - [x] Sorting (single & multi-column)
+- [x] Row selection (single, multiple)
 - [x] Fixed columns (pin left/right)
-- [x] Row selection (single, multiple, range)
-- [x] Theme system (Alpine, Balham, Material)
-- [ ] Filters (Text, Number, Date, Set)
-- [ ] Cell editors (Text, Number, Date, Select)
-- [ ] Row grouping & aggregation
-- [ ] Tree data
-- [ ] Pivoting
-- [ ] Excel export (XLSX)
-- [ ] Range selection & clipboard
-- [ ] Server-side row model (SSRM)
-- [ ] Charts integration
-- [ ] Row drag & drop
+- [x] Cell spanning (row/column span)
+- [x] Row drag & drop
+
+### ✅ P1 — Enhanced Features
+- [x] Filters (Text, Number, Date, Set, Boolean) — 5 filter types
+- [x] Cell editors (Text, Number, Date, Select, Checkbox, LargeText, RichSelect) — 7 editor types
+- [x] Column Group Headers (multi-row headers)
+- [x] Keyboard Navigation (Arrow, Tab, Enter, F2, Escape, Page/Home/End)
+- [x] Accessibility (ARIA, screen reader support)
+- [x] Cell Data Types (auto-inference: string, number, date, boolean, object)
+
+### ✅ P2 — Advanced Data
+- [x] Row Grouping & Aggregation (sum, avg, min, max, count, countunique)
+- [x] Tree Data (hierarchical data with expand/collapse)
+
+### ✅ P3 — UI Integration
+- [x] Range Selection & clipboard
+- [x] Column Menu
+- [x] Sidebar (tool panels)
+- [x] Status Bar
+
+### ✅ P4 — Enterprise
+- [x] Master-Detail (nested grids)
+- [x] Server-Side Row Model (infinite scroll, chunk loading)
+- [x] Undo/Redo (Ctrl+Z/Y)
+
+### 🚧 Coming Next
+- [ ] Charts integration (P4-4)
+- [ ] Pivoting (P2-3)
+- [ ] PDF Export
+- [ ] Column virtualization performance optimization
 
 ## 🏗️ Architecture
 
 ```
-db-grid/
-├── core/          # Framework-agnostic TypeScript engine
-│   ├── models/    # ColDef, GridOptions, GridApi, Events
-│   ├── services/  # Data processing, virtual scroll, sort, filter
-│   ├── rendering/ # Canvas & DOM renderers
-│   └── utils/     # Shared utilities
-├── angular/       # Angular 21+ component layer
-│   ├── components/# Grid, Column, Header, Cell, Row
-│   ├── directives/# Angular directives
-│   └── services/  # Angular-specific services
-├── filters/       # Built-in filter implementations
-├── editors/       # Built-in cell editor implementations
-└── themes/        # Theme packages (Alpine, Balham, Material)
+db-grid/                        # Angular demo app (src/app/)
+├── projects/db-grid/           # Library package
+│   └── src/lib/
+│       ├── core/               # Framework-agnostic TypeScript engine
+│       │   ├── models/         # ColDef, GridOptions, GridApi, Events
+│       │   └── services/       # 31 services (Data, Filter, Sort, Drag, etc.)
+│       ├── angular/            # Angular 21+ component layer
+│       │   └── components/     # Grid, Header, Cell, Row, Editors, Filters
+│       └── index.ts            # Public API exports
+├── src/app/                    # Interactive demo application (15 tabs)
+├── .github/workflows/           # CI/CD (build + GitHub Pages deploy)
+├── vitest.config.ts            # Unit test configuration
+└── package.json
+```
+
+## 📊 Test Coverage
+
+```bash
+npm test   # 84 tests passing (Vitest + jsdom)
+npm run build  # Production build (~110KB gzipped)
 ```
 
 ## 🤝 Contributing
