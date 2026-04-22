@@ -96,6 +96,9 @@
 
   // 行样式
   .db-grid-row {
+    display: flex;
+    align-items: center;
+    height: var(--db-grid-balham-row-height);
     border-bottom: 1px solid var(--db-grid-balham-cell-border-color);
     background: var(--db-grid-balham-odd-row-bg);
 
@@ -128,11 +131,16 @@
 
   // 单元格样式
   .db-grid-cell {
+    flex: 1;
+    min-width: 0;
     border-right: 1px solid var(--db-grid-balham-cell-border-color);
     padding: 0 var(--db-grid-balham-cell-padding);
     color: var(--db-grid-balham-text-color);
     font-size: var(--db-grid-balham-font-size);
     line-height: var(--db-grid-balham-row-height);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 
     &:last-child {
       border-right: none;
