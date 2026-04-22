@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from '@angular/core/testing';
+/// <reference types="jasmine" />
 import { EditorService } from './editor.service';
 import { ColDef } from '../models';
 
