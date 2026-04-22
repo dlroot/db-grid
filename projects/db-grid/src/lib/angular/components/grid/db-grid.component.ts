@@ -508,12 +508,10 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     if (!isPlatformBrowser(this.platformId)) return;
     const bodyHeight = this.bodyContainer.nativeElement.clientHeight;
     this.dataService.setScrollConfig({ viewportHeight: bodyHeight, rowHeight: this.rowHeight });
-    
-    // 初始化数据（首次渲染时 rowData 已传入但 ngOnChanges 不会触发 firstChange）
-    if (this.rowData && this.rowData.length > 0) {
-      this.setRowData(this.rowData);
-    }
-    
+
+    // 初始化数据服务（即使 rowData 为空也要初始化，确保 grid 状态正确）
+    this.setRowData(this.rowData || []);
+
     this.renderHeader();
     this.renderRows();
 
