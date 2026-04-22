@@ -69,6 +69,9 @@ import {
   StatusBarService,
   MasterDetailService,
   UndoRedoService,
+  ServerSideService,
+  IServerSideDatasource,
+  ServerSideConfig,
 } from '../../../core/services';
 
 import { DbCellEditorComponent } from '../cell-editor/db-cell-editor.component';
@@ -207,6 +210,14 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   /** 分组配置 */
   @Input() groupConfig: GroupConfig | null = null;
 
+  // ============ Server-Side Inputs ============
+  /** 启用服务端行模型 */
+  @Input() enableServerSide: boolean = false;
+  /** 服务端配置 */
+  @Input() serverSideConfig: ServerSideConfig | null = null;
+  /** 服务端数据源 */
+  @Input() serverSideDatasource: IServerSideDatasource | null = null;
+
   // ============ Outputs ============
   @Output() gridReady = new EventEmitter<GridReadyEvent>();
   @Output() rowDataUpdated = new EventEmitter<RowDataUpdatedEvent>();
@@ -288,6 +299,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   private statusBarService: StatusBarService;
   private masterDetailService: MasterDetailService;
   private undoRedoService: UndoRedoService;
+  private serverSideService: ServerSideService;
   private _dataTypesApplied = false;
 
   // ============ State ============
@@ -345,6 +357,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.statusBarService = new StatusBarService();
     this.masterDetailService = new MasterDetailService();
     this.undoRedoService = new UndoRedoService();
+    this.serverSideService = new ServerSideService();
   }
 
   // ============ Lifecycle ============
@@ -422,6 +435,20 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       colDragEnabled: this.colDragEnabled,
     });
 
+    // 初始化服务端行模型
+    if (this.enableServerSide) {
+      this.serverSideService.initialize(this.serverSideConfig ?? {});
+      this.serverSideService.onRowsUpdatedEvent(() => {
+        this.ngZone.run(() => {
+          this.rowCount.set(this.serverSideService.getRowCount());
+          this.refreshView();
+        });
+      });
+      if (this.serverSideDatasource) {
+        this.serverSideService.setDatasource(this.serverSideDatasource);
+      }
+    }
+
     this.rowCount.set(this.dataService.getRowCount());
     this.createGridApi();
   }
@@ -466,6 +493,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         rowDragEnabled: this.rowDragEnabled,
         colDragEnabled: this.colDragEnabled,
       });
+    }
+    // 服务端数据源变更
+    if (changes['serverSideDatasource'] && this.enableServerSide) {
+      if (this.serverSideDatasource) {
+        this.serverSideService.setDatasource(this.serverSideDatasource);
+      }
     }
   }
 
@@ -560,6 +593,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.statusBarService.destroy();
     this.masterDetailService.destroy();
     this.undoRedoService.destroy();
+    this.serverSideService.destroy();
   }
 
   // ============ Grid API ============
@@ -709,6 +743,10 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       endDrag: (targetIndex: number, event: MouseEvent) => this.endDrag(targetIndex, event),
       getDragDropService: () => this.dragDropService,
 
+      // ========== 服务端行模型 ==========
+      getServerSideService: () => this.serverSideService,
+      refreshServerSide: () => this.serverSideService.refresh(),
+
       // ========== 刷新 ==========
       refreshView: () => this.refreshView(),
     };
@@ -718,6 +756,14 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   // --- 数据 ---
   setRowData(rowData: any[]): void {
+    // 服务端模式下跳过本地数据处理
+    if (this.enableServerSide) {
+      this.rowCount.set(this.serverSideService.getRowCount());
+      this.refreshView();
+      this.rowDataUpdated.emit({ type: 'rowDataUpdated', api: this.gridApi });
+      return;
+    }
+
     // 首次加载数据时自动推断列类型
     if (rowData && rowData.length > 0 && !this._dataTypesApplied) {
       this.cellDataTypeService.applyAutoTypes(this.columnDefs, rowData, this.gridOptions);
@@ -1222,6 +1268,26 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     const viewport = this.viewportInfo();
     const rowsContainer = this.rowsContainer.nativeElement;
     const virtualScroll = this.virtualScroll.nativeElement;
+
+    // 服务端模式：使用 serverSideService 获取数据
+    if (this.enableServerSide && this.serverSideService.isEnabled()) {
+      const totalHeight = this.serverSideService.getTotalHeight(this.rowHeight);
+      virtualScroll.style.height = `${totalHeight}px`;
+      rowsContainer.innerHTML = '';
+      rowsContainer.style.transform = `translateY(${viewport.offsetY}px)`;
+
+      const visibleData = this.serverSideService.getRowsInRange(viewport.startIndex, viewport.endIndex);
+      visibleData.forEach((data, i) => {
+        if (!data) return;
+        const rowIndex = viewport.startIndex + i;
+        const rowId = data.id !== undefined ? String(data.id) : `row-${rowIndex}`;
+        const rowElement = this.rowRenderer.render(rowIndex, data, { id: rowId, data, rowIndex, selected: false, rowHeight: this.rowHeight, uiLevel: 0 } as any).rowElement;
+        rowsContainer.appendChild(rowElement);
+      });
+      this.cdr.detectChanges();
+      return;
+    }
+
     const totalHeight = this.dataService.getTotalHeight();
     virtualScroll.style.height = `${totalHeight}px`;
     rowsContainer.innerHTML = '';
@@ -1258,6 +1324,13 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       this.scrollTop = newScrollTop;
       this.dataService.setScrollTop(newScrollTop);
       this.viewportInfo.set(this.dataService.getViewportInfo());
+
+      // 服务端模式：触发数据预取
+      if (this.enableServerSide) {
+        const bodyHeight = this.bodyContainer.nativeElement.clientHeight;
+        this.serverSideService.onScroll(newScrollTop, bodyHeight, this.rowHeight);
+      }
+
       this.renderRows();
     }
   }
