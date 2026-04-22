@@ -296,6 +296,13 @@ export class CellRendererService {
   private getCellStyleString(colDef: ColDef): string {
     const styles: string[] = [];
 
+    // 单元格宽度 — 必须与表头宽度一致，否则列不对齐
+    const width = colDef.width || 200;
+    styles.push(`width: ${width}px`);
+    styles.push(`min-width: ${width}px`);
+    styles.push(`max-width: ${width}px`);
+    styles.push(`flex: none`); // 覆盖 CSS 的 flex:1，使用固定宽度
+
     if (colDef.cellStyle) {
       if (typeof colDef.cellStyle === 'object') {
         Object.entries(colDef.cellStyle).forEach(([key, value]) => {

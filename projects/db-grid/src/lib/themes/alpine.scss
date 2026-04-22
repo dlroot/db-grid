@@ -124,7 +124,7 @@
 
   // 单元格样式
   .db-grid-cell {
-    flex: 1;
+    flex: 0 0 auto; // 固定宽度，不伸缩 — 宽度由 inline style 控制
     min-width: 0;
     border-right: 1px solid var(--db-grid-alpine-cell-border-color);
     padding: 0 var(--db-grid-alpine-cell-padding);
