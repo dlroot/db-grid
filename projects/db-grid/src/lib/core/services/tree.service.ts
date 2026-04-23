@@ -83,6 +83,7 @@ export class TreeService {
     // 为所有节点设置 children（不只是 rootNodes）
     this.allNodes.forEach((node, id) => {
       node.children = this.childrenMap.get(id) || [];
+      node.hasChildren = node.children.length > 0; // 设置 hasChildren 标志
       node.allChildrenCount = this.countAllChildren(node);
     });
 
