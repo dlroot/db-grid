@@ -13,6 +13,7 @@ export interface RowNode {
   // 父子关系
   parent: RowNode | null;
   children: RowNode[];
+  hasChildren?: boolean;  // 是否有子节点（用于树形渲染）
   childIndex: number;
   allChildrenCount: number;
   level: number;
