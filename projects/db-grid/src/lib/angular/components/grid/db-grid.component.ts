@@ -1375,6 +1375,16 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       }
       const rowNode = this.dataService.getRowNode(rowId);
       if (rowNode) {
+        // 树模式：合并树节点属性（children, hasChildren, level, expanded）
+        if (this.isTreeMode) {
+          const treeNode = this.treeService.getNode(rowId);
+          if (treeNode) {
+            rowNode.children = treeNode.children;
+            rowNode.hasChildren = treeNode.hasChildren;
+            rowNode.level = treeNode.level;
+            rowNode.expanded = treeNode.expanded;
+          }
+        }
         const { rowElement } = this.rowRenderer.render(rowIndex, data, rowNode);
         rowsContainer.appendChild(rowElement);
         this.setupRowEvents(rowElement, rowIndex, data, rowNode);
