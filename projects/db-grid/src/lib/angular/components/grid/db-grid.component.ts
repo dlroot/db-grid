@@ -40,6 +40,7 @@ import {
   FilterChangedEvent,
   SelectionChangedEvent,
   ColumnResizedEvent,
+  RowNode,
 } from '../../../core/models';
 
 import {
@@ -340,6 +341,11 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.cellSpanService = new CellSpanService();
     this.cellRenderer = new CellRendererService(this.columnService);
     this.rowRenderer = new RowRendererService(this.cellRenderer, this.columnService);
+    
+    // 设置树形切换回调
+    this.rowRenderer.onTreeToggle = (node: RowNode) => {
+      this.onTreeNodeToggled(node);
+    };
     this.headerRenderer = new HeaderRendererService(this.columnService);
 
     // 新增服务
@@ -778,6 +784,11 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     if (this.treeData && this.treeConfig) {
       this.isTreeMode = true;
       this.treeService.initialize(rowData, this.treeConfig);
+      
+      // 设置树模式渲染器配置
+      const firstColumnField = this.columnDefs[0]?.field || null;
+      this.cellRenderer.setTreeMode(true, firstColumnField);
+      
       this.dataService.initialize(this.treeService.getFlattenedNodes().map(n => n.data), this.gridOptions, this.columnDefs);
       this.rowCount.set(this.treeService.getDisplayCount());
     } else if (this.enableGrouping && this.groupConfig) {
@@ -796,6 +807,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     } else {
       this.isTreeMode = false;
       this.isGroupMode = false;
+      this.cellRenderer.setTreeMode(false, null); // 禁用树模式
       this.dataService.initialize(rowData, this.gridOptions, this.columnDefs);
       this.rowCount.set(this.dataService.getRowCount());
     }
@@ -929,6 +941,15 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   collapseAllNodes(): void { this.treeService.collapseAll(); this.refreshView(); }
   isNodeExpanded(nodeId: string): boolean { const n = this.treeService.getNode(nodeId); return n?.expanded || false; }
   getNodeLevel(nodeId: string): number { const n = this.treeService.getNode(nodeId); return n?.level || 0; }
+
+  /** 树节点展开/折叠切换回调 */
+  private onTreeNodeToggled(node: RowNode): void {
+    // 重新获取扁平化的节点数据
+    const flattenedNodes = this.treeService.getFlattenedNodes();
+    this.dataService.initialize(flattenedNodes.map(n => n.data), this.gridOptions, this.columnDefs);
+    this.rowCount.set(this.treeService.getDisplayCount());
+    this.refreshView();
+  }
 
   // ========== 分组 API ==========
 

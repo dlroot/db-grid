@@ -4,7 +4,7 @@
  */
 
 import { Injectable } from '@angular/core';
-import { ColDef, CellRendererParams, ValueFormatterParams, CellStyle } from '../../models';
+import { ColDef, CellRendererParams, ValueFormatterParams, CellStyle, RowNode } from '../../models';
 import { ColumnService } from '../../services/column.service';
 
 export interface CellRenderResult {
@@ -16,7 +16,22 @@ export interface CellRenderResult {
 
 @Injectable()
 export class CellRendererService {
+  /** 树模式配置 */
+  private _isTreeMode = false;
+  private _firstColumnField: string | null = null;
+
   constructor(private columnService: ColumnService) {}
+
+  /** 设置树模式 */
+  setTreeMode(isTreeMode: boolean, firstColumnField: string | null): void {
+    this._isTreeMode = isTreeMode;
+    this._firstColumnField = firstColumnField;
+  }
+
+  /** 获取是否为树模式 */
+  get isTreeMode(): boolean {
+    return this._isTreeMode;
+  }
 
   /** 单元格编辑状态 */
   private editingCells: Map<string, HTMLElement> = new Map();
@@ -137,7 +152,8 @@ export class CellRendererService {
     colDef: ColDef,
     value: any,
     data: any,
-    colIndex?: number
+    colIndex?: number,
+    rowNode?: RowNode
   ): HTMLElement {
     const cell = document.createElement('div');
     cell.className = this.getCellClass(colDef, value, data);
@@ -164,7 +180,7 @@ export class CellRendererService {
     }
 
     // 渲染内容
-    const content = this.renderContent(cell, rowIndex, colDef, value, data);
+    const content = this.renderContent(cell, rowIndex, colDef, value, data, rowNode);
 
     // 添加tooltip
     if (colDef.tooltipField || colDef.tooltipValueGetter) {
@@ -183,10 +199,17 @@ export class CellRendererService {
     rowIndex: number,
     colDef: ColDef,
     value: any,
-    data: any
+    data: any,
+    rowNode?: RowNode
   ): void {
     const displayValue = this.getDisplayValue(value, colDef, data);
     const formattedValue = this.formatValue(colDef, displayValue, data);
+
+    // 如果是树模式且是第一列，渲染树形单元格
+    if (this._isTreeMode && colDef.field === this._firstColumnField && rowNode) {
+      this.renderTreeCell(container, formattedValue, rowNode);
+      return;
+    }
 
     // 如果有自定义渲染器
     if (colDef.cellRenderer) {
@@ -293,6 +316,58 @@ export class CellRendererService {
 
       container.appendChild(btn);
     });
+  }
+
+  /** 渲染树形单元格 */
+  private renderTreeCell(container: HTMLElement, value: string, node: RowNode): void {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'db-tree-cell';
+    wrapper.style.cssText = 'display: flex; align-items: center; gap: 4px; width: 100%; height: 100%;';
+
+    // 缩进
+    const level = node.level || 0;
+    const indentSize = 20;
+    wrapper.style.paddingLeft = `${level * indentSize}px`;
+
+    // 展开/折叠图标
+    const hasChildren = !!(node.children && node.children.length > 0);
+    if (hasChildren) {
+      const icon = document.createElement('span');
+      icon.className = 'db-tree-icon' + (node.expanded ? ' expanded' : '');
+      icon.style.cssText = 'display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; cursor: pointer; color: #666; flex-shrink: 0;';
+      
+      // SVG 图标
+      if (node.expanded) {
+        icon.innerHTML = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+      } else {
+        icon.innerHTML = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M6 4L10 8L6 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+      }
+      
+      // 点击事件
+      icon.addEventListener('click', (e) => {
+        e.stopPropagation();
+        node.expanded = !node.expanded;
+        // 触发重新渲染（通过 dispatchEvent）
+        container.dispatchEvent(new CustomEvent('treeToggle', { detail: { node } }));
+      });
+      
+      wrapper.appendChild(icon);
+    } else {
+      // 无子节点，占位
+      const spacer = document.createElement('span');
+      spacer.style.cssText = 'width: 16px; height: 16px; flex-shrink: 0;';
+      wrapper.appendChild(spacer);
+    }
+
+    // 文本值
+    const textSpan = document.createElement('span');
+    textSpan.className = 'db-tree-value';
+    textSpan.style.cssText = 'flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
+    textSpan.textContent = value;
+    textSpan.title = value;
+    wrapper.appendChild(textSpan);
+
+    container.appendChild(wrapper);
   }
 
   /** 获取单元格样式字符串 */

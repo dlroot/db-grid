@@ -135,7 +135,8 @@ export class RowRendererService {
       colDef,
       value,
       rowData,
-      colIndex
+      colIndex,
+      rowNode // 传递 rowNode 用于树形渲染
     );
 
     // 设置单元格位置
@@ -145,8 +146,17 @@ export class RowRendererService {
     // 添加单元格点击事件
     this.setupCellEvents(cellElement, rowIndex, rowData, rowNode, colDef);
 
+    // 添加树形切换事件监听
+    cellElement.addEventListener('treeToggle', ((e: CustomEvent) => {
+      // 触发重新渲染
+      this.onTreeToggle?.(e.detail.node);
+    }) as EventListener);
+
     return cellElement;
   }
+
+  /** 树形切换回调 */
+  onTreeToggle: ((node: RowNode) => void) | null = null;
 
   /** 获取单元格值 */
   private getCellValue(rowData: any, colDef: ColDef): any {
