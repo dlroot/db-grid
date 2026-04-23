@@ -944,6 +944,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   /** 树节点展开/折叠切换回调 */
   private onTreeNodeToggled(node: RowNode): void {
+    // 先切换 treeService 内部状态
+    this.treeService.toggleNode(node.id);
     // 重新获取扁平化的节点数据
     const flattenedNodes = this.treeService.getFlattenedNodes();
     this.dataService.initialize(flattenedNodes.map(n => n.data), this.gridOptions, this.columnDefs);
