@@ -336,12 +336,10 @@ export class CellRendererService {
       icon.className = 'db-tree-icon' + (node.expanded ? ' expanded' : '');
       icon.style.cssText = 'display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; cursor: pointer; color: #666; flex-shrink: 0;';
       
-      // SVG 图标
-      if (node.expanded) {
-        icon.innerHTML = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
-      } else {
-        icon.innerHTML = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M6 4L10 8L6 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
-      }
+      // 使用字符图标（更可靠）
+      icon.textContent = node.expanded ? '▼' : '▶';
+      icon.style.fontSize = '10px';
+      icon.style.lineHeight = '16px';
       
       // 点击事件
       icon.addEventListener('click', (e) => {
