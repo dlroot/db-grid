@@ -331,6 +331,7 @@ export class CellRendererService {
 
     // 展开/折叠图标
     const hasChildren = !!(node.children && node.children.length > 0);
+    console.log('[TreeCell]', 'node.id:', node.id, 'children:', node.children, 'hasChildren:', hasChildren);
     if (hasChildren) {
       const icon = document.createElement('span');
       icon.className = 'db-tree-icon' + (node.expanded ? ' expanded' : '');
