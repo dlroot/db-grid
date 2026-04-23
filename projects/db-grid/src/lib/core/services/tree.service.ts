@@ -80,17 +80,24 @@ export class TreeService {
       }
     });
 
+    // 为所有节点设置 children（不只是 rootNodes）
+    this.allNodes.forEach((node, id) => {
+      node.children = this.childrenMap.get(id) || [];
+      node.allChildrenCount = this.countAllChildren(node);
+    });
+
+    // 为 rootNodes 设置 firstChild/lastChild
     this.rootNodes.forEach((root, i) => {
       root.firstChild = i === 0;
       root.lastChild = i === this.rootNodes.length - 1;
-      root.children = this.childrenMap.get(root.id) || [];
-      root.allChildrenCount = this.countAllChildren(root);
     });
   }
 
-  private countAllChildren(node: RowNode): number {
+  private countAllChildren(node: RowNode, visited: Set<string> = new Set()): number {
+    if (visited.has(node.id)) return 0; // 防止循环引用
+    visited.add(node.id);
     let count = node.children.length;
-    node.children.forEach(child => { count += this.countAllChildren(child); });
+    node.children.forEach(child => { count += this.countAllChildren(child, visited); });
     return count;
   }
 
