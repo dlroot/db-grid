@@ -134,7 +134,7 @@ export class CellSpanService {
 
   isSwappedOut(rowIndex: number, colId: string): boolean {
     const span = this.getSpan(rowIndex, colId);
-    return span != null && !span.isSpanStart && span.colspan === 0;
+    return span != null && !span.isSpanStart && (span.colspan === 0 || span.rowspan === 0);
   }
 
   getColSpan(rowIndex: number, colId: string): number {
@@ -147,7 +147,7 @@ export class CellSpanService {
 
   setManualSpan(rowIndex: number, colId: string, colspan: number, rowspan: number): void {
     if (colspan <= 1 && rowspan <= 1) return;
-    this.setSpan(rowIndex, colId, colspan, rowspan, true);
+    this.setSpan(rowIndex, colId, rowspan, colspan, true);
     for (let r = rowIndex; r < rowIndex + rowspan; r++) {
       for (let c = 0; c < this.colIdToIndex.size; c++) {
         const colIdByIndex = this.getColIdByIndex(c);

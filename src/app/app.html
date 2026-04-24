@@ -1,75 +1,76 @@
 <div class="demo-container">
   <!-- 工具栏 -->
   <div class="toolbar">
-    <h1>DB Grid Demo</h1>
-    <div class="demo-tabs">
-      <button [class.active]="currentDemo() === 'basic'" (click)="switchDemo('basic')">基础表格</button>
-      <button [class.active]="currentDemo() === 'tree'" (click)="switchDemo('tree')">树形数据</button>
-      <button [class.active]="currentDemo() === 'group'" (click)="switchDemo('group')">行分组</button>
-      <button [class.active]="currentDemo() === 'excel'" (click)="switchDemo('excel')">Excel导出</button>
-      <button [class.active]="currentDemo() === 'span'" (click)="switchDemo('span')">单元格合并</button>
-      <button [class.active]="currentDemo() === 'edit'" (click)="switchDemo('edit')">行内编辑</button>
-      <button [class.active]="currentDemo() === 'pin'" (click)="switchDemo('pin')">列固定</button>
-      <button [class.active]="currentDemo() === 'pagination'" (click)="switchDemo('pagination')">分页</button>
-      <button [class.active]="currentDemo() === 'drag'" (click)="switchDemo('drag')">拖拽排序</button>
-      <button [class.active]="currentDemo() === 'p0'" (click)="switchDemo('p0')">P0功能</button>
-      <button [class.active]="currentDemo() === 'server'" (click)="switchDemo('server')">服务端数据</button>
-      <button [class.active]="currentDemo() === 'master'" (click)="switchDemo('master')">主从表</button>
-      <button [class.active]="currentDemo() === 'undoredo'" (click)="switchDemo('undoredo')">撤销重做</button>
-      <button [class.active]="currentDemo() === 'keyboard'" (click)="switchDemo('keyboard')">键盘导航</button>
-      <button [class.active]="currentDemo() === 'agg'" (click)="switchDemo('agg')">聚合</button>
-    </div>
+    <h1>DB Grid Demo <span class="version">v1.0</span></h1>
+    <p class="subtitle">开源 Angular 数据表格库 · AG Grid API 兼容 · MIT 协议</p>
   </div>
 
-  <!-- 功能按钮 -->
-  <div class="action-bar">
-    <div class="quick-filter">
-      <input
-        type="text"
-        placeholder="🔍 快速搜索..."
-        [value]="quickFilter()"
-        (input)="onQuickFilterChange($any($event.target).value)"
-      />
-      @if (quickFilter()) {
-        <button class="clear-btn" (click)="onQuickFilterChange('')">✕</button>
-      }
-    </div>
-    <button (click)="exportCsv()">导出 CSV</button>
-    <button (click)="exportExcel()">导出 Excel</button>
-    <button (click)="expandAll()">展开全部</button>
-    <button (click)="collapseAll()">折叠全部</button>
-    <button (click)="selectAll()">全选</button>
-    <button (click)="clearSelection()">清除选择</button>
-    @if (currentDemo() === 'pagination') {
-      <button (click)="firstPage()">首页</button>
-      <button (click)="prevPage()">上一页</button>
-      <span class="page-info">第 {{ currentPage() }} / {{ totalPages() }} 页</span>
-      <button (click)="nextPage()">下一页</button>
-      <button (click)="lastPage()">末页</button>
-    }
-    <span class="selected-info">已选: {{ selectedCount() }} 行</span>
-    <span class="api-status">API: {{ apiStatus() }}</span>
+  <!-- Tab 切换按钮 -->
+  <div class="demo-tabs">
+    <button [class.active]="currentDemo() === 'basic'" (click)="switchDemo('basic')">
+      📊 基础表格
+    </button>
+    <button [class.active]="currentDemo() === 'tree'" (click)="switchDemo('tree')">
+      🌲 树形数据
+    </button>
+    <button [class.active]="currentDemo() === 'group'" (click)="switchDemo('group')">
+      📁 行分组
+    </button>
+    <button [class.active]="currentDemo() === 'excel'" (click)="switchDemo('excel')">
+      📥 Excel导出
+    </button>
+    <button [class.active]="currentDemo() === 'server'" (click)="switchDemo('server')">
+      🖥️ 服务端数据
+    </button>
+    <button [class.active]="currentDemo() === 'master'" (click)="switchDemo('master')">
+      📋 主从表
+    </button>
+    <button [class.active]="currentDemo() === 'undo'" (click)="switchDemo('undo')">
+      ↩️ 撤销重做
+    </button>
+    <button [class.active]="currentDemo() === 'keyboard'" (click)="switchDemo('keyboard')">
+      ⌨️ 键盘导航
+    </button>
+    <button [class.active]="currentDemo() === 'agg'" (click)="switchDemo('agg')">
+      ➕ 聚合统计
+    </button>
   </div>
 
-  <!-- Grid 容器 -->
-  <div class="grid-wrapper">
-    @if (currentDemo() === 'basic') {
+  <!-- 基础表格演示 -->
+  @if (currentDemo() === 'basic') {
+    <div class="demo-panel">
+      <div class="demo-header">
+        <h2>基础表格</h2>
+        <p class="demo-desc">展示数据表格的核心功能：排序、筛选、多选、分页等</p>
+      </div>
       <db-grid
         #myGrid
-        [columnDefs]="basicColumnDefs"
-        [rowData]="basicRowData"
-        [gridOptions]="basicOptions"
+        [columnDefs]="columnDefs"
+        [rowData]="rowData"
+        [gridOptions]="gridOptions"
         [rowHeight]="40"
         [headerHeight]="40"
         [theme]="'alpine'"
-        [rowSelection]="'multiple'"
+        [rowSelection]="rowSelection"
+        [pagination]="pagination"
+        [suppressPaginationPanel]="false"
+        [enableSorting]="true"
+        [enableFilter]="true"
+        [animateRows]="true"
         (gridReady)="onGridReady($event)"
-        (rowClicked)="onRowClicked($event)"
-        (sortChanged)="onSortChanged($event)"
-        (selectionChanged)="onSelectionChanged($event)"
+        (selectionChanged)="onSelectionChanged()"
+        (cellClicked)="onCellClicked($event)"
       />
-    }
-    @if (currentDemo() === 'tree') {
+    </div>
+  }
+
+  <!-- 树形数据演示 -->
+  @if (currentDemo() === 'tree') {
+    <div class="demo-panel">
+      <div class="demo-header">
+        <h2>树形数据</h2>
+        <p class="demo-desc">展示层级数据，支持展开/折叠子节点</p>
+      </div>
       <db-grid
         #myGrid
         [columnDefs]="treeColumnDefs"
@@ -78,16 +79,21 @@
         [rowHeight]="40"
         [headerHeight]="40"
         [theme]="'alpine'"
+        [rowSelection]="'multiple'"
         [treeData]="true"
         [treeConfig]="treeConfig"
-        [rowSelection]="'multiple'"
         (gridReady)="onGridReady($event)"
-        (nodeExpanded)="onNodeExpanded($event)"
-        (nodeCollapsed)="onNodeCollapsed($event)"
-        (selectionChanged)="onSelectionChanged($event)"
       />
-    }
-    @if (currentDemo() === 'group') {
+    </div>
+  }
+
+  <!-- 行分组演示 -->
+  @if (currentDemo() === 'group') {
+    <div class="demo-panel">
+      <div class="demo-header">
+        <h2>行分组</h2>
+        <p class="demo-desc">按字段值自动分组，支持展开/折叠组</p>
+      </div>
       <db-grid
         #myGrid
         [columnDefs]="groupColumnDefs"
@@ -99,11 +105,21 @@
         [enableGrouping]="true"
         [groupConfig]="groupConfig"
         (gridReady)="onGridReady($event)"
-        (groupExpanded)="onGroupExpanded($event)"
-        (groupCollapsed)="onGroupCollapsed($event)"
       />
-    }
-    @if (currentDemo() === 'excel') {
+    </div>
+  }
+
+  <!-- Excel导出演示 -->
+  @if (currentDemo() === 'excel') {
+    <div class="demo-panel">
+      <div class="demo-header">
+        <h2>Excel导出</h2>
+        <p class="demo-desc">将数据导出为 CSV 格式，兼容 Excel 中文显示</p>
+        <div class="demo-actions">
+          <button class="btn-export" (click)="exportCsv()">📥 导出 CSV</button>
+          <button class="btn-export" (click)="exportXlsx()">📊 导出 XLSX</button>
+        </div>
+      </div>
       <db-grid
         #myGrid
         [columnDefs]="excelColumnDefs"
@@ -111,258 +127,142 @@
         [gridOptions]="excelOptions"
         [rowHeight]="40"
         [headerHeight]="40"
-        [theme]="'balham'"
+        [theme]="'alpine'"
         [rowSelection]="'multiple'"
         (gridReady)="onGridReady($event)"
-        (selectionChanged)="onSelectionChanged($event)"
       />
-    }
-    @if (currentDemo() === 'span') {
+    </div>
+  }
+
+  <!-- 服务端数据演示 -->
+  @if (currentDemo() === 'server') {
+    <div class="demo-panel">
+      <div class="demo-header">
+        <h2>服务端数据</h2>
+        <p class="demo-desc">模拟服务端分页、排序、筛选，处理大数据量</p>
+      </div>
       <db-grid
         #myGrid
-        [columnDefs]="spanColumnDefs"
-        [rowData]="spanRowData"
-        [gridOptions]="spanOptions"
-        [rowHeight]="40"
-        [headerHeight]="40"
-        [theme]="'material'"
-        (gridReady)="onGridReady($event)"
-      />
-    }
-    @if (currentDemo() === 'edit') {
-      <db-grid
-        #myGrid
-        [columnDefs]="editColumnDefs"
-        [rowData]="editRowData"
-        [gridOptions]="editOptions"
+        [columnDefs]="serverColumnDefs"
+        [rowData]="[]"
+        [gridOptions]="serverOptions"
         [rowHeight]="40"
         [headerHeight]="40"
         [theme]="'alpine'"
-        [rowSelection]="'multiple'"
-        [enableCellEdit]="true"
-        [editOnDoubleClick]="true"
-        (gridReady)="onGridReady($event)"
-        (selectionChanged)="onSelectionChanged($event)"
-      />
-    }
-    @if (currentDemo() === 'pin') {
-      <db-grid
-        #myGrid
-        [columnDefs]="pinColumnDefs"
-        [rowData]="basicRowData"
-        [gridOptions]="pinOptions"
-        [rowHeight]="40"
-        [headerHeight]="40"
-        [theme]="'material'"
-        [rowSelection]="'multiple'"
-        [pinnedLeftColumns]="['id', 'name']"
-        [pinnedRightColumns]="['status']"
-        (gridReady)="onGridReady($event)"
-      />
-    }
-    @if (currentDemo() === 'pagination') {
-      <db-grid
-        #myGrid
-        [columnDefs]="basicColumnDefs"
-        [rowData]="basicRowData"
-        [gridOptions]="basicOptions"
-        [rowHeight]="40"
-        [headerHeight]="40"
-        [theme]="'balham'"
-        [rowSelection]="'multiple'"
+        [enableServerSide]="true"
         [pagination]="true"
-        [paginationPageSize]="20"
-        [paginationPageSizeOptions]="[10, 20, 50, 100]"
         (gridReady)="onGridReady($event)"
-        (selectionChanged)="onSelectionChanged($event)"
       />
-    }
-    @if (currentDemo() === 'drag') {
+    </div>
+  }
+
+  <!-- 主从表演示 -->
+  @if (currentDemo() === 'master') {
+    <div class="demo-panel">
+      <div class="demo-header">
+        <h2>主从表</h2>
+        <p class="demo-desc">点击主表行展开显示明细数据</p>
+      </div>
       <db-grid
         #myGrid
-        [columnDefs]="basicColumnDefs"
-        [rowData]="dragRowData"
-        [gridOptions]="dragOptions"
+        [columnDefs]="masterColumnDefs"
+        [rowData]="masterRowData"
+        [gridOptions]="masterOptions"
+        [rowHeight]="40"
+        [headerHeight]="40"
+        [theme]="'alpine'"
+        [masterDetail]="true"
+        [detailCellRenderer]="detailCellRenderer"
+        (gridReady)="onGridReady($event)"
+      />
+    </div>
+  }
+
+  <!-- 撤销重做演示 -->
+  @if (currentDemo() === 'undo') {
+    <div class="demo-panel">
+      <div class="demo-header">
+        <h2>撤销重做</h2>
+        <p class="demo-desc">支持编辑、添加行、删除行的撤销重做操作</p>
+        <div class="demo-actions">
+          <button class="btn" (click)="undo()">↩️ 撤销</button>
+          <button class="btn" (click)="redo()">↪️ 重做</button>
+          <button class="btn" (click)="addRow()">➕ 添加行</button>
+          <button class="btn" (click)="deleteRow()">🗑️ 删除选中</button>
+        </div>
+      </div>
+      <db-grid
+        #myGrid
+        [columnDefs]="undoColumnDefs"
+        [rowData]="undoRowData"
+        [gridOptions]="undoOptions"
         [rowHeight]="40"
         [headerHeight]="40"
         [theme]="'alpine'"
         [rowSelection]="'multiple'"
-        [rowDragEnabled]="true"
+        [editable]="true"
         (gridReady)="onGridReady($event)"
-        (selectionChanged)="onSelectionChanged($event)"
       />
-    }
-    @if (currentDemo() === 'p0') {
-      <div class="p0-demo-panel">
-        <div class="p0-info">
-          <h3>P0 功能演示：筛选器 + 编辑器 + 多列排序</h3>
-          <p>💡 <strong>使用提示：</strong></p>
-          <ul>
-            <li>点击列标题旁的 ⫴ 图标打开筛选器</li>
-            <li>双击单元格进入编辑模式</li>
-            <li>按住 Shift 点击多列进行多列排序</li>
-          </ul>
-          <div class="filter-status">
-            <strong>当前筛选条件：</strong>
-            <pre>{{ p0FilterModel() }}</pre>
-            <button (click)="clearAllFilters()">清除所有筛选</button>
-          </div>
+    </div>
+  }
+
+  <!-- 键盘导航演示 -->
+  @if (currentDemo() === 'keyboard') {
+    <div class="demo-panel">
+      <div class="demo-header">
+        <h2>键盘导航</h2>
+        <p class="demo-desc">支持方向键导航、Enter 编辑、Delete 删除、Ctrl+C 复制等</p>
+        <div class="keyboard-hints">
+          <span>↑↓←→</span> 导航 &nbsp;
+          <span>Enter</span> 编辑 &nbsp;
+          <span>Esc</span> 取消 &nbsp;
+          <span>Delete</span> 删除 &nbsp;
+          <span>Space</span> 选择
         </div>
-        <db-grid
-          #myGrid
-          [columnDefs]="p0ColumnDefs"
-          [rowData]="p0RowData"
-          [gridOptions]="p0Options"
-          [rowHeight]="40"
-          [headerHeight]="40"
-          [theme]="'alpine'"
-          [rowSelection]="'multiple'"
-          [enableCellEdit]="true"
-          [editOnDoubleClick]="true"
-          (gridReady)="onGridReady($event)"
-          (rowClicked)="onRowClicked($event)"
-          (sortChanged)="onSortChanged($event)"
-          (filterChanged)="onFilterChanged($event)"
-          (selectionChanged)="onSelectionChanged($event)"
-        />
       </div>
-    }
-    @if (currentDemo() === 'server') {
-      <div class="server-demo-panel">
-        <div class="server-info">
-          <h3>服务端数据演示：无限滚动 + 分块加载</h3>
-          <p>💡 <strong>模拟服务端数据源，支持：</strong></p>
-          <ul>
-            <li>按需加载 - 滚动到底部自动加载下一页</li>
-            <li>缓存管理 - 已加载的数据块会缓存</li>
-            <li>排序/筛选 - 服务端处理</li>
-          </ul>
-          <div class="server-status">
-            <span>加载状态: {{ serverLoading() ? '⏳ 加载中...' : '✅ 就绪' }}</span>
-            <span>已加载: {{ serverRowCount() >= 0 ? serverRowCount() + ' 行' : '-' }}</span>
-          </div>
-        </div>
-        <db-grid
-          #myGrid
-          [columnDefs]="serverColumnDefs"
-          [rowData]="[]"
-          [rowHeight]="40"
-          [headerHeight]="40"
-          [theme]="'alpine'"
-          [rowSelection]="'multiple'"
-          [serverSide]="true"
-          [serverSideDatasource]="serverSideDatasource"
-          [serverSideConfig]="serverConfig"
-          (gridReady)="onGridReady($event)"
-          (selectionChanged)="onSelectionChanged($event)"
-        />
+      <db-grid
+        #myGrid
+        [columnDefs]="keyboardColumnDefs"
+        [rowData]="keyboardRowData"
+        [gridOptions]="keyboardOptions"
+        [rowHeight]="40"
+        [headerHeight]="40"
+        [theme]="'alpine'"
+        [rowSelection]="'multiple'"
+        [editable]="true"
+        [enableKeyboardNavigation]="true"
+        (gridReady)="onGridReady($event)"
+      />
+    </div>
+  }
+
+  <!-- 聚合统计演示 -->
+  @if (currentDemo() === 'agg') {
+    <div class="demo-panel">
+      <div class="demo-header">
+        <h2>聚合统计</h2>
+        <p class="demo-desc">支持 sum、avg、count、min、max 等聚合计算</p>
       </div>
-    }
-    @if (currentDemo() === 'master') {
-      <div class="master-demo-panel">
-        <div class="master-info">
-          <h3>主从表演示：订单详情展开</h3>
-          <p>💡 <strong>点击行展开按钮查看订单详情</strong></p>
-        </div>
-        <db-grid
-          #myGrid
-          [columnDefs]="masterColumnDefs"
-          [rowData]="masterRowData"
-          [rowHeight]="40"
-          [headerHeight]="40"
-          [theme]="'alpine'"
-          [masterDetail]="true"
-          [detailCellRendererParams]="masterDetailConfig.detailCellRendererParams"
-          (gridReady)="onGridReady($event)"
-        />
-      </div>
-    }
-    @if (currentDemo() === 'undoredo') {
-      <div class="undoredo-demo-panel">
-        <div class="undoredo-info">
-          <h3>撤销重做演示：编辑历史管理</h3>
-          <p>💡 <strong>使用提示：</strong></p>
-          <ul>
-            <li>双击单元格进行编辑</li>
-            <li>Ctrl+Z 撤销 / Ctrl+Y 重做</li>
-            <li>或使用下方按钮操作</li>
-          </ul>
-          <div class="undoredo-actions">
-            <button (click)="undo()" [disabled]="!canUndo()">↩ 撤销 ({{ undoStackSize() }})</button>
-            <button (click)="redo()" [disabled]="!canRedo()">↪ 重做 ({{ redoStackSize() }})</button>
-          </div>
-        </div>
-        <db-grid
-          #myGrid
-          [columnDefs]="undoRedoColumnDefs"
-          [rowData]="undoRedoRowData"
-          [gridOptions]="undoRedoOptions"
-          [rowHeight]="40"
-          [headerHeight]="40"
-          [theme]="'alpine'"
-          [enableCellEdit]="true"
-          [editOnDoubleClick]="true"
-          (gridReady)="onGridReady($event)"
-          (cellValueChanged)="updateUndoRedoState()"
-        />
-      </div>
-    }
-    @if (currentDemo() === 'keyboard') {
-      <div class="keyboard-demo-panel">
-        <div class="keyboard-info">
-          <h3>键盘导航演示</h3>
-          <p>💡 <strong>使用键盘快捷键：</strong></p>
-          <ul>
-            <li><strong>方向键</strong> - 单元格导航</li>
-            <li><strong>Enter</strong> - 开始编辑</li>
-            <li><strong>Tab</strong> - 跳转到下一个单元格</li>
-            <li><strong>F2</strong> - 开始编辑当前单元格</li>
-            <li><strong>Escape</strong> - 取消编辑</li>
-            <li><strong>Page Up/Down</strong> - 上下翻页</li>
-            <li><strong>Home/End</strong> - 跳转到行首/行尾</li>
-          </ul>
-          <div class="keyboard-status">
-            <span>当前位置: {{ currentPosition() || '未选中' }}</span>
-          </div>
-        </div>
-        <db-grid
-          #myGrid
-          [columnDefs]="keyboardColumnDefs"
-          [rowData]="keyboardRowData"
-          [gridOptions]="keyboardOptions"
-          [rowHeight]="40"
-          [headerHeight]="40"
-          [theme]="'alpine'"
-          [enableCellEdit]="true"
-          [editOnDoubleClick]="true"
-          (gridReady)="onGridReady($event)"
-          (cellFocused)="onCellFocused($event)"
-        />
-      </div>
-    }
-    @if (currentDemo() === 'agg') {
-      <div class="agg-demo-panel">
-        <div class="agg-info">
-          <h3>聚合演示：自动计算汇总</h3>
-          <p>💡 <strong>功能说明：</strong></p>
-          <ul>
-            <li>拖动列标题到分组区域进行分组</li>
-            <li>自动计算 Sum（求和）、Avg（平均）、Min、Max</li>
-            <li>支持多级分组嵌套</li>
-          </ul>
-        </div>
-        <db-grid
-          #myGrid
-          [columnDefs]="aggColumnDefs"
-          [rowData]="aggRowData"
-          [gridOptions]="aggOptions"
-          [rowHeight]="40"
-          [headerHeight]="40"
-          [theme]="'alpine'"
-          [groupSelectsChildren]="true"
-          (gridReady)="onGridReady($event)"
-        />
-      </div>
-    }
+      <db-grid
+        #myGrid
+        [columnDefs]="aggColumnDefs"
+        [rowData]="aggRowData"
+        [gridOptions]="aggOptions"
+        [rowHeight]="40"
+        [headerHeight]="40"
+        [theme]="'alpine'"
+        [enableAggregation]="true"
+        [groupIncludeFooter]="true"
+        (gridReady)="onGridReady($event)"
+      />
+    </div>
+  }
+
+  <!-- 状态栏 -->
+  <div class="status-bar">
+    <span class="status-item">{{ rowCount() }} 条记录</span>
+    <span class="status-item">{{ selectedCount() }} 已选择</span>
+    <span class="status-item" [class.success]="apiStatus === 'ready'">API: {{ apiStatus }}</span>
+    <span class="status-item version">v1.0.0</span>
   </div>
 </div>

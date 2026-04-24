@@ -63,9 +63,9 @@ describe('CellSpanService', () => {
       expect(service.getRowSpan(1, 'name')).toBe(0);
       expect(service.isSpanStart(0, 'name')).toBe(true);
       expect(service.isSpanStart(1, 'name')).toBe(false);
-      // Note: isSwappedOut checks colspan===0, but autoMerge sets rowspan=0 and colspan=1
-      // So isSwappedOut returns false for vertically merged cells (potential bug in source)
-      expect(service.isSwappedOut(1, 'name')).toBe(false);
+      // isSwappedOut checks colspan===0 OR rowspan===0
+      // autoMerge sets rowspan=0 and colspan=1 for merged-out cells
+      expect(service.isSwappedOut(1, 'name')).toBe(true);
     });
 
     it('should not merge rows with different values', () => {
@@ -152,17 +152,12 @@ describe('CellSpanService', () => {
   describe('setManualSpan', () => {
     it('should set a manual span (colspan=2, rowspan=1)', () => {
       service.initialize(columnDefs, rowData);
-      // NOTE: setManualSpan(rowIndex, colId, colspan, rowspan)
-      // internally calls setSpan(rowIndex, colId, colspan, rowspan, true)
-      // but setSpan's signature is (rowIndex, colId, rowspan, colspan, isSpanStart)
-      // so colspan/rowspan params are swapped in the stored CellSpan
       service.setManualSpan(0, 'name', 2, 1);
       const span = service.getSpan(0, 'name');
       expect(span).toBeDefined();
       expect(span!.isSpanStart).toBe(true);
-      // Due to param order swap: stored rowspan=2 (was colspan), stored colspan=1 (was rowspan)
-      expect(service.getRowSpan(0, 'name')).toBe(2);
-      expect(service.getColSpan(0, 'name')).toBe(1);
+      expect(service.getColSpan(0, 'name')).toBe(2);
+      expect(service.getRowSpan(0, 'name')).toBe(1);
     });
 
     it('should set a manual span (colspan=1, rowspan=2)', () => {
@@ -170,9 +165,8 @@ describe('CellSpanService', () => {
       service.setManualSpan(0, 'name', 1, 2);
       const span = service.getSpan(0, 'name');
       expect(span).toBeDefined();
-      // Due to param swap: stored rowspan=1, stored colspan=2
-      expect(service.getRowSpan(0, 'name')).toBe(1);
-      expect(service.getColSpan(0, 'name')).toBe(2);
+      expect(service.getRowSpan(0, 'name')).toBe(2);
+      expect(service.getColSpan(0, 'name')).toBe(1);
     });
 
     it('should not set span for colspan<=1 and rowspan<=1', () => {
