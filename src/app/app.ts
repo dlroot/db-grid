@@ -151,6 +151,30 @@ export class AppComponent implements OnInit {
   dragRowData = this.generateEmployeeData(20);
   dragOptions = { rowSelection: "multiple", animateRows: true };
 
+  // ========== 数据透视数据 ==========
+  pivotColumnDefs = [
+    { field: "country", headerName: "国家", width: 100, filter: "set" },
+    { field: "product", headerName: "产品", width: 120, filter: "set" },
+    { field: "year", headerName: "年份", width: 100, filter: "set" },
+    { field: "sales", headerName: "销售额", width: 120, filter: "number" },
+    { field: "profit", headerName: "利润", width: 100, filter: "number" },
+  ];
+  pivotRowData = [
+    { country: '中国', product: '手机', year: '2023', sales: 1000, profit: 200 },
+    { country: '中国', product: '手机', year: '2024', sales: 1500, profit: 300 },
+    { country: '中国', product: '笔记本', year: '2023', sales: 800, profit: 150 },
+    { country: '中国', product: '笔记本', year: '2024', sales: 1200, profit: 250 },
+    { country: '美国', product: '手机', year: '2023', sales: 900, profit: 180 },
+    { country: '美国', product: '手机', year: '2024', sales: 1100, profit: 220 },
+    { country: '美国', product: '笔记本', year: '2023', sales: 700, profit: 120 },
+    { country: '美国', product: '笔记本', year: '2024', sales: 950, profit: 190 },
+    { country: '德国', product: '手机', year: '2023', sales: 600, profit: 100 },
+    { country: '德国', product: '手机', year: '2024', sales: 800, profit: 150 },
+    { country: '德国', product: '笔记本', year: '2023', sales: 500, profit: 80 },
+    { country: '德国', product: '笔记本', year: '2024', sales: 700, profit: 120 },
+  ];
+  pivotOptions = {};
+
   // ========== P0 功能演示：筛选器 + 编辑器 + 多列排序 ==========
   p0ColumnDefs = [
     { field: "id", headerName: "ID", width: 80, sortable: true, filter: false, editable: false },
@@ -331,6 +355,21 @@ export class AppComponent implements OnInit {
         service.initialize({ rowDragEnabled: this.rowDragEnabled(), rowDragMultiRow: this.multiDragEnabled() });
       }
     }
+  }
+
+  // ========== 数据透视演示 ==========
+  pivotEnabled = signal<boolean>(false);
+  pivotValueColumns = [
+    { field: 'sales', aggFunc: 'sum' },
+    { field: 'profit', aggFunc: 'sum' },
+  ];
+
+  applyPivot(): void {
+    this.pivotEnabled.set(true);
+  }
+
+  clearPivot(): void {
+    this.pivotEnabled.set(false);
   }
 
   // ========== 分页状态 ==========

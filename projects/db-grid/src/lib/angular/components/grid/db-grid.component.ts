@@ -71,6 +71,7 @@ import {
   MasterDetailService,
   UndoRedoService,
   ServerSideService,
+  PivotService,
   IServerSideDatasource,
   ServerSideConfig,
 } from '../../../core/services';
@@ -211,6 +212,16 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   /** 分组配置 */
   @Input() groupConfig: GroupConfig | null = null;
 
+  // ============ Pivot Inputs ============
+  /** 启用数据透视模式 */
+  @Input() pivotMode = false;
+  /** 透视列（作为列头的字段） */
+  @Input() pivotColumn = '';
+  /** 透视行分组列 */
+  @Input() pivotRowGroupColumns: string[] = [];
+  /** 透视值列（需聚合的字段和聚合函数） */
+  @Input() pivotValueColumns: { field: string; aggFunc: string }[] = [];
+
   // ============ Server-Side Inputs ============
   /** 启用服务端行模型 */
   @Input() enableServerSide: boolean = false;
@@ -302,6 +313,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   private masterDetailService: MasterDetailService;
   private undoRedoService: UndoRedoService;
   private serverSideService: ServerSideService;
+  private pivotService: PivotService;
   private _dataTypesApplied = false;
 
   // ============ State ============
@@ -312,6 +324,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   private gridApi: any = null;
   private isTreeMode = false;
   private isGroupMode = false;
+  private isPivotMode = false;
   private isPaginated = false;
 
   // ============ Filter Popup State ============
@@ -366,6 +379,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.masterDetailService = new MasterDetailService();
     this.undoRedoService = new UndoRedoService();
     this.serverSideService = new ServerSideService();
+    this.pivotService = new PivotService();
   }
 
   // ============ Lifecycle ============
@@ -805,6 +819,22 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       // 使用 initializeNodes 直接传入节点数组
       this.dataService.initializeNodes(result.flatNodes, this.gridOptions, this.columnDefs);
       this.rowCount.set(this.groupService.getFlattenedNodes().length);
+    } else if (this.pivotMode && this.pivotColumn && this.pivotRowGroupColumns.length > 0) {
+      // ========== 透视模式 ==========
+      this.isPivotMode = true;
+      this.pivotService.initialize({
+        enabled: true,
+        pivotMode: true,
+        pivotColumns: [this.pivotColumn],
+        rowGroupColumns: this.pivotRowGroupColumns,
+        valueColumns: this.pivotValueColumns.map(v => ({ field: v.field, aggFunc: v.aggFunc as any })),
+      });
+      const pivotResult = this.pivotService.compute(rowData);
+      // 生成透视后的列定义
+      const pivotColDefs = this.pivotService.getPivotColumnDefs();
+      // 使用透视结果初始化数据服务
+      this.dataService.initialize(pivotResult.rows, this.gridOptions, pivotColDefs);
+      this.rowCount.set(pivotResult.rows.length);
     } else {
       this.isTreeMode = false;
       this.isGroupMode = false;
@@ -974,6 +1004,24 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   toggleGroup(nodeId: string): void { this.groupService.toggleGroup(nodeId); this.refreshView(); }
   expandAllGroups(): void { this.groupService.expandAll(); this.refreshView(); }
   collapseAllGroups(): void { this.groupService.collapseAll(); this.refreshView(); }
+
+  // ========== 数据透视 API ==========
+  setPivotMode(pivotColumn: string, rowGroupColumns: string[], valueColumns: { field: string; aggFunc: string }[]): void {
+    this.pivotMode = true;
+    this.pivotColumn = pivotColumn;
+    this.pivotRowGroupColumns = rowGroupColumns;
+    this.pivotValueColumns = valueColumns;
+    this.setRowData(this.getRowData());
+  }
+
+  removePivotMode(): void {
+    this.pivotMode = false;
+    this.isPivotMode = false;
+    this.pivotService.disablePivotMode();
+    this.refreshView();
+  }
+
+  getPivotResult(): any { return this.pivotService.getResult(); }
 
   // ========== 单元格合并 API ==========
 

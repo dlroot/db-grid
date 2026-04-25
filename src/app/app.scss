@@ -11,9 +11,10 @@ body {
 }
 
 .demo-container {
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 /* 工具栏 */
@@ -119,6 +120,7 @@ body {
 
   db-grid {
     flex: 1;
+    min-height: 400px;
     background: white;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);

@@ -40,6 +40,9 @@
     <button [class.active]="currentDemo() === 'drag'" (click)="switchDemo('drag')">
       ✋ 行拖拽
     </button>
+    <button [class.active]="currentDemo() === 'pivot'" (click)="switchDemo('pivot')">
+      📊 数据透视
+    </button>
   </div>
 
   <!-- 基础表格演示 -->
@@ -57,12 +60,8 @@
         [rowHeight]="40"
         [headerHeight]="40"
         [theme]="'alpine'"
-        [rowSelection]="rowSelection"
-        [pagination]="pagination"
-        [suppressPaginationPanel]="false"
         [enableSorting]="true"
         [enableFilter]="true"
-        [animateRows]="true"
         (gridReady)="onGridReady($event)"
         (selectionChanged)="onSelectionChanged()"
         (cellClicked)="onCellClicked($event)"
@@ -312,6 +311,34 @@
         [rowSelection]="'multiple'"
         [rowDragEnabled]="rowDragEnabled()"
         [rowDragMultiRow]="multiDragEnabled()"
+        (gridReady)="onGridReady($event)"
+      />
+    </div>
+  }
+
+  <!-- 数据透视演示 -->
+  @if (currentDemo() === 'pivot') {
+    <div class="demo-panel">
+      <div class="demo-header">
+        <h2>数据透视</h2>
+        <p class="demo-desc">按维度旋转数据，生成交叉分析表</p>
+        <div class="demo-actions">
+          <button class="btn" (click)="applyPivot()">应用透视</button>
+          <button class="btn" (click)="clearPivot()">清除透视</button>
+        </div>
+      </div>
+      <db-grid
+        #myGrid
+        [columnDefs]="pivotColumnDefs"
+        [rowData]="pivotRowData"
+        [gridOptions]="pivotOptions"
+        [rowHeight]="40"
+        [headerHeight]="40"
+        [theme]="'alpine'"
+        [pivotMode]="pivotEnabled()"
+        [pivotColumn]="'year'"
+        [pivotRowGroupColumns]="['country', 'product']"
+        [pivotValueColumns]="pivotValueColumns"
         (gridReady)="onGridReady($event)"
       />
     </div>
