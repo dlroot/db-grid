@@ -222,6 +222,10 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   /** 透视值列（需聚合的字段和聚合函数） */
   @Input() pivotValueColumns: { field: string; aggFunc: string }[] = [];
 
+  // ============ Column Virtualization Input ============
+  /** 启用列虚拟化（大量列时自动只渲染可见列） */
+  @Input() enableColVirtualization = false;
+
   // ============ Server-Side Inputs ============
   /** 启用服务端行模型 */
   @Input() enableServerSide: boolean = false;
@@ -326,6 +330,9 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   private isGroupMode = false;
   private isPivotMode = false;
   private isPaginated = false;
+  // 列虚拟化
+  private lastColRenderScrollLeft = -1;
+  private colVirtualBuffer = 3;
 
   // ============ Filter Popup State ============
   activeFilterPopup: { colDef: ColDef; position: { x: number; y: number } } | null = null;
@@ -1347,14 +1354,27 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   private renderHeader(): void {
     const container = this.headerContainer.nativeElement;
-    const { headerElement } = this.headerRenderer.render();
-    (headerElement as HTMLElement).style.height = `${this.headerHeight}px`;
-    // 设置表头宽度与内容区一致，确保横向滚动同步
+    let headerElement: HTMLElement;
+
+    if (this.enableColVirtualization) {
+      // 列虚拟化：只渲染可见列的表头
+      const bodyWidth = this.bodyContainer?.nativeElement?.clientWidth || 800;
+      const colRange = this.columnService.getVisibleColumnsInRange(this.scrollLeft, bodyWidth, this.colVirtualBuffer);
+      const result = this.headerRenderer.renderWithColumns(colRange);
+      headerElement = result.headerElement as HTMLElement;
+    } else {
+      // 常规模式：渲染所有列
+      const result = this.headerRenderer.render();
+      headerElement = result.headerElement as HTMLElement;
+    }
+
+    headerElement.style.height = `${this.headerHeight}px`;
     const totalColWidth = this.calculateTotalColumnWidth();
-    (headerElement as HTMLElement).style.width = `${totalColWidth}px`;
-    (headerElement as HTMLElement).style.minWidth = `${totalColWidth}px`;
+    headerElement.style.width = `${totalColWidth}px`;
+    headerElement.style.minWidth = `${totalColWidth}px`;
     container.innerHTML = '';
     container.appendChild(headerElement);
+
     headerElement.addEventListener('headerClick', ((e: CustomEvent) => { this.onHeaderClick(e.detail); }) as EventListener);
     headerElement.addEventListener('filterClick', ((e: CustomEvent) => {
       const { colDef, event } = e.detail;
@@ -1413,6 +1433,22 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     rowsContainer.style.transform = `translateY(${viewport.offsetY}px)`;
 
     const visibleData = this.dataService.getVisibleRows();
+
+    // 列虚拟化：计算可见列范围
+    let colRange: { leftPinned: ColDef[]; center: ColDef[]; rightPinned: ColDef[]; offsetX: number; totalScrollableWidth: number } | null = null;
+    if (this.enableColVirtualization) {
+      const bodyWidth = this.bodyContainer?.nativeElement?.clientWidth || 800;
+      colRange = this.columnService.getVisibleColumnsInRange(this.scrollLeft, bodyWidth, this.colVirtualBuffer);
+      // 用可滚动区域的总宽度作为虚拟滚动宽度
+      if (colRange) {
+        const pinnedLeftWidth = colRange.leftPinned.reduce((t, c) => t + (this.columnService.getColumnState(c)?.width || 200), 0);
+        const pinnedRightWidth = colRange.rightPinned.reduce((t, c) => t + (this.columnService.getColumnState(c)?.width || 200), 0);
+        const totalW = pinnedLeftWidth + colRange.totalScrollableWidth + pinnedRightWidth;
+        virtualScroll.style.width = `${totalW}px`;
+        rowsContainer.style.width = `${totalW}px`;
+      }
+    }
+
     visibleData.forEach((data, i) => {
       const rowIndex = viewport.startIndex + i;
       // 使用和 dataService 相同的 ID 生成逻辑
@@ -1436,9 +1472,34 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
             rowNode.expanded = treeNode.expanded;
           }
         }
-        const { rowElement } = this.rowRenderer.render(rowIndex, data, rowNode);
-        rowsContainer.appendChild(rowElement);
-        this.setupRowEvents(rowElement, rowIndex, data, rowNode);
+
+        if (this.enableColVirtualization && colRange) {
+          // 列虚拟化：只渲染可见列
+          const renderResult = this.rowRenderer.render(rowIndex, data, rowNode);
+          const rowElement = renderResult.rowElement;
+          // 先清空默认渲染的所有列单元格
+          rowElement.innerHTML = '';
+          // 重新渲染仅可见列
+          const visibleCols = [...colRange.leftPinned, ...colRange.center, ...colRange.rightPinned];
+          this.rowRenderer.renderCellsForColumns(rowElement, rowIndex, data, rowNode, visibleCols);
+          // 为中间列设置偏移
+          if (colRange.offsetX > 0) {
+            const centerStart = colRange.leftPinned.length;
+            for (let ci = centerStart; ci < centerStart + colRange.center.length; ci++) {
+              const cell = rowElement.children[ci] as HTMLElement;
+              if (cell) {
+                const existingTransform = cell.style.transform || '';
+                cell.style.transform = `translateX(${colRange.offsetX}px) ${existingTransform}`.trim();
+              }
+            }
+          }
+          rowsContainer.appendChild(rowElement);
+          this.setupRowEvents(rowElement, rowIndex, data, rowNode);
+        } else {
+          const { rowElement } = this.rowRenderer.render(rowIndex, data, rowNode);
+          rowsContainer.appendChild(rowElement);
+          this.setupRowEvents(rowElement, rowIndex, data, rowNode);
+        }
       }
     });
     this.cdr.detectChanges();
@@ -1455,6 +1516,17 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     if (newScrollLeft !== this.scrollLeft) {
       this.scrollLeft = newScrollLeft;
       this.headerContainer.nativeElement.scrollLeft = newScrollLeft;
+
+      // 列虚拟化：横向滚动时重新渲染
+      if (this.enableColVirtualization) {
+        const bodyWidth = this.bodyContainer.nativeElement.clientWidth;
+        // 只在滚动超过一列宽度时才重新渲染，避免频繁重绘
+        if (Math.abs(newScrollLeft - this.lastColRenderScrollLeft) > 50) {
+          this.lastColRenderScrollLeft = newScrollLeft;
+          this.renderRows();
+          this.renderHeader();
+        }
+      }
     }
 
     if (newScrollTop !== this.scrollTop) {

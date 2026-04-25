@@ -118,6 +118,25 @@ export class RowRendererService {
     return cells;
   }
 
+  /** 渲染行中的指定列单元格（列虚拟化） */
+  renderCellsForColumns(
+    rowElement: HTMLElement,
+    rowIndex: number,
+    rowData: any,
+    rowNode: RowNode,
+    columns: ColDef[]
+  ): Map<string, HTMLElement> {
+    const cells = new Map<string, HTMLElement>();
+
+    columns.forEach((colDef, colIndex) => {
+      const cellElement = this.renderCell(rowIndex, rowData, rowNode, colDef, colIndex);
+      rowElement.appendChild(cellElement);
+      cells.set(colDef.field || colDef.colId || '', cellElement);
+    });
+
+    return cells;
+  }
+
   /** 渲染单个单元格 */
   private renderCell(
     rowIndex: number,

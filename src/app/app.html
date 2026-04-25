@@ -43,6 +43,9 @@
     <button [class.active]="currentDemo() === 'pivot'" (click)="switchDemo('pivot')">
       📊 数据透视
     </button>
+    <button [class.active]="currentDemo() === 'colvirtual'" (click)="switchDemo('colvirtual')">
+      🏗️ 列虚拟化
+    </button>
   </div>
 
   <!-- 基础表格演示 -->
@@ -339,6 +342,31 @@
         [pivotColumn]="'year'"
         [pivotRowGroupColumns]="['country', 'product']"
         [pivotValueColumns]="pivotValueColumns"
+        (gridReady)="onGridReady($event)"
+      />
+    </div>
+  }
+
+  <!-- 列虚拟化演示 -->
+  @if (currentDemo() === 'colvirtual') {
+    <div class="demo-panel">
+      <div class="demo-header">
+        <h2>列虚拟化</h2>
+        <p class="demo-desc">100+ 列场景下，只渲染可见列，大幅提升性能</p>
+        <div class="demo-actions">
+          <span class="btn" style="cursor:default">列数: {{ colVirtualColumnDefs.length }}</span>
+          <span class="btn" style="cursor:default">行数: {{ colVirtualRowData.length }}</span>
+        </div>
+      </div>
+      <db-grid
+        #myGrid
+        [columnDefs]="colVirtualColumnDefs"
+        [rowData]="colVirtualRowData"
+        [gridOptions]="colVirtualOptions"
+        [rowHeight]="40"
+        [headerHeight]="40"
+        [theme]="'alpine'"
+        [enableColVirtualization]="true"
         (gridReady)="onGridReady($event)"
       />
     </div>

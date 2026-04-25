@@ -175,6 +175,88 @@ export class ColumnService {
     return this.visibleColumns;
   }
 
+  /** 获取可见列中可滚动的（非 pinned）列 */
+  getVisibleScrollableColumns(): ColDef[] {
+    return this.visibleColumns.filter(col => {
+      const state = this.getColumnState(col);
+      return !state?.pinned;
+    });
+  }
+
+  /** 列虚拟化：获取指定水平滚动范围内的可见列
+   * @param scrollLeft 水平滚动偏移量（相对于可滚动区域）
+   * @param viewportWidth 可视区域宽度
+   * @param buffer 缓冲区额外列数（默认 2）
+   * @returns { leftPinned, center, rightPinned, offsetX }
+   */
+  getVisibleColumnsInRange(
+    scrollLeft: number,
+    viewportWidth: number,
+    buffer: number = 2
+  ): { leftPinned: ColDef[]; center: ColDef[]; rightPinned: ColDef[]; offsetX: number; totalScrollableWidth: number } {
+    const leftPinned = this.visibleColumns.filter(col => {
+      const state = this.getColumnState(col);
+      return state?.pinned === 'left';
+    });
+
+    const rightPinned = this.visibleColumns.filter(col => {
+      const state = this.getColumnState(col);
+      return state?.pinned === 'right';
+    });
+
+    // 可滚动的可见列
+    const scrollable = this.visibleColumns.filter(col => {
+      const state = this.getColumnState(col);
+      return !state?.pinned;
+    });
+
+    // 计算每列的偏移量
+    let accOffset = 0;
+    const colOffsets: { col: ColDef; start: number; end: number }[] = [];
+    for (const col of scrollable) {
+      const state = this.getColumnState(col);
+      const w = state?.width || this.defaultColWidth;
+      colOffsets.push({ col, start: accOffset, end: accOffset + w });
+      accOffset += w;
+    }
+    const totalScrollableWidth = accOffset;
+
+    // 找出在视口范围内的列
+    const viewStart = scrollLeft;
+    const viewEnd = scrollLeft + viewportWidth;
+    const centerInRange: ColDef[] = [];
+    let firstVisibleStart = 0;
+
+    let foundFirst = false;
+    for (let i = 0; i < colOffsets.length; i++) {
+      const { start, end, col } = colOffsets[i];
+      // 列与视口有交集
+      if (end > viewStart && start < viewEnd) {
+        if (!foundFirst) {
+          firstVisibleStart = start;
+          foundFirst = true;
+        }
+        centerInRange.push(col);
+      }
+    }
+
+    // 添加缓冲区
+    const startIndex = centerInRange.length > 0
+      ? scrollable.indexOf(centerInRange[0])
+      : 0;
+    const endIndex = centerInRange.length > 0
+      ? scrollable.indexOf(centerInRange[centerInRange.length - 1])
+      : -1;
+
+    const bufStart = Math.max(0, startIndex - buffer);
+    const bufEnd = Math.min(scrollable.length - 1, endIndex + buffer);
+
+    const center = scrollable.slice(bufStart, bufEnd + 1);
+    const offsetX = colOffsets[bufStart]?.start ?? 0;
+
+    return { leftPinned, center, rightPinned, offsetX, totalScrollableWidth };
+  }
+
   /** 获取左固定列 */
   getLeftPinnedColumns(): ColDef[] {
     return this.leftPinnedColumns;

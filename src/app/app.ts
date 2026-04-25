@@ -372,6 +372,47 @@ export class AppComponent implements OnInit {
     this.pivotEnabled.set(false);
   }
 
+  // ========== 列虚拟化演示 ==========
+  colVirtualColumnDefs = this.generateManyColumns(100);
+  colVirtualRowData = this.generateWideData(50, 100);
+  colVirtualOptions = {};
+
+  /** 生成大量列定义 */
+  generateManyColumns(count: number): any[] {
+    const cols: any[] = [
+      { field: 'id', headerName: 'ID', width: 80, pinnedLeft: true },
+      { field: 'name', headerName: '名称', width: 120, pinnedLeft: true },
+    ];
+    for (let i = 0; i < count; i++) {
+      cols.push({
+        field: `col_${i}`,
+        headerName: `列 ${i + 1}`,
+        width: 120,
+        sortable: i % 5 === 0,
+        filter: i % 3 === 0 ? 'text' : undefined,
+      });
+    }
+    cols.push({ field: 'total', headerName: '总计', width: 120, pinnedRight: true });
+    return cols;
+  }
+
+  /** 生成宽表数据 */
+  generateWideData(rows: number, cols: number): any[] {
+    const data: any[] = [];
+    for (let r = 0; r < rows; r++) {
+      const row: any = { id: r + 1, name: `项目 ${r + 1}` };
+      let total = 0;
+      for (let c = 0; c < cols; c++) {
+        const val = Math.round(Math.random() * 1000);
+        row[`col_${c}`] = val;
+        total += val;
+      }
+      row.total = total;
+      data.push(row);
+    }
+    return data;
+  }
+
   // ========== 分页状态 ==========
   currentPage = signal<number>(1);
   totalPages = signal<number>(5);

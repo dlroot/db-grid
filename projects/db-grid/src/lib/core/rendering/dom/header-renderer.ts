@@ -33,6 +33,13 @@ export class HeaderRendererService {
 
   /** 渲染表头 */
   render(): HeaderRenderResult {
+    return this.renderWithColumns(undefined);
+  }
+
+  /** 渲染指定列表头（列虚拟化）
+   * @param columns 如果提供，只渲染这些列；否则渲染所有可见列
+   */
+  renderWithColumns(columns?: { leftPinned: ColDef[]; center: ColDef[]; rightPinned: ColDef[]; offsetX: number; totalScrollableWidth: number }): HeaderRenderResult {
     const headerElement = this.createHeaderContainer();
     const columnHeaders = new Map<string, HTMLElement>();
 
@@ -44,16 +51,13 @@ export class HeaderRendererService {
       const depth = this.columnService.getGroupDepth();
       headerElement.style.height = `${depth * this.headerHeight}px`;
 
-      // 构建行数组：每行包含一组 cell
       const rows: HTMLElement[][] = [];
       for (let i = 0; i < depth; i++) {
         rows.push([]);
       }
 
-      // 递归填充
       this.buildGroupCells(columnTree, rows, 0, depth);
 
-      // 渲染每行
       rows.forEach((cells, rowIndex) => {
         const row = this.createHeaderRow();
         cells.forEach(cell => row.appendChild(cell));
@@ -62,14 +66,47 @@ export class HeaderRendererService {
     } else {
       // ========== 扁平表头：单行渲染 ==========
       headerElement.style.height = `${this.headerHeight}px`;
-      const columns = this.columnService.getVisibleColumns();
       const headerRow = this.createHeaderRow();
 
-      columns.forEach(colDef => {
-        const colHeader = this.createColumnHeader(colDef);
-        headerRow.appendChild(colHeader);
-        columnHeaders.set(colDef.field || colDef.colId || '', colHeader);
-      });
+      if (columns) {
+        // 列虚拟化模式：渲染 leftPinned + center(带偏移) + rightPinned
+        // 左固定列
+        columns.leftPinned.forEach(colDef => {
+          const colHeader = this.createColumnHeader(colDef);
+          headerRow.appendChild(colHeader);
+          columnHeaders.set(colDef.field || colDef.colId || '', colHeader);
+        });
+
+        // 中间可滚动列（带偏移）
+        const centerContainer = document.createElement('div');
+        centerContainer.className = 'db-grid-header-center';
+        centerContainer.style.cssText = `
+          display: flex;
+          position: relative;
+          margin-left: ${columns.offsetX}px;
+        `;
+        columns.center.forEach(colDef => {
+          const colHeader = this.createColumnHeader(colDef);
+          centerContainer.appendChild(colHeader);
+          columnHeaders.set(colDef.field || colDef.colId || '', colHeader);
+        });
+        headerRow.appendChild(centerContainer);
+
+        // 右固定列
+        columns.rightPinned.forEach(colDef => {
+          const colHeader = this.createColumnHeader(colDef);
+          headerRow.appendChild(colHeader);
+          columnHeaders.set(colDef.field || colDef.colId || '', colHeader);
+        });
+      } else {
+        // 常规模式：渲染所有列
+        const allCols = this.columnService.getVisibleColumns();
+        allCols.forEach(colDef => {
+          const colHeader = this.createColumnHeader(colDef);
+          headerRow.appendChild(colHeader);
+          columnHeaders.set(colDef.field || colDef.colId || '', colHeader);
+        });
+      }
 
       headerElement.appendChild(headerRow);
     }
