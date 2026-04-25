@@ -50,6 +50,21 @@ export class DataService {
     });
   }
 
+  /** 初始化节点（分组/树模式） */
+  initializeNodes(nodes: RowNode[], gridOptions: GridOptions = {}, colDefs: ColDef[] = []): void {
+    this.gridOptions = gridOptions;
+    this.colDefs = colDefs;
+    this.rowNodeMap.clear();
+    this.rowData = nodes.map(n => n.data);
+    
+    nodes.forEach((node, index) => {
+      if (!node.id) node.id = `node-${index}`;
+      node.rowIndex = index;
+      node.rowHeight = this.scrollConfig.rowHeight;
+      this.rowNodeMap.set(node.id, node);
+    });
+  }
+
   /** 更新列定义 */
   setColDefs(colDefs: ColDef[]): void {
     this.colDefs = colDefs;
