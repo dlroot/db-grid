@@ -82,6 +82,39 @@ body {
       box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
     }
   }
+
+  .theme-selector {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    label {
+      font-size: 14px;
+      color: #666;
+      font-weight: 500;
+    }
+
+    select {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      background: white;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.2s;
+
+      &:hover {
+        border-color: #667eea;
+      }
+
+      &:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+      }
+    }
+  }
 }
 
 /* 演示面板 */

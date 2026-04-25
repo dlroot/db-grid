@@ -175,7 +175,8 @@ export class AppComponent implements OnInit {
   ];
   pivotOptions = {};
 
-  // ========== P0 功能演示：筛选器 + 编辑器 + 多列排序 ==========
+  // ========== 当前主题 ==========
+  currentTheme = signal<string>("alpine");
   p0ColumnDefs = [
     { field: "id", headerName: "ID", width: 80, sortable: true, filter: false, editable: false },
     { field: "name", headerName: "姓名", width: 120, sortable: true, filter: "text", editable: true },
@@ -453,6 +454,12 @@ export class AppComponent implements OnInit {
     this.selectedCount.set(0);
     this.gridApi = null;
     this.apiStatus.set("未连接");
+  }
+
+
+  switchTheme(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    this.currentTheme.set(select.value);
   }
 
   expandAll(): void {

@@ -49,6 +49,14 @@
     <button [class.active]="currentDemo() === 'rowvirtual'" (click)="switchDemo('rowvirtual')">
       ⚡ 行虚拟化
     </button>
+    <span class="theme-selector">
+      <label>主题:</label>
+      <select [value]="currentTheme()" (change)="switchTheme($event)">
+        <option value="alpine">Alpine</option>
+        <option value="balham">Balham</option>
+        <option value="material">Material</option>
+      </select>
+    </span>
   </div>
 
   <!-- 基础表格演示 -->
@@ -65,7 +73,7 @@
         [gridOptions]="basicOptions"
         [rowHeight]="40"
         [headerHeight]="40"
-        [theme]="'alpine'"
+        [theme]="currentTheme()"
         [enableSorting]="true"
         [enableFilter]="true"
         (gridReady)="onGridReady($event)"
@@ -89,7 +97,7 @@
         [gridOptions]="treeOptions"
         [rowHeight]="40"
         [headerHeight]="40"
-        [theme]="'alpine'"
+        [theme]="currentTheme()"
         [rowSelection]="'multiple'"
         [treeData]="true"
         [treeConfig]="treeConfig"
@@ -112,7 +120,7 @@
         [gridOptions]="groupOptions"
         [rowHeight]="40"
         [headerHeight]="40"
-        [theme]="'alpine'"
+        [theme]="currentTheme()"
         [enableGrouping]="true"
         [groupConfig]="groupConfig"
         (gridReady)="onGridReady($event)"
@@ -138,7 +146,7 @@
         [gridOptions]="excelOptions"
         [rowHeight]="40"
         [headerHeight]="40"
-        [theme]="'alpine'"
+        [theme]="currentTheme()"
         [rowSelection]="'multiple'"
         (gridReady)="onGridReady($event)"
       />
@@ -159,7 +167,7 @@
         [gridOptions]="serverOptions"
         [rowHeight]="40"
         [headerHeight]="40"
-        [theme]="'alpine'"
+        [theme]="currentTheme()"
         [enableServerSide]="true"
         [pagination]="true"
         (gridReady)="onGridReady($event)"
@@ -181,7 +189,7 @@
         [gridOptions]="masterOptions"
         [rowHeight]="40"
         [headerHeight]="40"
-        [theme]="'alpine'"
+        [theme]="currentTheme()"
         [masterDetail]="true"
         [detailCellRenderer]="detailCellRenderer"
         (gridReady)="onGridReady($event)"
@@ -209,7 +217,7 @@
         [gridOptions]="undoOptions"
         [rowHeight]="40"
         [headerHeight]="40"
-        [theme]="'alpine'"
+        [theme]="currentTheme()"
         [rowSelection]="'multiple'"
         [editable]="true"
         (gridReady)="onGridReady($event)"
@@ -238,7 +246,7 @@
         [gridOptions]="keyboardOptions"
         [rowHeight]="40"
         [headerHeight]="40"
-        [theme]="'alpine'"
+        [theme]="currentTheme()"
         [rowSelection]="'multiple'"
         [editable]="true"
         [enableKeyboardNavigation]="true"
@@ -261,7 +269,7 @@
         [gridOptions]="aggOptions"
         [rowHeight]="40"
         [headerHeight]="40"
-        [theme]="'alpine'"
+        [theme]="currentTheme()"
         [enableAggregation]="true"
         [groupIncludeFooter]="true"
         (gridReady)="onGridReady($event)"
@@ -287,7 +295,7 @@
         [gridOptions]="spanOptions"
         [rowHeight]="40"
         [headerHeight]="40"
-        [theme]="'alpine'"
+        [theme]="currentTheme()"
         [enableCellSpan]="true"
         [cellSpanConfig]="spanConfig"
         (gridReady)="onGridReady($event)"
@@ -313,7 +321,7 @@
         [gridOptions]="dragOptions"
         [rowHeight]="40"
         [headerHeight]="40"
-        [theme]="'alpine'"
+        [theme]="currentTheme()"
         [rowSelection]="'multiple'"
         [rowDragEnabled]="rowDragEnabled()"
         [rowDragMultiRow]="multiDragEnabled()"
@@ -340,7 +348,7 @@
         [gridOptions]="pivotOptions"
         [rowHeight]="40"
         [headerHeight]="40"
-        [theme]="'alpine'"
+        [theme]="currentTheme()"
         [pivotMode]="pivotEnabled()"
         [pivotColumn]="'year'"
         [pivotRowGroupColumns]="['country', 'product']"
@@ -368,7 +376,7 @@
         [gridOptions]="colVirtualOptions"
         [rowHeight]="40"
         [headerHeight]="40"
-        [theme]="'alpine'"
+        [theme]="currentTheme()"
         [enableColVirtualization]="true"
         (gridReady)="onGridReady($event)"
       />
@@ -395,7 +403,7 @@
         [gridOptions]="rowVirtualOptions"
         [rowHeight]="40"
         [headerHeight]="40"
-        [theme]="'alpine'"
+        [theme]="currentTheme()"
         [suppressVirtualScroll]="false"
         (gridReady)="onRowVirtualGridReady($event)"
       />
