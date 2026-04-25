@@ -51,9 +51,9 @@
       </div>
       <db-grid
         #myGrid
-        [columnDefs]="columnDefs"
-        [rowData]="rowData"
-        [gridOptions]="gridOptions"
+        [columnDefs]="basicColumnDefs"
+        [rowData]="basicRowData"
+        [gridOptions]="basicOptions"
         [rowHeight]="40"
         [headerHeight]="40"
         [theme]="'alpine'"
@@ -199,8 +199,8 @@
       </div>
       <db-grid
         #myGrid
-        [columnDefs]="undoColumnDefs"
-        [rowData]="undoRowData"
+        [columnDefs]="undoRedoColumnDefs"
+        [rowData]="undoRedoRowData"
         [gridOptions]="undoOptions"
         [rowHeight]="40"
         [headerHeight]="40"
