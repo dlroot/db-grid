@@ -679,4 +679,59 @@ export class AppComponent implements OnInit {
     }
     return data;
   }
+
+  // ========== 行虚拟化演示 ==========
+  rowVirtualColumnDefs = [
+    { field: "id", headerName: "ID", width: 80, filter: "number" },
+    { field: "name", headerName: "姓名", width: 120, sortable: true },
+    { field: "age", headerName: "年龄", width: 80, sortable: true, filter: "number" },
+    { field: "email", headerName: "邮箱", width: 220, sortable: true },
+    { field: "department", headerName: "部门", width: 130, filter: "set" },
+    { field: "position", headerName: "职位", width: 130, filter: "set" },
+    { field: "salary", headerName: "薪资", width: 120, sortable: true, filter: "number" },
+    { field: "status", headerName: "状态", width: 100, filter: "set" },
+  ];
+  rowVirtualRowData = this.generateLargeData(100000);
+  rowVirtualOptions = { rowSelection: "multiple" };
+  rowVirtualViewportRows = signal<number>(0);
+  private rowVirtualGridApi: any = null;
+
+  /** 生成大量行数据 */
+  private generateLargeData(count: number): any[] {
+    const names = ["张伟","王芳","李明","刘洋","陈静","杨帆","赵雷","黄丽","周杰","吴敏","徐强","孙悦","马超","朱华","何平","林涛","潘敏","韩伟","魏芳","冯勇"];
+    const departments = ["技术部","产品部","市场部","人力资源部","财务部","研发部","运营部","客服部"];
+    const positions = ["工程师","经理","主管","专员","总监","助理","顾问","分析师"];
+    const statuses = ["在职","出差","休假"];
+    const data: any[] = [];
+    for (let i = 1; i <= count; i++) {
+      data.push({
+        id: i,
+        name: names[i % names.length],
+        age: 22 + (i % 30),
+        email: `user${i}@example.com`,
+        department: departments[i % departments.length],
+        position: positions[i % positions.length],
+        salary: Math.floor(8000 + ((i * 7919) % 30000)),
+        status: statuses[i % statuses.length],
+      });
+    }
+    return data;
+  }
+
+  onRowVirtualGridReady(api: any): void {
+    this.rowVirtualGridApi = api;
+    api.addEventListener('viewportChanged', () => {
+      const vp = api.getViewportInfo?.();
+      if (vp) {
+        const count = vp.endIndex - vp.startIndex;
+        this.rowVirtualViewportRows.set(Math.min(count, 50));
+      }
+    });
+  }
+
+  scrollToRowVirtual(rowIndex: number): void {
+    if (this.rowVirtualGridApi) {
+      this.rowVirtualGridApi.ensureIndexVisible(rowIndex);
+    }
+  }
 }

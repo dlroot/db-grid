@@ -251,6 +251,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   @Output() nodeCollapsed = new EventEmitter<any>();
   @Output() groupExpanded = new EventEmitter<any>();
   @Output() groupCollapsed = new EventEmitter<any>();
+  @Output() viewportChanged = new EventEmitter<{ startIndex: number; endIndex: number; offsetY: number }>();
 
   // ============ 编辑 Inputs ============
   @Input() enableCellEdit: boolean = false;
@@ -627,7 +628,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   private createGridApi(): void {
     this.gridApi = {
-      // ========== 数据操作 ==========
+      // ========== 通用事件 ==========
+      addEventListener: (eventType: string, handler: (event: any) => void) => {
+        if (eventType === 'viewportChanged') {
+          this.viewportChanged.subscribe((e) => handler(e));
+        }
+      },
       setRowData: (rowData: any[]) => this.setRowData(rowData),
       getRowData: () => this.getRowData(),
       setGridOption: (key: string, value: any) => this.setGridOption(key, value),
@@ -669,6 +675,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       // ========== 滚动 ==========
       ensureIndexVisible: (index: number, align?: string) => this.ensureIndexVisible(index, align),
       ensureNodeVisible: (node: any, align?: string) => this.ensureNodeVisible(node, align),
+      getViewportInfo: () => this.viewportInfo(),
 
       // ========== 树形数据 ==========
       expandNode: (nodeId: string) => this.expandNode(nodeId),
@@ -1542,6 +1549,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
       this.renderRows();
     }
+    // 触发 viewportChanged 事件（用于行虚拟化性能追踪）
+    this.ngZone.run(() => this.viewportChanged.emit(this.viewportInfo()));
   }
 
   private onWindowResize(): void {
