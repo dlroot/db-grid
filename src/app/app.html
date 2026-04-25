@@ -34,6 +34,12 @@
     <button [class.active]="currentDemo() === 'agg'" (click)="switchDemo('agg')">
       ➕ 聚合统计
     </button>
+    <button [class.active]="currentDemo() === 'span'" (click)="switchDemo('span')">
+      🔲 单元格合并
+    </button>
+    <button [class.active]="currentDemo() === 'drag'" (click)="switchDemo('drag')">
+      ✋ 行拖拽
+    </button>
   </div>
 
   <!-- 基础表格演示 -->
@@ -258,11 +264,64 @@
     </div>
   }
 
+  <!-- 单元格合并演示 -->
+  @if (currentDemo() === 'span') {
+    <div class="demo-panel">
+      <div class="demo-header">
+        <h2>单元格合并</h2>
+        <p class="demo-desc">自动合并相同值单元格，支持手动设置跨行/跨列</p>
+        <div class="demo-actions">
+          <button class="btn" (click)="toggleAutoMerge()">🔄 自动合并: {{ autoMergeEnabled() ? '开' : '关' }}</button>
+          <button class="btn" (click)="setManualSpan()">📐 手动设置跨列</button>
+        </div>
+      </div>
+      <db-grid
+        #myGrid
+        [columnDefs]="spanColumnDefs"
+        [rowData]="spanRowData"
+        [gridOptions]="spanOptions"
+        [rowHeight]="40"
+        [headerHeight]="40"
+        [theme]="'alpine'"
+        [enableCellSpan]="true"
+        [cellSpanConfig]="spanConfig"
+        (gridReady)="onGridReady($event)"
+      />
+    </div>
+  }
+
+  <!-- 行拖拽演示 -->
+  @if (currentDemo() === 'drag') {
+    <div class="demo-panel">
+      <div class="demo-header">
+        <h2>行拖拽</h2>
+        <p class="demo-desc">支持单行和多行拖拽排序</p>
+        <div class="demo-actions">
+          <button class="btn" (click)="toggleRowDrag()">✋ 拖拽: {{ rowDragEnabled() ? '开' : '关' }}</button>
+          <button class="btn" (click)="toggleMultiDrag()">📋 多行拖拽: {{ multiDragEnabled() ? '开' : '关' }}</button>
+        </div>
+      </div>
+      <db-grid
+        #myGrid
+        [columnDefs]="dragColumnDefs"
+        [rowData]="dragRowData"
+        [gridOptions]="dragOptions"
+        [rowHeight]="40"
+        [headerHeight]="40"
+        [theme]="'alpine'"
+        [rowSelection]="'multiple'"
+        [rowDragEnabled]="rowDragEnabled()"
+        [rowDragMultiRow]="multiDragEnabled()"
+        (gridReady)="onGridReady($event)"
+      />
+    </div>
+  }
+
   <!-- 状态栏 -->
   <div class="status-bar">
     <span class="status-item">{{ rowCount() }} 条记录</span>
     <span class="status-item">{{ selectedCount() }} 已选择</span>
-    <span class="status-item" [class.success]="apiStatus === 'ready'">API: {{ apiStatus }}</span>
+    <span class="status-item" [class.success]="apiStatus() === '已连接'">API: {{ apiStatus() }}</span>
     <span class="status-item version">v1.0.0</span>
   </div>
 </div>

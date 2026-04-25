@@ -15,6 +15,7 @@ export class AppComponent implements OnInit {
   selectedCount = signal<number>(0);
   apiStatus = signal<string>("未连接");
   quickFilter = signal<string>("");
+  rowCount = signal<number>(0);
 
   @ViewChild("myGrid") myGrid!: DbGridComponent;
 
@@ -271,6 +272,67 @@ export class AppComponent implements OnInit {
   aggRowData = this.generateSalesData(40);
   aggOptions = {};
 
+  // ========== 单元格合并演示 ==========
+  autoMergeEnabled = signal<boolean>(true);
+  spanConfig = { autoMerge: true, mergeColumns: ['region', 'product'] };
+
+  toggleAutoMerge(): void {
+    this.autoMergeEnabled.update(v => !v);
+    if (this.gridApi) {
+      const service = this.gridApi.getCellSpanService?.();
+      if (service) {
+        service.initialize(this.spanColumnDefs, this.spanRowData, {
+          autoMerge: this.autoMergeEnabled(),
+          mergeColumns: ['region', 'product']
+        });
+      }
+    }
+  }
+
+  setManualSpan(): void {
+    if (this.gridApi) {
+      const service = this.gridApi.getCellSpanService?.();
+      if (service) {
+        // 手动设置第一行 region 列跨2列
+        service.setManualSpan(0, 'region', 2, 1);
+      }
+    }
+  }
+
+  // ========== 行拖拽演示 ==========
+  rowDragEnabled = signal<boolean>(true);
+  multiDragEnabled = signal<boolean>(false);
+  dragColumnDefs = [
+    { field: "id", headerName: "ID", width: 80, sortable: true },
+    { field: "name", headerName: "姓名", width: 150, sortable: true },
+    { field: "age", headerName: "年龄", width: 100, sortable: true },
+    { field: "email", headerName: "邮箱", width: 220 },
+    { field: "department", headerName: "部门", width: 150 },
+    { field: "position", headerName: "职位", width: 150 },
+    { field: "salary", headerName: "薪资", width: 120, sortable: true },
+    { field: "status", headerName: "状态", width: 100 },
+  ];
+
+  toggleRowDrag(): void {
+    this.rowDragEnabled.update(v => !v);
+    if (this.gridApi) {
+      const service = this.gridApi.getRowDragService?.();
+      if (service) {
+        this.rowDragEnabled() ? service.enable() : service.disable();
+      }
+    }
+  }
+
+  toggleMultiDrag(): void {
+    this.multiDragEnabled.update(v => !v);
+    if (this.gridApi) {
+      const service = this.gridApi.getRowDragService?.();
+      if (service) {
+        service.initialize({ rowDragEnabled: this.rowDragEnabled(), rowDragMultiRow: this.multiDragEnabled() });
+      }
+    }
+  }
+
   // ========== 分页状态 ==========
   currentPage = signal<number>(1);
   totalPages = signal<number>(5);
@@ -280,6 +342,8 @@ export class AppComponent implements OnInit {
   onGridReady(event: any): void {
     this.gridApi = event.api;
     this.apiStatus.set("已连接");
+    const rowData = event.api.getRowData?.() || [];
+    this.rowCount.set(rowData.length);
     if (this.currentDemo() === "span" && this.gridApi) {
       const service = this.gridApi.getCellSpanService?.();
       if (service) service.initialize(this.spanColumnDefs, this.spanRowData, { autoMerge: true, mergeColumns: ["region"] });

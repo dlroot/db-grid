@@ -4,9 +4,9 @@
  */
 
 // 导入各个主题
-@import 'alpine.scss';
-@import 'balham.scss';
-@import 'material.scss';
+@import './alpine';
+@import './balham';
+@import './material';
 
 // 基础样式（所有主题共享）
 :root {
