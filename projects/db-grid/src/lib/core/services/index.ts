@@ -33,3 +33,4 @@ export * from './accessibility.service';
 export * from './undo-redo.service';
 export * from './server-side.service';
 export * from './pivot.service';
+export * from './i18n.service';

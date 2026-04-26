@@ -6,6 +6,7 @@
 import { Injectable } from '@angular/core';
 import { ColDef, ColGroupDef } from '../../models';
 import { ColumnService } from '../../services/column.service';
+import { I18nService } from '../../services/i18n.service';
 
 export interface HeaderRenderResult {
   headerElement: HTMLElement;
@@ -29,7 +30,7 @@ export class HeaderRendererService {
   private dragIndicatorEl: HTMLElement | null = null;
   private onColDragEnd?: (fromColId: string, toColId: string) => void;
 
-  constructor(private columnService: ColumnService) {}
+  constructor(private columnService: ColumnService, private i18n?: I18nService) {}
 
   /** 渲染表头 */
   render(): HeaderRenderResult {
@@ -243,7 +244,7 @@ export class HeaderRendererService {
     const container = document.createElement('div');
     container.className = 'db-grid-header';
     container.setAttribute('role', 'rowgroup');
-    container.setAttribute('aria-label', '表头');
+    container.setAttribute('aria-label', 'table header');
     container.style.cssText = `
       display: flex;
       flex-direction: column;
@@ -411,13 +412,13 @@ export class HeaderRendererService {
 
     if (sort === 'asc') {
       icon.innerHTML = '▲';
-      icon.title = '升序排列';
+      icon.title = `${this.i18n?.t('sort.ascending') ?? 'Sort Ascending'}`;
     } else if (sort === 'desc') {
       icon.innerHTML = '▼';
-      icon.title = '降序排列';
+      icon.title = `${this.i18n?.t('sort.descending') ?? 'Sort Descending'}`;
     } else {
       icon.innerHTML = '⇅';
-      icon.title = '点击排序';
+      icon.title = `${this.i18n?.t('sort.noSort') ?? 'Click to Sort'}`;
       icon.classList.add('db-grid-sort-icon-inactive');
     }
 
@@ -429,7 +430,7 @@ export class HeaderRendererService {
     const icon = document.createElement('span');
     icon.className = 'db-grid-filter-icon';
     icon.innerHTML = '⫴';
-    icon.title = '点击筛选';
+    icon.title = `${this.i18n?.t('filter.click') ?? 'Click to Filter'}`;
 
     if (colDef.filterActive) {
       icon.classList.add('db-grid-filter-icon-active');
@@ -458,7 +459,7 @@ export class HeaderRendererService {
     const handle = document.createElement('div');
     handle.className = 'db-grid-drag-handle';
     handle.innerHTML = '⋮⋮';
-    handle.title = '拖拽移动列';
+    handle.title = `${this.i18n?.t('col.drag') ?? 'Drag to Move Column'}`;
     return handle;
   }
 
@@ -467,7 +468,7 @@ export class HeaderRendererService {
     const btn = document.createElement('div');
     btn.className = 'db-grid-header-menu-button';
     btn.innerHTML = '☰';
-    btn.title = '列菜单';
+    btn.title = `${this.i18n?.t('col.menu') ?? 'Column Menu'}`;
     btn.style.cssText = `
       display: flex; align-items: center; justify-content: center;
       width: 20px; height: 20px;
@@ -625,15 +626,15 @@ export class HeaderRendererService {
 
     // 菜单项
     const menuItems = [
-      { label: '排序 A → Z', action: 'sortAsc' },
-      { label: '排序 Z → A', action: 'sortDesc' },
-      { label: '清除排序', action: 'clearSort' },
+      { label: 'Sort Ascending', action: 'sortAsc' },
+      { label: 'Sort Descending', action: 'sortDesc' },
+      { label: 'Clear Sort', action: 'clearSort' },
       { type: 'separator' },
-      { label: '筛选', action: 'filter' },
-      { label: '固定列', action: 'pin' },
+      { label: 'Filter', action: 'filter' },
+      { label: 'Pin Column', action: 'pin' },
       { type: 'separator' },
-      { label: '自动调整列宽', action: 'autoSize' },
-      { label: '重置列', action: 'reset' },
+      { label: 'Auto-Size Column', action: 'autoSize' },
+      { label: 'Reset Columns', action: 'reset' },
     ];
 
     menuItems.forEach(item => {

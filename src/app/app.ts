@@ -741,4 +741,37 @@ export class AppComponent implements OnInit {
       this.rowVirtualGridApi.ensureIndexVisible(rowIndex);
     }
   }
+
+  // ========== 国际化演示 ==========
+  i18nLanguages = [
+    { code: 'en', label: '🇺🇸 English' },
+    { code: 'zh', label: '🇨🇳 中文' },
+    { code: 'ja', label: '🇯🇵 日本語' },
+    { code: 'ko', label: '🇰🇷 한국어' },
+  ];
+  currentI18n = signal<string>('zh');
+  i18nColumnDefs = [
+    { field: 'orderNo', headerName: '订单号', width: 130, filter: 'text', sortable: true },
+    { field: 'product', headerName: '产品名称', width: 150, filter: 'text' },
+    { field: 'category', headerName: '分类', width: 120, filter: 'set' },
+    { field: 'quantity', headerName: '数量', width: 100, filter: 'number', cellEditor: 'number' },
+    { field: 'unitPrice', headerName: '单价', width: 110, filter: 'number', cellEditor: 'number' },
+    { field: 'amount', headerName: '金额', width: 120, filter: 'number' },
+    { field: 'status', headerName: '状态', width: 100, filter: 'set', cellEditor: 'select', cellEditorParams: { values: ['待支付', '已支付', '已发货', '已完成', '已取消'] } },
+  ];
+  i18nRowData = [
+    { orderNo: 'ORD-2024-0001', product: 'MacBook Pro 14"', category: '电子产品', quantity: 1, unitPrice: 14999, amount: 14999, status: '已完成' },
+    { orderNo: 'ORD-2024-0002', product: 'iPhone 15 Pro', category: '电子产品', quantity: 2, unitPrice: 8999, amount: 17998, status: '已发货' },
+    { orderNo: 'ORD-2024-0003', product: 'AirPods Pro', category: '电子产品', quantity: 3, unitPrice: 1899, amount: 5697, status: '已支付' },
+    { orderNo: 'ORD-2024-0004', product: '人体工学椅', category: '家具', quantity: 2, unitPrice: 1299, amount: 2598, status: '已支付' },
+    { orderNo: 'ORD-2024-0005', product: '机械键盘', category: '外设', quantity: 5, unitPrice: 699, amount: 3495, status: '待支付' },
+    { orderNo: 'ORD-2024-0006', product: '显示器 27"', category: '电子产品', quantity: 1, unitPrice: 2499, amount: 2499, status: '已取消' },
+    { orderNo: 'ORD-2024-0007', product: '移动硬盘 1TB', category: '存储', quantity: 4, unitPrice: 399, amount: 1596, status: '已完成' },
+    { orderNo: 'ORD-2024-0008', product: '无线鼠标', category: '外设', quantity: 8, unitPrice: 199, amount: 1592, status: '已发货' },
+  ];
+  i18nOptions = { rowSelection: 'multiple' };
+
+  setI18n(locale: string): void {
+    this.currentI18n.set(locale);
+  }
 }

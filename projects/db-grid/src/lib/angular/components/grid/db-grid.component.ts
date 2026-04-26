@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Grid 主组件
  * 核心入口组件
  */
@@ -73,6 +73,8 @@ import {
   UndoRedoService,
   ServerSideService,
   PivotService,
+  I18nService,
+  Locale,
   IServerSideDatasource,
   ServerSideConfig,
 } from '../../../core/services';
@@ -105,12 +107,12 @@ import {
         <div class="db-grid-overlay">
           <div class="db-grid-overlay-content">
             <span class="db-grid-spinner">⟳</span>
-            <span>{{ loadingMessage || '加载中...' }}</span>
+            <span>{{ loadingMessage || (i18nService.t('grid.loading')) }}</span>
           </div>
         </div>
       }
       @if (!loading && rowCount() === 0) {
-        <div class="db-grid-no-rows">{{ noRowsMessage || '暂无数据' }}</div>
+        <div class="db-grid-no-rows">{{ noRowsMessage || (i18nService.t('grid.noRows')) }}</div>
       }
 
       <!-- 筛选器弹出层 -->
@@ -316,6 +318,10 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   /** 启用右键菜单 */
   @Input() enableContextMenu: boolean = true;
 
+  // ============ i18n ============
+  /** Grid 语言 locale：'en' | 'zh'，默认英文 */
+  @Input() locale: Locale = 'en';
+
   // ============ Outputs ============
   @Output() gridReady = new EventEmitter<GridReadyEvent>();
   @Output() rowDataUpdated = new EventEmitter<RowDataUpdatedEvent>();
@@ -401,6 +407,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   private undoRedoService: UndoRedoService;
   private serverSideService: ServerSideService;
   private pivotService: PivotService;
+  private i18nService: I18nService;
   private _dataTypesApplied = false;
 
   // ============ State ============
@@ -476,6 +483,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.undoRedoService = new UndoRedoService();
     this.serverSideService = new ServerSideService();
     this.pivotService = new PivotService();
+    this.i18nService = new I18nService();
+    this.i18nService.setLocale(this.locale);
   }
 
   // ============ Lifecycle ============
@@ -578,6 +587,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     if (changes['columnDefs'] && !changes['columnDefs'].firstChange) {
       this.columnService.initialize(changes['columnDefs'].currentValue);
       this.refreshHeader();
+    }
+    // 语言变更
+    if (changes['locale'] && !changes['locale'].firstChange) {
+      this.i18nService?.setLocale(this.locale);
+      this.refreshHeader();
+      this.renderRows();
     }
     // 编辑配置变更
     if (changes['enableCellEdit'] && !changes['enableCellEdit'].firstChange) {
@@ -830,6 +845,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       hideContextMenu: () => this.hideContextMenu(),
       getContextMenuService: () => this.contextMenuService,
       getColumnMenuService: () => this.columnMenuService,
+      getI18nService: () => this.i18nService,
       showGridMenu: (colId: string, event: MouseEvent) => this.showColumnGridMenu(colId, event),
       hideGridMenu: () => this.closeGridMenu(),
 
@@ -1278,7 +1294,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     const colVisibilityItems = this.getColumnVisibilityItems();
     items.push(
       { id: 'sepCols', type: 'separator' },
-      { id: 'columnsMenu', label: '列显隐', icon: '🔲', type: 'submenu', subItems: colVisibilityItems }
+      { id: 'columnsMenu', label: `${this.i18nService.t('menu.columns')}`, icon: '🔲', type: 'submenu', subItems: colVisibilityItems }
     );
 
     this.gridMenuPosition.set({ x, y });
@@ -1296,17 +1312,17 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     const y = event.clientY - gridRect.top;
 
     const items: ColumnMenuItemType[] = [
-      { id: 'copyCell', label: '复制单元格', icon: '📋', action: 'copyCell', shortcut: 'Ctrl+C' },
-      { id: 'copyRow', label: '复制整行', icon: '📄', action: 'copyRow' },
+      { id: 'copyCell', label: `${this.i18nService.t('menu.copyCell')}`, icon: '📋', action: 'copyCell', shortcut: 'Ctrl+C' },
+      { id: 'copyRow', label: `${this.i18nService.t('menu.copyRow')}`, icon: '📄', action: 'copyRow' },
       { id: 'sep1', type: 'separator' },
     ];
     if (context.colDef?.editable !== false) {
-      items.push({ id: 'editCell', label: '编辑单元格', icon: '✏️', action: 'editCell', shortcut: 'Enter' });
+      items.push({ id: 'editCell', label: `${this.i18nService.t('menu.editCell')}`, icon: '✏️', action: 'editCell', shortcut: 'Enter' });
     }
     items.push(
       { id: 'sep2', type: 'separator' },
-      { id: 'selectRow', label: '选择此行', icon: '✓', action: 'selectRow' },
-      { id: 'clearSelection', label: '清除选择', icon: '✕', action: 'clearSelection' }
+      { id: 'selectRow', label: `${this.i18nService.t('menu.selectRow')}`, icon: '✓', action: 'selectRow' },
+      { id: 'clearSelection', label: `${this.i18nService.t('menu.clearSelection')}`, icon: '✕', action: 'clearSelection' }
     );
 
     this.gridMenuColId = context.colDef?.field || '';

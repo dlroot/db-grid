@@ -49,6 +49,9 @@
     <button [class.active]="currentDemo() === 'rowvirtual'" (click)="switchDemo('rowvirtual')">
       ⚡ 行虚拟化
     </button>
+    <button [class.active]="currentDemo() === 'i18n'" (click)="switchDemo('i18n')">
+      🌐 国际化
+    </button>
     <span class="theme-selector">
       <label>主题:</label>
       <select [value]="currentTheme()" (change)="switchTheme($event)">
@@ -406,6 +409,34 @@
         [theme]="currentTheme()"
         [suppressVirtualScroll]="false"
         (gridReady)="onRowVirtualGridReady($event)"
+      />
+    </div>
+  }
+
+  <!-- 国际化演示 -->
+  @if (currentDemo() === 'i18n') {
+    <div class="demo-panel">
+      <div class="demo-header">
+        <h2>国际化</h2>
+        <p class="demo-desc">支持中/英/日/韩 4种语言，一键切换界面文字</p>
+        <div class="demo-actions">
+          @for (lang of i18nLanguages; track lang.code) {
+            <button class="btn" [class.active]="currentI18n() === lang.code" (click)="setI18n(lang.code)">
+              {{ lang.label }}
+            </button>
+          }
+        </div>
+      </div>
+      <db-grid
+        #myGrid
+        [columnDefs]="i18nColumnDefs"
+        [rowData]="i18nRowData"
+        [gridOptions]="i18nOptions"
+        [rowHeight]="40"
+        [headerHeight]="40"
+        [theme]="'alpine'"
+        [locale]="currentI18n()"
+        (gridReady)="onGridReady($event)"
       />
     </div>
   }
