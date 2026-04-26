@@ -56,6 +56,7 @@ import {
   PaginationService,
   ContextMenuService,
   ColumnMenuService,
+  ColumnMenuItem as ColumnMenuItemType,
   DragDropService,
   FilterService,
   EditorService,
@@ -135,6 +136,35 @@ import {
           (navigate)="onEditorNavigate($event)">
         </db-cell-editor>
       }
+
+      <!-- Grid Menu 浮层 -->
+      @if (gridMenuVisible()) {
+        <div class="db-grid-menu-overlay" (click)="closeGridMenu()"></div>
+        <div class="db-grid-menu" [style.left.px]="gridMenuPosition().x" [style.top.px]="gridMenuPosition().y">
+          @for (item of gridMenuItems(); track item.id) {
+            @if (item.type === 'separator') {
+              <div class="db-grid-menu-sep"></div>
+            } @else if (item.type === 'submenu') {
+              <div class="db-grid-menu-item db-grid-menu-submenu" (mouseenter)="openSubmenu(item)" (click)="$event.stopPropagation()">
+                <span class="db-grid-menu-icon">{{ item.icon || '' }}</span>
+                <span class="db-grid-menu-label">{{ item.label }}</span>
+                <span class="db-grid-menu-arrow">▸</span>
+              </div>
+            } @else {
+              <div class="db-grid-menu-item" [class.db-grid-menu-item-disabled]="item.disabled" (click)="onGridMenuItemClick(item)">
+                <span class="db-grid-menu-icon">{{ item.icon || '' }}</span>
+                <span class="db-grid-menu-label">{{ item.label }}</span>
+                @if (item.checked !== undefined) {
+                  <span class="db-grid-menu-check">{{ item.checked ? '✓' : '' }}</span>
+                }
+                @if (item.shortcut) {
+                  <span class="db-grid-menu-shortcut">{{ item.shortcut }}</span>
+                }
+              </div>
+            }
+          }
+        </div>
+      }
     </div>
   `,
   styles: [`
@@ -170,6 +200,52 @@ import {
       position: absolute;
       z-index: 100;
       box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+
+    /* ========== Grid Menu ========== */
+    .db-grid-menu-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 199;
+    }
+    .db-grid-menu {
+      position: absolute;
+      z-index: 200;
+      min-width: 200px;
+      background: var(--db-grid-bg, #fff);
+      border: 1px solid var(--db-grid-border-color, #ddd);
+      border-radius: 6px;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.12);
+      padding: 4px 0;
+      font-size: var(--db-grid-font-size, 14px);
+      animation: db-grid-menu-fadein 0.12s ease-out;
+    }
+    @keyframes db-grid-menu-fadein {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .db-grid-menu-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 14px;
+      cursor: pointer;
+      transition: background 0.1s;
+      white-space: nowrap;
+    }
+    .db-grid-menu-item:hover:not(.db-grid-menu-item-disabled) {
+      background: var(--db-grid-row-hover-bg, #f0f7ff);
+    }
+    .db-grid-menu-item-disabled {
+      opacity: 0.4; cursor: default;
+    }
+    .db-grid-menu-icon { width: 20px; text-align: center; flex-shrink: 0; }
+    .db-grid-menu-label { flex: 1; }
+    .db-grid-menu-check { margin-left: auto; color: var(--db-grid-accent, #2196f3); font-weight: 600; }
+    .db-grid-menu-shortcut { margin-left: auto; opacity: 0.5; font-size: 12px; }
+    .db-grid-menu-arrow { margin-left: auto; opacity: 0.5; }
+    .db-grid-menu-submenu { position: relative; }
+    .db-grid-menu-sep {
+      height: 1px;
+      margin: 4px 8px;
+      background: var(--db-grid-border-color, #eee);
     }
 
     /* ========== Keyboard Focus Styles ========== */
@@ -233,6 +309,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   @Input() serverSideConfig: ServerSideConfig | null = null;
   /** 服务端数据源 */
   @Input() serverSideDatasource: IServerSideDatasource | null = null;
+
+  // ============ Menu Inputs ============
+  /** 启用列头菜单按钮（三横线图标） */
+  @Input() enableColumnMenu: boolean = true;
+  /** 启用右键菜单 */
+  @Input() enableContextMenu: boolean = true;
 
   // ============ Outputs ============
   @Output() gridReady = new EventEmitter<GridReadyEvent>();
@@ -334,6 +416,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   // 列虚拟化
   private lastColRenderScrollLeft = -1;
   private colVirtualBuffer = 3;
+
+  // Grid Menu
+  gridMenuVisible = signal<boolean>(false);
+  gridMenuPosition = signal<{x: number; y: number}>({x: 0, y: 0});
+  gridMenuItems = signal<ColumnMenuItemType[]>([]);
+  private gridMenuColId = '';
 
   // ============ Filter Popup State ============
   activeFilterPopup: { colDef: ColDef; position: { x: number; y: number } } | null = null;
@@ -742,6 +830,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       hideContextMenu: () => this.hideContextMenu(),
       getContextMenuService: () => this.contextMenuService,
       getColumnMenuService: () => this.columnMenuService,
+      showGridMenu: (colId: string, event: MouseEvent) => this.showColumnGridMenu(colId, event),
+      hideGridMenu: () => this.closeGridMenu(),
 
       // ========== 范围选择 & 剪贴板 ==========
       copyToClipboard: (data?: any[], columns?: any[]) => this.copyToClipboard(data, columns),
@@ -1168,6 +1258,253 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.contextMenuService.hide();
   }
 
+  // ========== Grid Menu 方法 ==========
+
+  /** 显示列头菜单 */
+  showColumnGridMenu(colId: string, event: MouseEvent): void {
+    event.stopPropagation();
+    event.preventDefault();
+    if (!this.enableColumnMenu) return;
+
+    const rect = (event.target as HTMLElement).getBoundingClientRect();
+    const gridRect = this.gridContainer.nativeElement.getBoundingClientRect();
+    const x = rect.left - gridRect.left;
+    const y = rect.bottom - gridRect.top;
+
+    this.gridMenuColId = colId;
+    this.columnMenuService.initialize(this.columnDefs);
+    const items = this.columnMenuService.getGeneralMenuItems(colId);
+    // 附加「列显隐」子菜单
+    const colVisibilityItems = this.getColumnVisibilityItems();
+    items.push(
+      { id: 'sepCols', type: 'separator' },
+      { id: 'columnsMenu', label: '列显隐', icon: '🔲', type: 'submenu', subItems: colVisibilityItems }
+    );
+
+    this.gridMenuPosition.set({ x, y });
+    this.gridMenuItems.set(items);
+    this.gridMenuVisible.set(true);
+  }
+
+  /** 显示右键菜单（单元格/行） */
+  showCellContextMenu(event: MouseEvent, context: { rowData?: any; rowIndex?: number; colDef?: any }): void {
+    if (!this.enableContextMenu) return;
+    event.preventDefault();
+
+    const gridRect = this.gridContainer.nativeElement.getBoundingClientRect();
+    const x = event.clientX - gridRect.left;
+    const y = event.clientY - gridRect.top;
+
+    const items: ColumnMenuItemType[] = [
+      { id: 'copyCell', label: '复制单元格', icon: '📋', action: 'copyCell', shortcut: 'Ctrl+C' },
+      { id: 'copyRow', label: '复制整行', icon: '📄', action: 'copyRow' },
+      { id: 'sep1', type: 'separator' },
+    ];
+    if (context.colDef?.editable !== false) {
+      items.push({ id: 'editCell', label: '编辑单元格', icon: '✏️', action: 'editCell', shortcut: 'Enter' });
+    }
+    items.push(
+      { id: 'sep2', type: 'separator' },
+      { id: 'selectRow', label: '选择此行', icon: '✓', action: 'selectRow' },
+      { id: 'clearSelection', label: '清除选择', icon: '✕', action: 'clearSelection' }
+    );
+
+    this.gridMenuColId = context.colDef?.field || '';
+    this.gridMenuPosition.set({ x, y });
+    this.gridMenuItems.set(items);
+    this.gridMenuVisible.set(true);
+  }
+
+  /** 关闭菜单 */
+  closeGridMenu(): void {
+    this.gridMenuVisible.set(false);
+    this.gridMenuColId = '';
+  }
+
+  /** 菜单项点击处理 */
+  onGridMenuItemClick(item: ColumnMenuItemType): void {
+    if (item.disabled) return;
+
+    // 子菜单项点击
+    if (item.action === 'toggleColumn') {
+      this.toggleColumnVisibility(item.id);
+      this.closeGridMenu();
+      return;
+    }
+
+    const colId = this.gridMenuColId;
+    this.closeGridMenu();
+
+    switch (item.action) {
+      case 'sortAsc':
+        this.dataService.setSortModel([{ colId, sort: 'asc' }]);
+        this.syncSortState();
+        this.refreshHeader();
+        this.refreshView();
+        break;
+      case 'sortDesc':
+        this.dataService.setSortModel([{ colId, sort: 'desc' }]);
+        this.syncSortState();
+        this.refreshHeader();
+        this.refreshView();
+        break;
+      case 'clearSort':
+        this.dataService.setSortModel([]);
+        this.syncSortState();
+        this.refreshHeader();
+        this.refreshView();
+        break;
+      case 'pinLeft':
+        this.columnService.setColumnPinned(colId, 'left');
+        this.refreshView();
+        break;
+      case 'pinRight':
+        this.columnService.setColumnPinned(colId, 'right');
+        this.refreshView();
+        break;
+      case 'clearPinned':
+        this.columnService.setColumnPinned(colId, null);
+        this.refreshView();
+        break;
+      case 'hideColumn':
+        this.columnService.setColumnHidden(colId, true);
+        this.refreshHeader();
+        this.refreshView();
+        break;
+      case 'autoSizeThis':
+        this.autoSizeColumn(colId);
+        break;
+      case 'autoSizeAll':
+        this.autoSizeAllColumns();
+        break;
+      case 'copyCell':
+        this.copyCellToClipboard();
+        break;
+      case 'copyRow':
+        this.copyRowToClipboard();
+        break;
+      case 'editCell':
+        this.openCellEditor(0, this.columnDefs.find(c => (c.colId || c.field) === colId)!, undefined, { click: true });
+        break;
+      case 'selectRow':
+        // 由上下文决定
+        break;
+      case 'clearSelection':
+        this.deselectAll();
+        break;
+    }
+  }
+
+  /** 获取列显隐子菜单项 */
+  private getColumnVisibilityItems(): ColumnMenuItemType[] {
+    return this.columnService.getAllColumns().map(col => {
+      const state = this.columnService.getColumnState(col);
+      const colId = col.colId || col.field || '';
+      return {
+        id: colId,
+        label: col.headerName || col.field || colId,
+        icon: state?.hide ? '☐' : '☑',
+        action: 'toggleColumn',
+        checked: !state?.hide,
+        disabled: col.lockVisible === true,
+      };
+    });
+  }
+
+  /** 切换列显隐 */
+  private toggleColumnVisibility(colId: string): void {
+    const state = this.columnService.getColumnState(this.columnService.getColumn(colId)!);
+    if (state) {
+      this.columnService.setColumnHidden(colId, !state.hide);
+      this.refreshHeader();
+      this.refreshView();
+    }
+  }
+
+  /** 同步排序状态到 columnDefs */
+  private syncSortState(): void {
+    this.columnDefs.forEach(cd => {
+      const state = this.dataService.getColumnSortState(cd.colId || cd.field);
+      cd.sort = state.sort;
+      cd.sortIndex = state.sortIndex ?? undefined;
+    });
+  }
+
+  /** 自适应列宽 */
+  private autoSizeColumn(colId: string): void {
+    const col = this.columnService.getColumn(colId);
+    if (!col) return;
+    const field = col.field;
+    if (!field) return;
+
+    // 遍历可见行，计算最大内容宽度
+    let maxWidth = 60; // 最小宽度
+    const visibleData = this.dataService.getVisibleRows();
+    const allData = this.getRowData();
+    for (const row of allData) {
+      const value = row[field];
+      if (value !== undefined && value !== null) {
+        const textWidth = String(value).length * 9 + 24; // 估算: 每字符9px + padding
+        maxWidth = Math.max(maxWidth, textWidth);
+      }
+    }
+    const headerWidth = (col.headerName || col.field || '').length * 9 + 40;
+    maxWidth = Math.max(maxWidth, headerWidth, 80);
+    this.columnService.setColumnWidth(colId, maxWidth);
+    this.refreshHeader();
+    this.refreshView();
+  }
+
+  /** 自适应所有列宽 */
+  private autoSizeAllColumns(): void {
+    const columns = this.columnService.getVisibleColumns();
+    const allData = this.getRowData();
+    for (const col of columns) {
+      const field = col.field;
+      if (!field) continue;
+      let maxWidth = 60;
+      for (const row of allData) {
+        const value = row[field];
+        if (value !== undefined && value !== null) {
+          const textWidth = String(value).length * 9 + 24;
+          maxWidth = Math.max(maxWidth, textWidth);
+        }
+      }
+      const headerWidth = (col.headerName || col.field || '').length * 9 + 40;
+      maxWidth = Math.max(maxWidth, headerWidth, 80);
+      const colId = col.colId || col.field || '';
+      this.columnService.setColumnWidth(colId, maxWidth);
+    }
+    this.refreshHeader();
+    this.refreshView();
+  }
+
+  /** 复制单元格到剪贴板 */
+  private copyCellToClipboard(): void {
+    // 简单实现 - 后续可通过 SelectionService 获取当前选中单元格
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText('').catch(() => {});
+    }
+  }
+
+  /** 复制整行到剪贴板 */
+  private copyRowToClipboard(): void {
+    const selectedNodes = this.selectionService.getSelectedNodes();
+    if (selectedNodes.length === 0) return;
+    const text = selectedNodes.map(n => {
+      const data = n.data;
+      return Object.values(data).join('\t');
+    }).join('\n');
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).catch(() => {});
+    }
+  }
+
+  /** 打开子菜单（预留） */
+  openSubmenu(item: ColumnMenuItemType): void {
+    // 子菜单项的 hover 展开 — 当前用 inline 方式处理
+  }
+
   // ========== 拖拽排序 API ==========
 
   startDrag(rowNodes: any[], event: MouseEvent): void {
@@ -1386,6 +1723,14 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     headerElement.addEventListener('filterClick', ((e: CustomEvent) => {
       const { colDef, event } = e.detail;
       this.ngZone.run(() => this.openFilterPopup(colDef, event));
+    }) as EventListener);
+    headerElement.addEventListener('columnMenuClick', ((e: CustomEvent) => {
+      const { colId, event } = e.detail;
+      this.ngZone.run(() => this.showColumnGridMenu(colId, event));
+    }) as EventListener);
+    headerElement.addEventListener('headerContextMenu', ((e: CustomEvent) => {
+      const { colDef, event } = e.detail;
+      this.ngZone.run(() => this.showColumnGridMenu(colDef?.colId || colDef?.field || '', event));
     }) as EventListener);
 
     // 列拖拽回调
@@ -1622,6 +1967,14 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       const { nodeId } = e.detail;
       this.ngZone.run(() => { this.toggleGroup(nodeId); });
     }) as EventListener);
+
+    // 右键菜单
+    rowElement.addEventListener('contextmenu', (e: MouseEvent) => {
+      const cell = (e.target as HTMLElement).closest('.db-grid-cell') as HTMLElement;
+      const colId = cell?.dataset?.['colId'] || '';
+      const colDef = this.columnDefs.find(c => (c.colId || c.field) === colId);
+      this.ngZone.run(() => this.showCellContextMenu(e, { rowData: data, rowIndex, colDef }));
+    });
   }
 
   // ============ 筛选器事件 ============

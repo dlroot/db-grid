@@ -306,6 +306,10 @@ export class HeaderRendererService {
     this.setupColumnDrag(dragHandle, colDef, colId);
     header.appendChild(dragHandle);
 
+    // 菜单按钮（三横线图标）
+    const menuButton = this.createMenuButton(colDef, colId);
+    header.appendChild(menuButton);
+
     // 调整大小手柄
     const resizeHandle = this.createResizeHandle(colDef);
     header.appendChild(resizeHandle);
@@ -449,12 +453,45 @@ export class HeaderRendererService {
   }
 
   /** 创建拖拽手柄 */
+  /** 创建拖拽手柄 */
   private createDragHandle(): HTMLElement {
     const handle = document.createElement('div');
     handle.className = 'db-grid-drag-handle';
     handle.innerHTML = '⋮⋮';
     handle.title = '拖拽移动列';
     return handle;
+  }
+
+  /** 创建菜单按钮（三横线图标） */
+  private createMenuButton(colDef: ColDef, colId: string): HTMLElement {
+    const btn = document.createElement('div');
+    btn.className = 'db-grid-header-menu-button';
+    btn.innerHTML = '☰';
+    btn.title = '列菜单';
+    btn.style.cssText = `
+      display: flex; align-items: center; justify-content: center;
+      width: 20px; height: 20px;
+      cursor: pointer; font-size: 12px;
+      opacity: 0.4; transition: opacity 0.15s;
+      border-radius: 3px;
+    `;
+
+    // 鼠标悬停时显示
+    btn.addEventListener('mouseenter', () => { btn.style.opacity = '1'; btn.style.background = 'rgba(0,0,0,0.06)'; });
+    btn.addEventListener('mouseleave', () => { btn.style.opacity = '0.4'; btn.style.background = ''; });
+
+    // 点击触发列菜单事件
+    btn.addEventListener('click', (e: MouseEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const event = new CustomEvent('columnMenuClick', {
+        bubbles: true,
+        detail: { colDef, colId, event: e },
+      });
+      btn.dispatchEvent(event);
+    });
+
+    return btn;
   }
 
   /** 创建调整大小手柄 */
