@@ -115,12 +115,15 @@ All `ColDef`, `GridOptions`, and `GridApi` interfaces are **100% compatible** wi
 ### ✅ P2 — Advanced Data
 - [x] Row Grouping & Aggregation (sum, avg, min, max, count, countunique)
 - [x] Tree Data (hierarchical data with expand/collapse)
+- [x] Pivoting (pivot table with row/column rotation, multi-aggregation)
 
 ### ✅ P3 — UI Integration
 - [x] Range Selection & clipboard
 - [x] Column Menu
 - [x] Sidebar (tool panels)
 - [x] Status Bar
+- [x] Column Virtualization (100+ columns, render only visible columns)
+- [x] Grid Menu (header menu button + right-click context menu)
 
 ### ✅ P4 — Enterprise
 - [x] Master-Detail (nested grids)
@@ -128,10 +131,8 @@ All `ColDef`, `GridOptions`, and `GridApi` interfaces are **100% compatible** wi
 - [x] Undo/Redo (Ctrl+Z/Y)
 
 ### 🚧 Coming Next
-- [ ] Charts integration (P4-4)
-- [ ] Pivoting (P2-3)
+- [ ] Charts integration
 - [ ] PDF Export
-- [ ] Column virtualization performance optimization
 
 ## 🏗️ Architecture
 
@@ -145,7 +146,7 @@ db-grid/                        # Angular demo app (src/app/)
 │       ├── angular/            # Angular 21+ component layer
 │       │   └── components/     # Grid, Header, Cell, Row, Editors, Filters
 │       └── index.ts            # Public API exports
-├── src/app/                    # Interactive demo application (15 tabs)
+├── src/app/                    # Interactive demo application (17 tabs)
 ├── .github/workflows/           # CI/CD (build + GitHub Pages deploy)
 ├── vitest.config.ts            # Unit test configuration
 └── package.json
@@ -154,7 +155,7 @@ db-grid/                        # Angular demo app (src/app/)
 ## 📊 Test Coverage
 
 ```bash
-npm test   # 84 tests passing (Vitest + jsdom)
+npm test   # 1020 tests passing (Vitest + jsdom, 30 test files)
 npm run build  # Production build (~110KB gzipped)
 ```
 
