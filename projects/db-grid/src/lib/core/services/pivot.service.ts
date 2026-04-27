@@ -81,7 +81,7 @@ export class PivotService {
   /** 执行透视计算 */
   compute(rowData: any[]): PivotResult {
     if (!this.pivotMode || this.pivotColumns.length === 0) {
-      this.pivotResult = { headers: [], rows: [], totals: {} };
+      this.pivotResult = { headers: [], rows: [], totals: {}, flatRows: [] };
       return this.pivotResult;
     }
 
@@ -102,14 +102,23 @@ export class PivotService {
 
     // 3. 对每个分组计算聚合值
     const resultRows: PivotRow[] = [];
+    const flatRows: any[] = [];
     const totals: Record<string, number> = {};
 
     for (const [groupKey, groupRows] of Object.entries(groupedData)) {
+      const groupValues = this.parseGroupKey(groupKey);
       const row: PivotRow = {
         groupKey,
-        groupValues: this.parseGroupKey(groupKey),
+        groupValues,
         values: {}
       };
+
+      // 扁平化行：将 groupValues 和 values 展开到顶层
+      const flatRow: any = {};
+      for (let i = 0; i < this.rowGroupColumns.length; i++) {
+        const key = `group_${i}`;
+        flatRow[key] = groupValues[i] ?? '';
+      }
 
       for (const pivotHeader of pivotHeaders) {
         const matchingRows = groupRows.filter(r => {
@@ -120,6 +129,7 @@ export class PivotService {
           const key = `${pivotHeader}_${valueCol.field}`;
           const aggregated = this.aggregate(matchingRows, valueCol.field, valueCol.aggFunc);
           row.values[key] = aggregated;
+          flatRow[key] = aggregated;
 
           // 累加总计
           if (!totals[key]) totals[key] = 0;
@@ -130,6 +140,7 @@ export class PivotService {
       }
 
       resultRows.push(row);
+      flatRows.push(flatRow);
     }
 
     // 4. 构建列头
@@ -146,7 +157,7 @@ export class PivotService {
       }
     }
 
-    this.pivotResult = { headers, rows: resultRows, totals };
+    this.pivotResult = { headers, rows: resultRows, totals, flatRows };
     if (this.onPivotChanged) this.onPivotChanged(this.pivotResult);
     return this.pivotResult;
   }
@@ -245,6 +256,8 @@ export interface PivotResult {
   headers: PivotHeader[];
   rows: PivotRow[];
   totals: Record<string, number>;
+  /** 展平的行数据，可直接传给 grid 渲染 */
+  flatRows: any[];
 }
 
 /** 透视列头 */

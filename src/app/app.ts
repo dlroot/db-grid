@@ -153,26 +153,14 @@ export class AppComponent implements OnInit {
 
   // ========== 数据透视数据 ==========
   pivotColumnDefs = [
-    { field: "country", headerName: "国家", width: 100, filter: "set" },
-    { field: "product", headerName: "产品", width: 120, filter: "set" },
-    { field: "year", headerName: "年份", width: 100, filter: "set" },
-    { field: "sales", headerName: "销售额", width: 120, filter: "number" },
-    { field: "profit", headerName: "利润", width: 100, filter: "number" },
+    { field: 'country', headerName: '国家', width: 100, filter: 'set' },
+    { field: 'product', headerName: '产品', width: 120, filter: 'set' },
+    { field: 'year', headerName: '年份', width: 100, filter: 'set' },
+    { field: 'sales', headerName: '销售额', width: 120, filter: 'number' },
+    { field: 'profit', headerName: '利润', width: 100, filter: 'number' },
+    { field: 'quantity', headerName: '销量', width: 100, filter: 'number' },
   ];
-  pivotRowData = [
-    { country: '中国', product: '手机', year: '2023', sales: 1000, profit: 200 },
-    { country: '中国', product: '手机', year: '2024', sales: 1500, profit: 300 },
-    { country: '中国', product: '笔记本', year: '2023', sales: 800, profit: 150 },
-    { country: '中国', product: '笔记本', year: '2024', sales: 1200, profit: 250 },
-    { country: '美国', product: '手机', year: '2023', sales: 900, profit: 180 },
-    { country: '美国', product: '手机', year: '2024', sales: 1100, profit: 220 },
-    { country: '美国', product: '笔记本', year: '2023', sales: 700, profit: 120 },
-    { country: '美国', product: '笔记本', year: '2024', sales: 950, profit: 190 },
-    { country: '德国', product: '手机', year: '2023', sales: 600, profit: 100 },
-    { country: '德国', product: '手机', year: '2024', sales: 800, profit: 150 },
-    { country: '德国', product: '笔记本', year: '2023', sales: 500, profit: 80 },
-    { country: '德国', product: '笔记本', year: '2024', sales: 700, profit: 120 },
-  ];
+  pivotRowData = this.generatePivotData();
   pivotOptions = {};
 
   // ========== 当前主题 ==========
@@ -371,6 +359,24 @@ export class AppComponent implements OnInit {
 
   clearPivot(): void {
     this.pivotEnabled.set(false);
+  }
+
+  private generatePivotData(): any[] {
+    const countries = ['中国', '美国', '德国', '日本', '英国'];
+    const products = ['手机', '笔记本', '平板', '耳机', '手表'];
+    const years = ['2022', '2023', '2024'];
+    const data: any[] = [];
+    for (const country of countries) {
+      for (const product of products) {
+        for (const year of years) {
+          const sales = Math.floor(500 + Math.random() * 2000);
+          const profit = Math.floor(sales * (0.1 + Math.random() * 0.2));
+          const quantity = Math.floor(50 + Math.random() * 500);
+          data.push({ country, product, year, sales, profit, quantity });
+        }
+      }
+    }
+    return data;
   }
 
   // ========== 列虚拟化演示 ==========

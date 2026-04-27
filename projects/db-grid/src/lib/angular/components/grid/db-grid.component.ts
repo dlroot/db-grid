@@ -627,6 +627,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         colDragEnabled: this.colDragEnabled,
       });
     }
+    // 透视配置变更
+    if (changes['pivotMode'] || changes['pivotColumn'] || changes['pivotRowGroupColumns'] || changes['pivotValueColumns']) {
+      if (this.pivotMode && this.rowData && this.rowData.length > 0) {
+        this.setRowData(this.rowData);
+      }
+    }
     // 服务端数据源变更
     if (changes['serverSideDatasource'] && this.enableServerSide) {
       if (this.serverSideDatasource) {
@@ -942,6 +948,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     } else if (this.pivotMode && this.pivotColumn && this.pivotRowGroupColumns.length > 0) {
       // ========== 透视模式 ==========
       this.isPivotMode = true;
+      // 保存原始数据，以便清除透视时恢复
+      this.dataService.setOriginalRowData(rowData);
       this.pivotService.initialize({
         enabled: true,
         pivotMode: true,
@@ -952,13 +960,11 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       const pivotResult = this.pivotService.compute(rowData);
       // 生成透视后的列定义
       const pivotColDefs = this.pivotService.getPivotColumnDefs();
-      // 使用透视结果初始化数据服务
-      this.dataService.initialize(pivotResult.rows, this.gridOptions, pivotColDefs);
-      this.rowCount.set(pivotResult.rows.length);
+      // 使用展平的透视结果初始化数据服务
+      this.dataService.initialize(pivotResult.flatRows, this.gridOptions, pivotColDefs);
+      this.rowCount.set(pivotResult.flatRows.length);
     } else {
-      this.isTreeMode = false;
-      this.isGroupMode = false;
-      this.cellRenderer.setTreeMode(false, null); // 禁用树模式
+      this.isPivotMode = false;
       this.dataService.initialize(rowData, this.gridOptions, this.columnDefs);
       this.rowCount.set(this.dataService.getRowCount());
     }
@@ -1138,6 +1144,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.pivotMode = false;
     this.isPivotMode = false;
     this.pivotService.disablePivotMode();
+    // 恢复原始数据
+    const original = this.dataService.getOriginalRowData();
+    if (original && original.length > 0) {
+      this.dataService.initialize(original, this.gridOptions, this.columnDefs);
+      this.rowCount.set(this.dataService.getRowCount());
+    }
     this.refreshView();
   }
 

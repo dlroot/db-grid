@@ -16,6 +16,11 @@ interface VirtualScrollConfig {
 @Injectable()
 export class DataService {
   private rowData: any[] = [];
+  /** 保存原始行数据（透视模式下需要恢复原始数据） */
+  private originalRowData: any[] = [];
+
+  getOriginalRowData(): any[] { return this.originalRowData; }
+  setOriginalRowData(data: any[]): void { this.originalRowData = data || []; }
   private rowNodeMap: Map<string, RowNode> = new Map();
   private scrollConfig: VirtualScrollConfig = {
     rowHeight: 40,
