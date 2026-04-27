@@ -3,8 +3,8 @@
  * Run: node _daily_push.js
  * Uses SSH (no token needed) if SSH key is added to GitHub.
  */
-const { execSync } = require('child_process');
-const path = require('path');
+import { execSync } from 'child_process';
+import path from 'path';
 
 const repoDir = 'C:\\Users\\will\\.qclaw\\workspace\\db-grid';
 const today = new Date().toISOString().slice(0, 10);
