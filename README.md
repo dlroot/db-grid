@@ -132,7 +132,6 @@ All `ColDef`, `GridOptions`, and `GridApi` interfaces are **100% compatible** wi
 
 ### 🚧 Coming Next
 - [ ] Charts integration
-- [ ] PDF Export
 
 ## 🏗️ Architecture
 
@@ -146,7 +145,7 @@ db-grid/                        # Angular demo app (src/app/)
 │       ├── angular/            # Angular 21+ component layer
 │       │   └── components/     # Grid, Header, Cell, Row, Editors, Filters
 │       └── index.ts            # Public API exports
-├── src/app/                    # Interactive demo application (17 tabs)
+├── src/app/                    # Interactive demo application (20 tabs)
 ├── .github/workflows/           # CI/CD (build + GitHub Pages deploy)
 ├── vitest.config.ts            # Unit test configuration
 └── package.json
@@ -156,7 +155,7 @@ db-grid/                        # Angular demo app (src/app/)
 
 ```bash
 npm test   # 1020 tests passing (Vitest + jsdom, 30 test files)
-npm run build  # Production build (~110KB gzipped)
+npm run build  # Production build (~120KB gzipped)
 ```
 
 ## 🤝 Contributing
