@@ -55,6 +55,9 @@
     <button [class.active]="currentDemo() === 'pdf'" (click)="switchDemo('pdf')">
       📄 PDF导出
     </button>
+    <button [class.active]="currentDemo() === 'charts'" (click)="switchDemo('charts')">
+      📈 图表
+    </button>
     <span class="theme-selector">
       <label>主题:</label>
       <select [value]="currentTheme()" (change)="switchTheme($event)">
@@ -470,6 +473,27 @@
       />
     </div>
   }
+
+  <!-- 图表演示 -->
+  @if (currentDemo() === 'charts') {
+    <div class="demo-panel">
+      <div class="demo-header">
+        <h2>图表 Charts</h2>
+        <p class="demo-desc">基于 Chart.js 的嵌入式图表，支持柱状图、折线图、饼图、环形图</p>
+        <div class="demo-actions">
+          <button class="btn" [class.btn-active]="chartsType() === 'bar'" (click)="chartsType.set('bar')">📊 柱状图</button>
+          <button class="btn" [class.btn-active]="chartsType() === 'line'" (click)="chartsType.set('line')">📈 折线图</button>
+          <button class="btn" [class.btn-active]="chartsType() === 'pie'" (click)="chartsType.set('pie')">🥧 饼图</button>
+          <button class="btn" [class.btn-active]="chartsType() === 'doughnut'" (click)="chartsType.set('doughnut')">🍩 环形图</button>
+          <button class="btn" (click)="renderChart()">🔄 渲染图表</button>
+        </div>
+      </div>
+      <div class="chart-container">
+        <canvas id="mainChart"></canvas>
+      </div>
+    </div>
+  }
+
 
   <!-- 状态栏 -->
   <div class="status-bar">

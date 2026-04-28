@@ -53,6 +53,7 @@ import {
   GroupService,
   ExcelExportService,
   CellSpanService,
+  ChartsService,
   CellEditService,
   ColumnPinningService,
   PaginationService,
@@ -386,6 +387,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   private excelExportService: ExcelExportService;
   private pdfExportService: PdfExportService;
   private cellSpanService: CellSpanService;
+  private chartsService: ChartsService;
   private cellRenderer: CellRendererService;
   private rowRenderer: RowRendererService;
   private headerRenderer: HeaderRendererService;
@@ -459,6 +461,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.excelExportService = new ExcelExportService();
     this.pdfExportService = new PdfExportService();
     this.cellSpanService = new CellSpanService();
+    this.chartsService = new ChartsService();
     this.cellRenderer = new CellRendererService(this.columnService);
     this.rowRenderer = new RowRendererService(this.cellRenderer, this.columnService);
     
@@ -825,6 +828,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       // ========== Excel 导出 ==========
       exportDataAsCsv: (params?: any) => this.exportDataAsCsv(params),
       exportDataAsPdf: (options?: any) => this.exportDataAsPdf(options),
+      addChart: (containerId: string, config: any) => this.chartsService.createChart(containerId, config),
+      destroyChart: (containerId: string) => this.chartsService.destroyChart(containerId),
       downloadExcel: (options?: any) => this.downloadExcel(options),
       importCsv: (csvText: string, options?: any) => this.importCsv(csvText, options),
 

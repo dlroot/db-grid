@@ -33,4 +33,5 @@ export * from './keyboard-navigation.service';
 export * from './accessibility.service';
 export * from './undo-redo.service';
 export * from './server-side.service';
+export * from './charts.service';
 export * from './i18n.service';

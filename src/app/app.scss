@@ -159,6 +159,25 @@ body {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     overflow: hidden;
   }
+
+  .chart-container {
+    height: 450px;
+    padding: 20px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    position: relative;
+
+  }
+
+  .chart-container canvas {
+    max-height: 100%;
+  }
+
+  .btn-active {
+    background: #1890ff !important;
+    color: white !important;
+  }
 }
 
 /* 按钮样式 */

@@ -853,4 +853,40 @@ export class AppComponent implements OnInit {
   setI18n(locale: string): void {
     this.currentI18n.set(locale);
   }
+
+  // ========== 图表演示 ==========
+  chartsType = signal<'bar' | 'line' | 'pie' | 'doughnut'>('bar');
+
+  renderChart(): void {
+    if (this.gridApi) {
+      this.gridApi.destroyChart?.('mainChart');
+      const config = this.gridApi.chartsService?.chartConfigFromGridData
+        ? this.gridApi.chartsService.chartConfigFromGridData(
+            this.chartsType(),
+            'DB Grid 数据统计',
+            ['Q1', 'Q2', 'Q3', 'Q4'],
+            [
+              { label: '销售额', data: [12000, 15000, 18000, 22000] },
+              { label: '利润', data: [3000, 4000, 5500, 7000] },
+            ]
+          )
+        : {
+            type: this.chartsType(),
+            title: 'DB Grid 数据统计',
+            data: {
+              labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+              datasets: [{
+                label: '销售额',
+                data: [12000, 15000, 18000, 22000],
+                backgroundColor: ['#5470c6','#91cc75','#fac858','#ee6666'],
+              }, {
+                label: '利润',
+                data: [3000, 4000, 5500, 7000],
+                backgroundColor: ['#73c0de','#3ba272','#fc8452','#9a60b4'],
+              }]
+            }
+          };
+      this.gridApi.addChart?.('mainChart', config);
+    }
+  }
 }
