@@ -52,6 +52,9 @@
     <button [class.active]="currentDemo() === 'i18n'" (click)="switchDemo('i18n')">
       🌐 国际化
     </button>
+    <button [class.active]="currentDemo() === 'pdf'" (click)="switchDemo('pdf')">
+      📄 PDF导出
+    </button>
     <span class="theme-selector">
       <label>主题:</label>
       <select [value]="currentTheme()" (change)="switchTheme($event)">
@@ -437,6 +440,33 @@
         [theme]="'alpine'"
         [locale]="currentI18n()"
         (gridReady)="onGridReady($event)"
+      />
+    </div>
+  }
+
+  <!-- PDF导出演示 -->
+  @if (currentDemo() === 'pdf') {
+    <div class="demo-panel">
+      <div class="demo-header">
+        <h2>PDF 导出</h2>
+        <p class="demo-desc">将表格数据导出为 PDF 文件，支持自定义页面大小、方向、样式</p>
+        <div class="demo-actions">
+          <button class="btn" (click)="exportPdf()">📥 导出 PDF</button>
+          <button class="btn" (click)="exportPdfLandscape()">📐 横向导出</button>
+          <button class="btn" (click)="exportPdfSelected()">✅ 导出选中行</button>
+        </div>
+      </div>
+      <db-grid
+        #myGrid
+        [columnDefs]="pdfColumnDefs"
+        [rowData]="pdfRowData"
+        [gridOptions]="pdfOptions"
+        [rowHeight]="40"
+        [headerHeight]="40"
+        [theme]="'alpine'"
+        [rowSelection]="'multiple'"
+        (gridReady)="onGridReady($event)"
+        (selectionChanged)="onSelectionChanged()"
       />
     </div>
   }

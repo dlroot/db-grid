@@ -777,6 +777,79 @@ export class AppComponent implements OnInit {
   ];
   i18nOptions = { rowSelection: 'multiple' };
 
+  switchI18n(locale: string): void {
+    this.currentI18n.set(locale);
+  }
+
+  // ========== PDF导出演示 ==========
+  pdfColumnDefs = [
+    { field: 'id', headerName: 'ID', width: 70 },
+    { field: 'name', headerName: '姓名', width: 120 },
+    { field: 'department', headerName: '部门', width: 120 },
+    { field: 'position', headerName: '职位', width: 120 },
+    { field: 'salary', headerName: '薪资', width: 100 },
+    { field: 'hireDate', headerName: '入职日期', width: 110 },
+    { field: 'status', headerName: '状态', width: 80 },
+  ];
+  pdfRowData = this.generatePdfData(50);
+  pdfOptions = { rowSelection: 'multiple' };
+
+  private generatePdfData(count: number): any[] {
+    const names = ['张伟','王芳','李明','刘洋','陈静','杨帆','赵雷','黄丽','周杰','吴敏'];
+    const departments = ['技术部','产品部','市场部','财务部','人力资源部','运营部','客服部'];
+    const positions = ['工程师','经理','主管','专员','总监','助理','顾问'];
+    const statuses = ['在职','出差','休假','离职'];
+    const data: any[] = [];
+    for (let i = 1; i <= count; i++) {
+      const year = 2018 + (i % 7);
+      const month = (i % 12) + 1;
+      data.push({
+        id: i,
+        name: names[i % names.length],
+        department: departments[i % departments.length],
+        position: positions[i % positions.length],
+        salary: Math.floor(8000 + (i * 7919) % 30000),
+        hireDate: `${year}-${String(month).padStart(2,'0')}-01`,
+        status: statuses[i % statuses.length],
+      });
+    }
+    return data;
+  }
+
+  exportPdf(): void {
+    if (this.gridApi) {
+      this.gridApi.exportDataAsPdf({
+        fileName: 'db-grid-export.pdf',
+        pageSize: 'a4',
+        orientation: 'portrait',
+      });
+    }
+  }
+
+  exportPdfLandscape(): void {
+    if (this.gridApi) {
+      this.gridApi.exportDataAsPdf({
+        fileName: 'db-grid-landscape.pdf',
+        pageSize: 'a4',
+        orientation: 'landscape',
+      });
+    }
+  }
+
+  exportPdfSelected(): void {
+    if (this.gridApi) {
+      const selectedRows = this.gridApi.getSelectedRows();
+      if (selectedRows.length === 0) {
+        alert('请先选择要导出的行');
+        return;
+      }
+      this.gridApi.exportDataAsPdf({
+        fileName: 'db-grid-selected.pdf',
+        onlySelected: true,
+        pageSize: 'a4',
+      });
+    }
+  }
   setI18n(locale: string): void {
     this.currentI18n.set(locale);
   }
