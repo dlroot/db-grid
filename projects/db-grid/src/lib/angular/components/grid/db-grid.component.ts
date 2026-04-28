@@ -41,7 +41,9 @@ import {
   SelectionChangedEvent,
   ColumnResizedEvent,
   RowNode,
+  GridApi,
 } from '../../../core/models';
+import { PdfExportService } from '../../../core/services';
 
 import {
   DataService,
@@ -382,6 +384,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   private treeService: TreeService;
   private groupService: GroupService;
   private excelExportService: ExcelExportService;
+  private pdfExportService: PdfExportService;
   private cellSpanService: CellSpanService;
   private cellRenderer: CellRendererService;
   private rowRenderer: RowRendererService;
@@ -454,6 +457,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.aggregationService = new AggregationService();
     this.groupService = new GroupService(this.aggregationService);
     this.excelExportService = new ExcelExportService();
+    this.pdfExportService = new PdfExportService();
     this.cellSpanService = new CellSpanService();
     this.cellRenderer = new CellRendererService(this.columnService);
     this.rowRenderer = new RowRendererService(this.cellRenderer, this.columnService);
@@ -820,8 +824,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
       // ========== Excel 导出 ==========
       exportDataAsCsv: (params?: any) => this.exportDataAsCsv(params),
+      exportDataAsPdf: (options?: any) => this.exportDataAsPdf(options),
       downloadExcel: (options?: any) => this.downloadExcel(options),
       importCsv: (csvText: string, options?: any) => this.importCsv(csvText, options),
+
+      // ========== PDF 导出 ==========
+      exportToPdf: (options?: any) => this.exportToPdf(options),
 
       // ========== 单元格编辑 ==========
       startCellEdit: (rowIndex: number, colId: string) => this.startCellEdit(rowIndex, colId),
@@ -1182,6 +1190,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     return this.excelExportService.importCsv(csvText, options);
   }
 
+  exportDataAsPdf(options?: any): void {
+    const colDefs = this.columnService.getVisibleColumns();
+    const rows = this.getDisplayedRows();
+    this.pdfExportService.exportToPdf(colDefs, rows, options);
+  }
+
   // ========== 单元格编辑 API ==========
 
   private editingCell: { rowIndex: number; colId: string; editor: any } | null = null;
@@ -1276,6 +1290,19 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     return this.paginationService.getPageInfo();
   }
 
+  // ========== PDF 导出 ==========
+  /** 导出当前数据为 PDF（通过 gridApi 调用） */
+  exportToPdf(options?: any): void {
+    const colDefs = this.columnDefs || [];
+    const rowData = options?.allRows ? this.getRowData() : this.getSelectedRows();
+    if (!rowData || rowData.length === 0) {
+      console.warn('PDF Export: 没有可导出的数据');
+      return;
+    }
+    this.pdfExportService.exportToPdf(colDefs, rowData, options);
+  }
+
+  /** 获取当前所有行数据（用于导出） */
   // ========== 右键菜单 API ==========
 
   showContextMenu(position: { x: number; y: number }, context: any): void {
