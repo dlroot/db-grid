@@ -12,35 +12,47 @@ describe('I18nService', () => {
     expect(service).toBeTruthy();
   });
 
+  it('should have default locale en', () => {
+    expect(service.getLocale()).toBe('en');
+  });
+
   it('should set and get locale', () => {
-    service.setLocale('zh-CN');
-    // Test indirectly through behavior
-    expect(service).toBeTruthy();
+    service.setLocale('zh');
+    expect(service.getLocale()).toBe('zh');
   });
 
   it('should translate simple keys', () => {
     const translations = {
-      'en-US': { hello: 'Hello', goodbye: 'Goodbye' },
-      'zh-CN': { hello: '你好', goodbye: '再见' },
+      en: { hello: 'Hello', goodbye: 'Goodbye' },
+      zh: { hello: '你好', goodbye: '再见' },
     };
     (service as any).translations = translations;
-
-    service.setLocale('en-US');
-    // Since translate might be private, we test setLocale works
-    expect(service).toBeTruthy();
+    
+    service.setLocale('en');
+    expect(service.translate('hello')).toBe('Hello');
+    service.setLocale('zh');
+    expect(service.translate('hello')).toBe('你好');
   });
 
-  it('should handle missing translation keys', () => {
-    service.setLocale('en-US');
-    // If translate is private, we can't test directly
-    // Just verify setLocale works
-    expect(service).toBeTruthy();
+  it('should return key for missing translation', () => {
+    expect(service.translate('nonexistent')).toBe('nonexistent');
   });
 
-  it('should handle translation parameters', () => {
-    service.setLocale('en-US');
-    // Test that the service can be instantiated with different locales
-    service.setLocale('zh-CN');
-    expect(service).toBeTruthy();
+  it('should format number with locale', () => {
+    service.setLocale('en');
+    // Just test it doesn't throw
+    expect(() => service.formatNumber(1234.56, '0,0.00')).not.toThrow();
+  });
+
+  it('should format date with locale', () => {
+    service.setLocale('zh');
+    // Just test it doesn't throw
+    expect(() => service.formatDate(new Date('2024-01-15'), 'yyyy-MM-dd')).not.toThrow();
+  });
+
+  it('should get locale display name', () => {
+    const name = service.getLocaleDisplayName('en');
+    expect(typeof name).toBe('string');
+    expect(name.length).toBeGreaterThan(0);
   });
 });
