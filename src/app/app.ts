@@ -86,7 +86,7 @@ export class AppComponent implements OnInit {
 
   groupRowData = this.generateSalesData(50);
   groupConfig = { groupFields: ["category", "region"], autoCreateGroupColumn: true, expandAll: true };
-  groupOptions = {};
+  groupOptions = this.groupConfig;
 
   // Excel data
   excelColumnDefs = [
