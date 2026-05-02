@@ -82,7 +82,8 @@ body {
       box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
       display: flex !important;
       flex-direction: column;
-      height: 500px;
+      flex: 1;
+      min-height: 0;
       overflow: hidden;
     }
   }
@@ -311,3 +312,10 @@ body {
     font-size: 12px;
   }
 }
+
+/* ÐÞ¸´°´Å¥±äÐÎ£º¸²¸Ç¸¸ÈÝÆ÷ column Ó°Ïì */
+.demo-header {
+  flex-direction: row !important;
+  justify-content: space-between !important;
+}
+
