@@ -440,7 +440,7 @@
         [gridOptions]="i18nOptions"
         [rowHeight]="40"
         [headerHeight]="40"
-        [theme]="'alpine'"
+        [theme]="currentTheme()"
         [locale]="currentI18n()"
         (gridReady)="onGridReady($event)"
       />
@@ -466,7 +466,7 @@
         [gridOptions]="pdfOptions"
         [rowHeight]="40"
         [headerHeight]="40"
-        [theme]="'alpine'"
+        [theme]="currentTheme()"
         [rowSelection]="'multiple'"
         (gridReady)="onGridReady($event)"
         (selectionChanged)="onSelectionChanged()"

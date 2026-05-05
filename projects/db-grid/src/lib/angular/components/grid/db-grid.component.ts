@@ -22,6 +22,7 @@ import {
   ChangeDetectorRef,
   signal,
   computed,
+  input,
 } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Subject, fromEvent, debounceTime, takeUntil } from 'rxjs';
@@ -271,7 +272,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   @Input() columnDefs: ColDef[] = [];
   @Input() rowData: any[] = [];
   @Input() gridOptions: GridOptions = {};
-  @Input() theme: 'alpine' | 'balham' | 'material' | 'custom' = 'alpine';
+  theme = input<'alpine' | 'balham' | 'material' | 'custom'>('alpine');
   @Input() rowHeight: number = 40;
   @Input() headerHeight: number = 40;
   @Input() loading: boolean = false;
@@ -376,7 +377,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   viewportInfo = signal<{ startIndex: number; endIndex: number; offsetY: number }>({
     startIndex: 0, endIndex: 0, offsetY: 0,
   });
-  themeClass = computed(() => `db-grid-theme-${this.theme}`);
+  themeClass = computed(() => `db-grid-theme-${this.theme()}`);
 
   // ============ Services ============
   private dataService: DataService;
