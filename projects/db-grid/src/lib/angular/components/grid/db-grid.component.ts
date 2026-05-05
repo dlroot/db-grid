@@ -185,7 +185,7 @@ import {
       font-size: var(--db-grid-font-size, 14px);
     }
     .db-grid-header-container { flex-shrink: 0; overflow-x: auto; overflow-y: hidden; }
-    .db-grid-body-container { flex: 1; overflow: auto; position: relative; }
+    .db-grid-body-container { flex: 1; overflow-y: auto; overflow-x: auto; position: relative; }
     .db-grid-virtual-scroll { position: relative; min-width: 100%; }
     .db-grid-rows { display: flex; flex-direction: column; position: absolute; left: 0; min-width: 100%; }
     .db-grid-footer-container { flex-shrink: 0; border-top: 1px solid var(--db-grid-border-color, #ddd); }
