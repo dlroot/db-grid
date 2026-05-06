@@ -974,6 +974,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         this.columnDefs = [...result.groupColumnDefs, ...this.columnDefs];
         this.columnService.initialize(this.columnDefs);
         this.pinnedLeftColumnIds.set(this.pinningService.getPinnedLeftIds());
+        this.refreshHeader();
       }
       // 使用 initializeNodes 直接传入节点数组
       this.dataService.initializeNodes(result.flatNodes, this.gridOptions, this.columnDefs);
