@@ -1,0 +1,546 @@
+/**
+ * Dark Theme - DB Grid
+ * 深色主题，专业级暗色界面
+ */
+
+// CSS 变量定义
+:root {
+  // 主色调 - 紫色系，适合深色背景
+  --db-grid-dark-primary: #7c4dff;
+  --db-grid-dark-primary-variant: #b388ff;
+  --db-grid-dark-secondary: #03dac6;
+  --db-grid-dark-secondary-variant: #018786;
+
+  // 表面色
+  --db-grid-dark-surface: #1e1e1e;
+  --db-grid-dark-background: #121212;
+  --db-grid-dark-surface-elevated: #2d2d2d;
+  --db-grid-dark-surface-overlay: rgba(255, 255, 255, 0.05);
+
+  // 状态色
+  --db-grid-dark-error: #cf6679;
+  --db-grid-dark-warning: #ffb74d;
+  --db-grid-dark-success: #81c784;
+  --db-grid-dark-info: #64b5f6;
+
+  // 文字色
+  --db-grid-dark-on-primary: #ffffff;
+  --db-grid-dark-on-surface: #e1e1e1;
+  --db-grid-dark-on-background: #e1e1e1;
+  --db-grid-dark-text-primary: #e1e1e1;
+  --db-grid-dark-text-secondary: #a0a0a0;
+  --db-grid-dark-text-disabled: #606060;
+  --db-grid-dark-text-link: #bb86fc;
+
+  // 边框色
+  --db-grid-dark-border-color: #3d3d3d;
+  --db-grid-dark-cell-border-color: #2a2a2a;
+  --db-grid-dark-divider: #373737;
+
+  // 行背景
+  --db-grid-dark-header-bg: #1f1f1f;
+  --db-grid-dark-odd-row-bg: #1e1e1e;
+  --db-grid-dark-even-row-bg: #242424;
+  --db-grid-dark-selected-row-bg: #2d2a4a;
+  --db-grid-dark-hover-row-bg: #2d2d2d;
+  --db-grid-dark-focus-row-bg: #3d3d3d;
+
+  // 滚动条
+  --db-grid-dark-scrollbar-track: #1e1e1e;
+  --db-grid-dark-scrollbar-thumb: #4a4a4a;
+  --db-grid-dark-scrollbar-thumb-hover: #5a5a5a;
+
+  // 字体
+  --db-grid-dark-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --db-grid-dark-font-size: 14px;
+  --db-grid-dark-font-size-sm: 12px;
+  --db-grid-dark-font-size-xs: 11px;
+
+  // 尺寸
+  --db-grid-dark-row-height: 44px;
+  --db-grid-dark-header-height: 48px;
+  --db-grid-dark-cell-padding: 12px;
+  --db-grid-dark-border-radius: 6px;
+  --db-grid-dark-border-radius-sm: 4px;
+
+  // 阴影
+  --db-grid-dark-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --db-grid-dark-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.5);
+  --db-grid-dark-shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.6);
+  --db-grid-dark-shadow-glow: 0 0 20px rgba(124, 77, 255, 0.3);
+}
+
+// Grid 容器
+.db-grid-theme-dark {
+  --db-grid-bg: var(--db-grid-dark-background);
+  --db-grid-border-color: transparent;
+  --db-grid-text-color: var(--db-grid-dark-text-primary);
+  --db-grid-font-family: var(--db-grid-dark-font-family);
+  --db-grid-font-size: var(--db-grid-dark-font-size);
+  --db-grid-row-height: var(--db-grid-dark-row-height);
+  --db-grid-header-bg: var(--db-grid-dark-header-bg);
+  --db-grid-header-text-color: var(--db-grid-dark-text-primary);
+
+  background: var(--db-grid-dark-background);
+  border: 1px solid var(--db-grid-dark-border-color);
+  border-radius: var(--db-grid-dark-border-radius);
+  box-shadow: var(--db-grid-dark-shadow-md);
+  font-family: var(--db-grid-dark-font-family);
+  font-size: var(--db-grid-dark-font-size);
+  color: var(--db-grid-dark-text-primary);
+  overflow: hidden;
+
+  // 表头样式
+  .db-grid-header {
+    background: var(--db-grid-dark-header-bg);
+    border-bottom: 1px solid var(--db-grid-dark-border-color);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+
+    .db-grid-header-cell {
+      font-weight: 500;
+      font-size: var(--db-grid-dark-font-size-sm);
+      color: var(--db-grid-dark-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-right: 1px solid var(--db-grid-dark-cell-border-color);
+      transition: background 0.2s ease, color 0.2s ease;
+
+      &:last-child {
+        border-right: none;
+      }
+
+      &:hover {
+        background: var(--db-grid-dark-hover-row-bg);
+        color: var(--db-grid-dark-text-primary);
+      }
+
+      &.db-grid-header-sortable:hover {
+        cursor: pointer;
+        background: var(--db-grid-dark-focus-row-bg);
+      }
+
+      &.db-grid-header-sorted-asc,
+      &.db-grid-header-sorted-desc {
+        background: rgba(124, 77, 255, 0.15);
+        color: var(--db-grid-dark-primary-variant);
+
+        .db-grid-sort-icon {
+          color: var(--db-grid-dark-primary);
+        }
+      }
+
+      .db-grid-header-label {
+        font-size: var(--db-grid-dark-font-size-sm);
+        font-weight: 600;
+      }
+
+      .db-grid-sort-icon {
+        font-size: 14px;
+        color: var(--db-grid-dark-text-secondary);
+        margin-left: 6px;
+        transition: transform 0.2s ease, color 0.2s ease;
+
+        &.db-grid-sort-icon-inactive {
+          opacity: 0.4;
+        }
+      }
+
+      .db-grid-filter-icon-active {
+        color: var(--db-grid-dark-primary);
+      }
+    }
+
+    // 固定左侧列阴影
+    .db-grid-header-cell.db-grid-pinned-left {
+      box-shadow: 2px 0 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .db-grid-header-cell.db-grid-pinned-right {
+      box-shadow: -2px 0 4px rgba(0, 0, 0, 0.3);
+    }
+  }
+
+  // 行样式
+  .db-grid-row {
+    display: flex;
+    align-items: center;
+    height: var(--db-grid-dark-row-height);
+    border-bottom: 1px solid var(--db-grid-dark-cell-border-color);
+    background: var(--db-grid-dark-odd-row-bg);
+    transition: background 0.15s ease;
+
+    &.db-grid-row-odd {
+      background: var(--db-grid-dark-even-row-bg);
+    }
+
+    &:hover {
+      background: var(--db-grid-dark-hover-row-bg);
+    }
+
+    &.db-grid-row-selected {
+      background: var(--db-grid-dark-selected-row-bg);
+
+      &:hover {
+        background: var(--db-grid-dark-selected-row-bg);
+      }
+    }
+
+    &.db-grid-row-floating {
+      background: #3d3520;
+      border-left: 3px solid var(--db-grid-dark-warning);
+    }
+
+    &.db-grid-row-highlight {
+      animation: dark-highlight 0.5s ease;
+    }
+
+    &.db-grid-row-editing {
+      background: rgba(124, 77, 255, 0.1);
+    }
+
+    // 固定列阴影
+    &.db-grid-pinned-left {
+      box-shadow: 2px 0 4px rgba(0, 0, 0, 0.3);
+    }
+
+    &.db-grid-pinned-right {
+      box-shadow: -2px 0 4px rgba(0, 0, 0, 0.3);
+    }
+  }
+
+  // 单元格样式
+  .db-grid-cell {
+    flex: 0 0 auto;
+    min-width: 0;
+    border-right: 1px solid var(--db-grid-dark-cell-border-color);
+    padding: 0 var(--db-grid-dark-cell-padding);
+    color: var(--db-grid-dark-text-primary);
+    font-size: var(--db-grid-dark-font-size);
+    line-height: var(--db-grid-dark-row-height);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+
+    &:last-child {
+      border-right: none;
+    }
+
+    &.db-grid-cell-editing {
+      padding: 0;
+      background: var(--db-grid-dark-surface-elevated);
+      outline: 2px solid var(--db-grid-dark-primary);
+      outline-offset: -2px;
+    }
+
+    // 单元格文字颜色变体
+    &.db-grid-cell-success {
+      color: var(--db-grid-dark-success);
+    }
+
+    &.db-grid-cell-warning {
+      color: var(--db-grid-dark-warning);
+    }
+
+    &.db-grid-cell-error {
+      color: var(--db-grid-dark-error);
+    }
+
+    &.db-grid-cell-info {
+      color: var(--db-grid-dark-info);
+    }
+
+    // 复选框单元格
+    &.db-grid-cell-checkbox {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  // 单元格编辑器
+  .db-grid-cell-editor {
+    width: 100%;
+    height: 100%;
+    border: none;
+    outline: none;
+    padding: 0 var(--db-grid-dark-cell-padding);
+    font-family: inherit;
+    font-size: inherit;
+    background: transparent;
+    color: var(--db-grid-dark-text-primary);
+
+    &.db-grid-cell-editor-text,
+    &.db-grid-cell-editor-number,
+    &.db-grid-cell-editor-date {
+      background: transparent;
+    }
+
+    &::placeholder {
+      color: var(--db-grid-dark-text-disabled);
+    }
+  }
+
+  // 复选框样式
+  .db-grid-checkbox {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    cursor: pointer;
+    accent-color: var(--db-grid-dark-primary);
+    filter: brightness(1.2);
+  }
+
+  // 动作按钮
+  .db-grid-action-btn {
+    background: transparent;
+    border: 1px solid var(--db-grid-dark-primary);
+    border-radius: var(--db-grid-dark-border-radius-sm);
+    padding: 8px 16px;
+    font-size: var(--db-grid-dark-font-size-sm);
+    font-weight: 500;
+    color: var(--db-grid-dark-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: var(--db-grid-dark-primary);
+      color: var(--db-grid-dark-on-primary);
+      box-shadow: var(--db-grid-dark-shadow-glow);
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      border-color: var(--db-grid-dark-text-disabled);
+      color: var(--db-grid-dark-text-disabled);
+    }
+  }
+
+  // 无数据提示
+  .db-grid-no-rows {
+    color: var(--db-grid-dark-text-secondary);
+    font-size: 16px;
+    font-weight: 400;
+    padding: 40px;
+    text-align: center;
+
+    .db-grid-no-rows-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+  }
+
+  // 加载遮罩
+  .db-grid-overlay {
+    background: rgba(18, 18, 18, 0.9);
+    backdrop-filter: blur(4px);
+
+    .db-grid-spinner {
+      color: var(--db-grid-dark-primary);
+      border-color: rgba(124, 77, 255, 0.2);
+      border-top-color: var(--db-grid-dark-primary);
+    }
+  }
+
+  // 拖拽和调整大小
+  .db-grid-resize-handle {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    cursor: col-resize;
+    background: transparent;
+    transition: background 0.2s ease;
+
+    &:hover {
+      background: var(--db-grid-dark-primary);
+    }
+  }
+
+  .db-grid-drag-handle {
+    color: var(--db-grid-dark-text-secondary);
+    font-size: 10px;
+    margin-left: 4px;
+    opacity: 0.5;
+    cursor: grab;
+
+    &:hover {
+      opacity: 1;
+      color: var(--db-grid-dark-primary);
+    }
+  }
+
+  // 滚动条样式
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--db-grid-dark-scrollbar-track);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--db-grid-dark-scrollbar-thumb);
+    border-radius: 5px;
+    border: 2px solid var(--db-grid-dark-scrollbar-track);
+
+    &:hover {
+      background: var(--db-grid-dark-scrollbar-thumb-hover);
+    }
+  }
+
+  // FireFox 滚动条
+  scrollbar-width: thin;
+  scrollbar-color: var(--db-grid-dark-scrollbar-thumb) var(--db-grid-dark-scrollbar-track);
+
+  // 工具提示
+  .db-grid-tooltip {
+    background: var(--db-grid-dark-surface-elevated);
+    color: var(--db-grid-dark-text-primary);
+    border: 1px solid var(--db-grid-dark-border-color);
+    box-shadow: var(--db-grid-dark-shadow-md);
+  }
+
+  // 上下文菜单
+  .db-grid-context-menu {
+    background: var(--db-grid-dark-surface);
+    border: 1px solid var(--db-grid-dark-border-color);
+    box-shadow: var(--db-grid-dark-shadow-lg);
+
+    .db-grid-context-menu-item {
+      color: var(--db-grid-dark-text-primary);
+
+      &:hover {
+        background: var(--db-grid-dark-hover-row-bg);
+      }
+
+      &.disabled {
+        color: var(--db-grid-dark-text-disabled);
+      }
+
+      .shortcut {
+        color: var(--db-grid-dark-text-secondary);
+      }
+    }
+
+    .db-grid-context-menu-separator {
+      background: var(--db-grid-dark-divider);
+    }
+  }
+
+  // 分页组件
+  .db-grid-pagination {
+    background: var(--db-grid-dark-header-bg);
+    border-top: 1px solid var(--db-grid-dark-border-color);
+
+    .db-grid-pagination-info {
+      color: var(--db-grid-dark-text-secondary);
+    }
+
+    .db-grid-pagination-controls button {
+      background: var(--db-grid-dark-surface);
+      border: 1px solid var(--db-grid-dark-border-color);
+      color: var(--db-grid-dark-text-primary);
+
+      &:hover:not(:disabled) {
+        background: var(--db-grid-dark-hover-row-bg);
+        border-color: var(--db-grid-dark-primary);
+      }
+
+      &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  // 加载骨架屏
+  .db-grid-skeleton {
+    .db-grid-row-skeleton {
+      border-color: var(--db-grid-dark-cell-border-color);
+
+      .db-grid-cell-skeleton::after {
+        background: linear-gradient(90deg, #2a2a2a 25%, #333 50%, #2a2a2a 75%);
+        background-size: 200% 100%;
+      }
+    }
+  }
+
+  // AG Grid 兼容类
+  &.ag-theme-dark {
+    --ag-background-color: var(--db-grid-dark-background);
+    --ag-header-background-color: var(--db-grid-dark-header-bg);
+    --ag-odd-row-background-color: var(--db-grid-dark-odd-row-bg);
+    --ag-row-hover-color: var(--db-grid-dark-hover-row-bg);
+    --ag-selected-row-background-color: var(--db-grid-dark-selected-row-bg);
+    --ag-border-color: var(--db-grid-dark-border-color);
+    --ag-cell-horizontal-border-color: var(--db-grid-dark-cell-border-color);
+    --ag-foreground-color: var(--db-grid-dark-text-primary);
+    --ag-secondary-foreground-color: var(--db-grid-dark-text-secondary);
+    --ag-header-foreground-color: var(--db-grid-dark-text-secondary);
+    --ag-input-focus-border-color: var(--db-grid-dark-primary);
+    --ag-range-selection-border-color: var(--db-grid-dark-primary);
+    --ag-font-family: var(--db-grid-dark-font-family);
+    --ag-font-size: var(--db-grid-dark-font-size);
+    --ag-row-height: var(--db-grid-dark-row-height);
+    --ag-header-height: var(--db-grid-dark-header-height);
+    --ag-cell-horizontal-padding: var(--db-grid-dark-cell-padding);
+  }
+}
+
+// 分组行样式（深色主题）
+.db-grid-theme-dark {
+  .db-grid-group-row {
+    background: var(--db-grid-dark-surface-elevated);
+    font-weight: 600;
+
+    .db-grid-group-indicator {
+      color: var(--db-grid-dark-secondary);
+    }
+
+    .db-grid-group-label {
+      color: var(--db-grid-dark-text-primary);
+    }
+
+    &:hover {
+      background: var(--db-grid-dark-focus-row-bg);
+    }
+  }
+
+  // 展开/折叠图标
+  .db-grid-expand-icon {
+    color: var(--db-grid-dark-text-secondary);
+    transition: transform 0.2s ease;
+
+    &.db-grid-expand-icon-expanded {
+      color: var(--db-grid-dark-primary);
+    }
+
+    &:hover {
+      color: var(--db-grid-dark-text-primary);
+    }
+  }
+}
+
+// 高亮动画
+@keyframes dark-highlight {
+  0% {
+    background: rgba(124, 77, 255, 0.25);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
+// 脉冲动画（用于加载状态）
+@keyframes dark-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
