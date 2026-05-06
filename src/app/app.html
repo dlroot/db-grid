@@ -134,6 +134,16 @@
         [groupConfig]="groupConfig"
         (gridReady)="onGridReady($event)"
       />
+      <!-- 临时调试信息 -->
+      <div style="background:#ff6b6b;color:white;padding:8px;margin-bottom:8px;border-radius:4px;">
+        调试：rowData={{ groupRowData?.length }} 条
+        @if (groupRowData?.length > 0) {
+          第一条：{{ groupRowData[0] | json }}
+        }
+        <br/>
+        gridApi: {{ gridApi ? '已连接' : '未连接' }}
+        rowCount: {{ rowCount() }}
+      </div>
     </div>
   }
 
