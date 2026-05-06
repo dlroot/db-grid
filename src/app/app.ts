@@ -381,10 +381,6 @@ export class AppComponent implements OnInit {
   }
 
   // ========== 列虚拟化演示 ==========
-  colVirtualColumnDefs = this.generateManyColumns(100);
-  colVirtualRowData = this.generateWideData(50, 100);
-  colVirtualOptions = {};
-
   /** 生成大量列定义 */
   generateManyColumns(count: number): any[] {
     const cols: any[] = [
@@ -420,6 +416,10 @@ export class AppComponent implements OnInit {
     }
     return data;
   }
+
+  colVirtualColumnDefs = this.generateManyColumns(100);
+  colVirtualRowData = this.generateWideData(50, 100);
+  colVirtualOptions = {};
 
   // ========== 分页状态 ==========
   currentPage = signal<number>(1);
