@@ -507,7 +507,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   ngOnInit(): void {
     // 初始化列服务
     this.columnService.initialize(this.columnDefs);
-    this.pinnedLeftColumnIds.set(this.columnService.getPinnedLeftIds());
+    this.pinnedLeftColumnIds.set(this.pinningService.getPinnedLeftIds());
     this.dataService.setScrollConfig({ rowHeight: this.rowHeight, viewportHeight: 400, bufferSize: 5 });
     // 注入筛选服务（支持列筛选 + 快速筛选）
     this.dataService.setFilterService(this.filterService);
@@ -517,7 +517,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       this.cellDataTypeService.applyAutoTypes(this.columnDefs, this.rowData, this.gridOptions);
       // 重新初始化列服务（类型推断可能修改了 columnDefs）
       this.columnService.initialize(this.columnDefs);
-      this.pinnedLeftColumnIds.set(this.columnService.getPinnedLeftIds());
+      this.pinnedLeftColumnIds.set(this.pinningService.getPinnedLeftIds());
     }
 
     // 初始化选择服务
@@ -603,7 +603,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     }
     if (changes['columnDefs'] && !changes['columnDefs'].firstChange) {
       this.columnService.initialize(changes['columnDefs'].currentValue);
-      this.pinnedLeftColumnIds.set(this.columnService.getPinnedLeftIds());
+      this.pinnedLeftColumnIds.set(this.pinningService.getPinnedLeftIds());
       this.refreshHeader();
     }
     // 语言变更
@@ -973,7 +973,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         const newCols = result.groupColumnDefs.filter(c => !existingIds.includes(c.colId!));
         this.columnDefs = [...result.groupColumnDefs, ...this.columnDefs];
         this.columnService.initialize(this.columnDefs);
-        this.pinnedLeftColumnIds.set(this.columnService.getPinnedLeftIds());
+        this.pinnedLeftColumnIds.set(this.pinningService.getPinnedLeftIds());
       }
       // 使用 initializeNodes 直接传入节点数组
       this.dataService.initializeNodes(result.flatNodes, this.gridOptions, this.columnDefs);
