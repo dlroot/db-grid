@@ -1,11 +1,11 @@
 /**
  * 国际化服务
- * 支持 en (默认) / zh 两种语言
+ * 支持 en / zh / ja / ko 四种语言
  */
 
 import { Injectable, signal } from '@angular/core';
 
-export type Locale = 'en' | 'zh';
+export type Locale = 'en' | 'zh' | 'ja' | 'ko';
 
 const translations: Record<Locale, Record<string, string>> = {
   en: {
@@ -211,6 +211,210 @@ const translations: Record<Locale, Record<string, string>> = {
     'editor.false': '否',
     'editor.selectOptions': '请选择...',
   },
+
+  ja: {
+    // ========== Grid 基礎 ==========
+    'grid.loading': '読み込み中...',
+    'grid.noRows': 'データがありません',
+    'grid.rows': '行',
+    'grid.selected': '選択中',
+
+    // ========== ソート ==========
+    'sort.ascending': '昇順',
+    'sort.descending': '降順',
+    'sort.noSort': 'クリックでソート',
+
+    // ========== フィルタ ==========
+    'filter.click': 'クリックでフィルタ',
+
+    // ========== 列操作 ==========
+    'col.drag': 'ドラッグで列移動',
+    'col.menu': '列メニュー',
+    'col.sortAZ': 'A → Z でソート',
+    'col.sortZA': 'Z → A でソート',
+    'col.clearSort': 'ソート解除',
+    'col.filter': 'フィルタ',
+    'col.pin': '列を固定',
+    'col.unpin': '固定解除',
+    'col.pinLeft': '左に固定',
+    'col.pinRight': '右に固定',
+    'col.autoSize': 'この列に合わせる',
+    'col.autoSizeAll': '全ての列に合わせる',
+    'col.hide': 'この列を隠す',
+    'col.show': 'この列を表示',
+    'col.columns': '列',
+    'col.reset': '列をリセット',
+
+    // ========== Grid Menu ソート ==========
+    'menu.sortAsc': '昇順',
+    'menu.sortDesc': '降順',
+    'menu.clearSort': 'ソート解除',
+    'menu.filter': 'フィルタ',
+    'menu.pin': '列を固定',
+    'menu.pinLeft': '左に固定',
+    'menu.pinRight': '右に固定',
+    'menu.unpin': '固定解除',
+    'menu.autoSize': 'この列に合わせる',
+    'menu.autoSizeAll': '全ての列に合わせる',
+    'menu.hide': 'この列を隠す',
+    'menu.columns': '列の表示',
+    'menu.reset': '列をリセット',
+
+    // ========== 右クリックメニュー ==========
+    'menu.copyCell': 'セルをコピー',
+    'menu.copyRow': '行をコピー',
+    'menu.editCell': 'セルを編集',
+    'menu.selectRow': '行を選択',
+    'menu.clearSelection': '選択を解除',
+    'menu.pinRow': '行を固定',
+    'menu.unpinRow': '行の固定解除',
+
+    // ========== ツリー ==========
+    'tree.expand': '展開',
+    'tree.collapse': '折りたたむ',
+    'tree.toggle': '切り替え',
+
+    // ========== グループ ==========
+    'group.expand': 'グループを展開',
+    'group.collapse': 'グループを折りたたむ',
+    'group.toggle': 'グループを切り替え',
+    'group.expandAll': '全てのグループを展開',
+    'group.collapseAll': '全てのグループを折りたたむ',
+
+    // ========== 集計 ==========
+    'agg.sum': '合計',
+    'agg.avg': '平均',
+    'agg.min': '最小',
+    'agg.max': '最大',
+    'agg.count': '件数',
+
+    // ========== セル結合 ==========
+    'cellSpan.autoMerge': '自動結合',
+    'cellSpan.manual': '手動結合',
+    'cellSpan.clear': '結合をクリア',
+
+    // ========== フィルタ ==========
+    'filter.search': '検索...',
+    'filter.apply': '適用',
+    'filter.clear': 'クリア',
+    'filter.reset': 'リセット',
+    'filter.contains': '含む',
+    'filter.equals': '等しい',
+    'filter.startsWith': '始まる',
+    'filter.endsWith': '終わる',
+    'filter.lessThan': 'より小さい',
+    'filter.greaterThan': 'より大きい',
+    'filter.inRange': '範囲内',
+    'filter.selectAll': '全て選択',
+    'filter.selectNone': '選択解除',
+
+    // ========== エディタ ==========
+    'editor.true': 'はい',
+    'editor.false': 'いいえ',
+    'editor.selectOptions': '選択してください...',
+  },
+
+  ko: {
+    // ========== Grid 기초 ==========
+    'grid.loading': '로딩 중...',
+    'grid.noRows': '데이터 없음',
+    'grid.rows': '행',
+    'grid.selected': '선택됨',
+
+    // ========== 정렬 ==========
+    'sort.ascending': '오름차순',
+    'sort.descending': '내림차순',
+    'sort.noSort': '클릭하여 정렬',
+
+    // ========== 필터 ==========
+    'filter.click': '클릭하여 필터',
+
+    // ========== 열 작업 ==========
+    'col.drag': '드래그하여 열 이동',
+    'col.menu': '열 메뉴',
+    'col.sortAZ': 'A → Z 정렬',
+    'col.sortZA': 'Z → A 정렬',
+    'col.clearSort': '정렬 해제',
+    'col.filter': '필터',
+    'col.pin': '열 고정',
+    'col.unpin': '고정 해제',
+    'col.pinLeft': '왼쪽에 고정',
+    'col.pinRight': '오른쪽에 고정',
+    'col.autoSize': '이 열에 맞춤',
+    'col.autoSizeAll': '모든 열에 맞춤',
+    'col.hide': '이 열 숨기기',
+    'col.show': '이 열 표시',
+    'col.columns': '열',
+    'col.reset': '열 초기화',
+
+    // ========== Grid Menu 정렬 ==========
+    'menu.sortAsc': '오름차순',
+    'menu.sortDesc': '내림차순',
+    'menu.clearSort': '정렬 해제',
+    'menu.filter': '필터',
+    'menu.pin': '열 고정',
+    'menu.pinLeft': '왼쪽에 고정',
+    'menu.pinRight': '오른쪽에 고정',
+    'menu.unpin': '고정 해제',
+    'menu.autoSize': '이 열에 맞춤',
+    'menu.autoSizeAll': '모든 열에 맞춤',
+    'menu.hide': '이 열 숨기기',
+    'menu.columns': '열 표시',
+    'menu.reset': '열 초기화',
+
+    // ========== 우클릭 메뉴 ==========
+    'menu.copyCell': '셀 복사',
+    'menu.copyRow': '행 복사',
+    'menu.editCell': '셀 편집',
+    'menu.selectRow': '행 선택',
+    'menu.clearSelection': '선택 해제',
+    'menu.pinRow': '행 고정',
+    'menu.unpinRow': '행 고정 해제',
+
+    // ========== 트리 ==========
+    'tree.expand': '펼치기',
+    'tree.collapse': '접기',
+    'tree.toggle': '토글',
+
+    // ========== 그룹 ==========
+    'group.expand': '그룹 펼치기',
+    'group.collapse': '그룹 접기',
+    'group.toggle': '그룹 토글',
+    'group.expandAll': '모든 그룹 펼치기',
+    'group.collapseAll': '모든 그룹 접기',
+
+    // ========== 집계 ==========
+    'agg.sum': '합계',
+    'agg.avg': '평균',
+    'agg.min': '최소',
+    'agg.max': '최대',
+    'agg.count': '개수',
+
+    // ========== 셀 병합 ==========
+    'cellSpan.autoMerge': '자동 병합',
+    'cellSpan.manual': '수동 병합',
+    'cellSpan.clear': '병합 해제',
+
+    // ========== 필터 ==========
+    'filter.search': '검색...',
+    'filter.apply': '적용',
+    'filter.clear': '지우기',
+    'filter.reset': '초기화',
+    'filter.contains': '포함',
+    'filter.equals': '같음',
+    'filter.startsWith': '시작',
+    'filter.endsWith': '끝',
+    'filter.lessThan': '작음',
+    'filter.greaterThan': '큼',
+    'filter.inRange': '범위',
+    'filter.selectAll': '전체 선택',
+    'filter.selectNone': '선택 해제',
+
+    // ========== 편집기 ==========
+    'editor.true': '예',
+    'editor.false': '아니오',
+    'editor.selectOptions': '옵션을 선택하세요...',
+  },
 };
 
 @Injectable()
@@ -252,6 +456,8 @@ export class I18nService {
     const names: Record<Locale, string> = {
       en: 'English',
       zh: '中文',
+      ja: '日本語',
+      ko: '한국어',
     };
     return names[locale] ?? locale;
   }
