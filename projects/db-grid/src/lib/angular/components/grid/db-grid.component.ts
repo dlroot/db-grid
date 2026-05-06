@@ -661,6 +661,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.dataService.setScrollConfig({ viewportHeight: bodyHeight, rowHeight: this.rowHeight });
 
     // 初始化数据服务（即使 rowData 为空也要初始化，确保 grid 状态正确）
+    console.log('[DBGrid] ngAfterViewInit setRowData', { rowData: this.rowData?.length, enableGrouping: this.enableGrouping, groupConfig: !!this.groupConfig });
     this.setRowData(this.rowData || []);
 
     this.renderHeader();
@@ -952,6 +953,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       this.dataService.initialize(this.treeService.getFlattenedNodes().map(n => n.data), this.gridOptions, this.columnDefs);
       this.rowCount.set(this.treeService.getDisplayCount());
     } else if (this.enableGrouping && this.groupConfig) {
+      console.log('[DBGrid] 分组模式初始化', { rowDataLength: rowData?.length, groupConfig: this.groupConfig });
       this.isGroupMode = true;
       this.groupService.initialize(rowData, this.groupConfig);
       const result = this.groupService.getResult();
@@ -965,6 +967,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       // 使用 initializeNodes 直接传入节点数组
       this.dataService.initializeNodes(result.flatNodes, this.gridOptions, this.columnDefs);
       this.rowCount.set(this.groupService.getFlattenedNodes().length);
+      console.log('[DBGrid] 分组模式 rowCount:', this.groupService.getFlattenedNodes().length, 'flatNodes:', this.groupService.getResult().flatNodes.length);
     } else if (this.pivotMode && this.pivotColumn && this.pivotRowGroupColumns.length > 0) {
       // ========== 透视模式 ==========
       this.isPivotMode = true;
