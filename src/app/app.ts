@@ -1,5 +1,6 @@
 import { Component, OnInit, signal, ViewChild } from "@angular/core";
 import { CommonModule } from "@angular/common";
+import { Chart } from "chart.js";
 import { DbGridComponent } from "../../projects/db-grid/src/lib/angular/components/grid/db-grid.component";
 
 @Component({
@@ -856,37 +857,53 @@ export class AppComponent implements OnInit {
 
   // ========== 图表演示 ==========
   chartsType = signal<'bar' | 'line' | 'pie' | 'doughnut'>('bar');
+  private chartInstance: any = null;
 
   renderChart(): void {
-    if (this.gridApi) {
-      this.gridApi.destroyChart?.('mainChart');
-      const config = this.gridApi.chartsService?.chartConfigFromGridData
-        ? this.gridApi.chartsService.chartConfigFromGridData(
-            this.chartsType(),
-            'DB Grid 数据统计',
-            ['Q1', 'Q2', 'Q3', 'Q4'],
-            [
-              { label: '销售额', data: [12000, 15000, 18000, 22000] },
-              { label: '利润', data: [3000, 4000, 5500, 7000] },
-            ]
-          )
-        : {
-            type: this.chartsType(),
-            title: 'DB Grid 数据统计',
-            data: {
-              labels: ['Q1', 'Q2', 'Q3', 'Q4'],
-              datasets: [{
-                label: '销售额',
-                data: [12000, 15000, 18000, 22000],
-                backgroundColor: ['#5470c6','#91cc75','#fac858','#ee6666'],
-              }, {
-                label: '利润',
-                data: [3000, 4000, 5500, 7000],
-                backgroundColor: ['#73c0de','#3ba272','#fc8452','#9a60b4'],
-              }]
-            }
-          };
-      this.gridApi.addChart?.('mainChart', config);
+    const canvas = document.getElementById('mainChart') as HTMLCanvasElement;
+    if (!canvas) return;
+
+    // Destroy existing chart
+    if (this.chartInstance) {
+      this.chartInstance.destroy();
+      this.chartInstance = null;
     }
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    this.chartInstance = new Chart(ctx, {
+      type: this.chartsType(),
+      data: {
+        labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+        datasets: [{
+          label: '销售额',
+          data: [12000, 15000, 18000, 22000],
+          backgroundColor: ['#5470c6', '#91cc75', '#fac858', '#ee6666'],
+          borderColor: '#5470c6',
+          borderWidth: 1,
+        }, {
+          label: '利润',
+          data: [3000, 4000, 5500, 7000],
+          backgroundColor: ['#73c0de', '#3ba272', '#fc8452', '#9a60b4'],
+          borderColor: '#73c0de',
+          borderWidth: 1,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          title: {
+            display: true,
+            text: 'DB Grid 数据统计',
+            font: { size: 14 }
+          },
+          legend: {
+            position: 'bottom'
+          }
+        }
+      }
+    });
   }
 }
