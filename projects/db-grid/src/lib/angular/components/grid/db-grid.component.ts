@@ -104,6 +104,9 @@ import {
       <div #bodyContainer class="db-grid-body-container" (scroll)="onScroll($event)">
         <div #virtualScroll class="db-grid-virtual-scroll">
           <div #rowsContainer class="db-grid-rows"></div>
+          @if (pinnedLeftColumnIds.length > 0) {
+            <div #pinnedLeftContainer class="db-grid-pinned-left"></div>
+          }
         </div>
       </div>
       <div #footerContainer class="db-grid-footer-container"></div>
@@ -189,6 +192,8 @@ import {
     .db-grid-body-container { flex: 1; overflow-y: auto; overflow-x: auto; position: relative; }
     .db-grid-virtual-scroll { position: relative; min-width: 100%; }
     .db-grid-rows { display: flex; flex-direction: column; position: absolute; left: 0; min-width: 100%; }
+    .db-grid-pinned-left { position: absolute; left: 0; top: 0; z-index: 2; overflow: hidden; }
+    .db-grid-pinned-left .db-grid-row { position: sticky; left: 0; }
     .db-grid-footer-container { flex-shrink: 0; border-top: 1px solid var(--db-grid-border-color, #ddd); }
     .db-grid-overlay {
       position: absolute; top: 0; left: 0; right: 0; bottom: 0;
@@ -370,6 +375,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   @ViewChild('bodyContainer') bodyContainer!: ElementRef<HTMLDivElement>;
   @ViewChild('virtualScroll') virtualScroll!: ElementRef<HTMLDivElement>;
   @ViewChild('rowsContainer') rowsContainer!: ElementRef<HTMLDivElement>;
+  @ViewChild('pinnedLeftContainer') pinnedLeftContainer!: ElementRef<HTMLDivElement>;
   @ViewChild('footerContainer') footerContainer!: ElementRef<HTMLDivElement>;
 
   // ============ Signals ============
@@ -377,6 +383,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   viewportInfo = signal<{ startIndex: number; endIndex: number; offsetY: number }>({
     startIndex: 0, endIndex: 0, offsetY: 0,
   });
+  pinnedLeftColumnIds = signal<string[]>([]);
   themeClass = computed(() => `db-grid-theme-${this.theme()}`);
 
   // ============ Services ============
@@ -500,6 +507,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   ngOnInit(): void {
     // 初始化列服务
     this.columnService.initialize(this.columnDefs);
+    this.pinnedLeftColumnIds.set(this.columnService.getPinnedLeftIds());
     this.dataService.setScrollConfig({ rowHeight: this.rowHeight, viewportHeight: 400, bufferSize: 5 });
     // 注入筛选服务（支持列筛选 + 快速筛选）
     this.dataService.setFilterService(this.filterService);
@@ -509,6 +517,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       this.cellDataTypeService.applyAutoTypes(this.columnDefs, this.rowData, this.gridOptions);
       // 重新初始化列服务（类型推断可能修改了 columnDefs）
       this.columnService.initialize(this.columnDefs);
+      this.pinnedLeftColumnIds.set(this.columnService.getPinnedLeftIds());
     }
 
     // 初始化选择服务
@@ -594,6 +603,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     }
     if (changes['columnDefs'] && !changes['columnDefs'].firstChange) {
       this.columnService.initialize(changes['columnDefs'].currentValue);
+      this.pinnedLeftColumnIds.set(this.columnService.getPinnedLeftIds());
       this.refreshHeader();
     }
     // 语言变更
@@ -963,6 +973,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         const newCols = result.groupColumnDefs.filter(c => !existingIds.includes(c.colId!));
         this.columnDefs = [...result.groupColumnDefs, ...this.columnDefs];
         this.columnService.initialize(this.columnDefs);
+        this.pinnedLeftColumnIds.set(this.columnService.getPinnedLeftIds());
       }
       // 使用 initializeNodes 直接传入节点数组
       this.dataService.initializeNodes(result.flatNodes, this.gridOptions, this.columnDefs);
@@ -1827,6 +1838,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       }
 
       rowsContainer.innerHTML = '';
+      this.pinnedLeftContainer.nativeElement.innerHTML = '';
       rowsContainer.style.transform = `translateY(${viewport.offsetY}px)`;
 
       const visibleData = this.serverSideService.getRowsInRange(viewport.startIndex, viewport.endIndex);
@@ -1868,6 +1880,9 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         const totalW = pinnedLeftWidth + colRange.totalScrollableWidth + pinnedRightWidth;
         virtualScroll.style.width = `${totalW}px`;
         rowsContainer.style.width = `${totalW}px`;
+        // 设置 pinned left 容器宽度
+        this.pinnedLeftContainer.nativeElement.style.width = `${pinnedLeftWidth}px`;
+        this.pinnedLeftContainer.nativeElement.style.height = `${totalHeight}px`;
       }
     }
 
@@ -1896,18 +1911,17 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         }
 
         if (this.enableColVirtualization && colRange) {
-          // 列虚拟化：只渲染可见列
+          // 列虚拟化：只渲染可见列（不含 pinned left，pinned 在独立层渲染）
           const renderResult = this.rowRenderer.render(rowIndex, data, rowNode);
           const rowElement = renderResult.rowElement;
           // 先清空默认渲染的所有列单元格
           rowElement.innerHTML = '';
-          // 重新渲染仅可见列
-          const visibleCols = [...colRange.leftPinned, ...colRange.center, ...colRange.rightPinned];
+          // 重新渲染仅可见列（排除 pinned left）
+          const visibleCols = [...colRange.center, ...colRange.rightPinned];
           this.rowRenderer.renderCellsForColumns(rowElement, rowIndex, data, rowNode, visibleCols);
-          // 为中间列设置偏移
+          // 为中间列设置偏移（pinned left 宽度）
           if (colRange.offsetX > 0) {
-            const centerStart = colRange.leftPinned.length;
-            for (let ci = centerStart; ci < centerStart + colRange.center.length; ci++) {
+            for (let ci = 0; ci < colRange.center.length; ci++) {
               const cell = rowElement.children[ci] as HTMLElement;
               if (cell) {
                 const existingTransform = cell.style.transform || '';
@@ -1917,10 +1931,32 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
           }
           rowsContainer.appendChild(rowElement);
           this.setupRowEvents(rowElement, rowIndex, data, rowNode);
+
+          // 渲染 pinned left 列到独立层
+          if (colRange.leftPinned.length > 0) {
+            const pinnedRowEl = document.createElement('div');
+            pinnedRowEl.className = 'db-grid-row';
+            pinnedRowEl.style.cssText = `display: flex; position: absolute; left: 0; transform: translateY(${viewport.offsetY + (viewport.startIndex + i) * this.rowHeight}px); z-index: 2;`;
+            this.rowRenderer.renderCellsForColumns(pinnedRowEl, rowIndex, data, rowNode, colRange.leftPinned);
+            this.pinnedLeftContainer.nativeElement.appendChild(pinnedRowEl);
+          }
         } else {
+          // 非列虚拟化模式：渲染全部列（pinned 列的 sticky 样式会生效）
           const { rowElement } = this.rowRenderer.render(rowIndex, data, rowNode);
           rowsContainer.appendChild(rowElement);
           this.setupRowEvents(rowElement, rowIndex, data, rowNode);
+
+          // pinned left 独立层渲染（当有 pinned 列时）
+          if (this.pinnedLeftColumnIds().length > 0) {
+            const pinnedCols = this.columnService.getVisibleColumns().filter(c => c.pinnedLeft);
+            if (pinnedCols.length > 0) {
+              const pinnedRowEl = document.createElement('div');
+              pinnedRowEl.className = 'db-grid-row';
+              pinnedRowEl.style.cssText = `display: flex; position: absolute; left: 0; transform: translateY(${viewport.offsetY + (viewport.startIndex + i) * this.rowHeight}px); z-index: 2;`;
+              this.rowRenderer.renderCellsForColumns(pinnedRowEl, rowIndex, data, rowNode, pinnedCols);
+              this.pinnedLeftContainer.nativeElement.appendChild(pinnedRowEl);
+            }
+          }
         }
       }
     });

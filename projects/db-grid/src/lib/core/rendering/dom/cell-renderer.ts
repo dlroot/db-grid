@@ -213,7 +213,7 @@ export class CellRendererService {
 
     // 如果有自定义渲染器
     if (colDef.cellRenderer) {
-      this.renderCustomCellRenderer(container, colDef, displayValue, data, {
+      this.renderCustomCellRenderer(container, colDef, displayValue, data, rowNode, {
         rowIndex,
       });
       return;
@@ -241,6 +241,7 @@ export class CellRendererService {
     colDef: ColDef,
     value: any,
     data: any,
+    rowNode: RowNode | undefined,
     extra: { rowIndex: number }
   ): void {
     const renderer = this.getRenderer(colDef.cellRenderer);
@@ -252,7 +253,7 @@ export class CellRendererService {
         colDef,
         column: colDef,
         context: {},
-        node: null,
+        node: rowNode || null,
         api: null,
         rowIndex: extra.rowIndex,
         $scope: null,
@@ -381,6 +382,17 @@ export class CellRendererService {
     styles.push(`max-width: ${width}px`);
     styles.push(`flex: none`);
     styles.push(`box-sizing: border-box`); // 与 header 一致，padding 包含在 width 内
+
+    // 固定列样式
+    if (colDef.pinnedLeft) {
+      styles.push(`position: sticky`);
+      styles.push(`left: 0`);
+      styles.push(`z-index: 1`);
+    } else if (colDef.pinnedRight) {
+      styles.push(`position: sticky`);
+      styles.push(`right: 0`);
+      styles.push(`z-index: 1`);
+    }
 
     if (colDef.cellStyle) {
       if (typeof colDef.cellStyle === 'object') {

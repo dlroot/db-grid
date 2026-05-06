@@ -69,6 +69,7 @@ export class GroupService {
         pinnedLeft: true,
         suppressMovable: true,
         cellRenderer: (params: any) => {
+          if (!params?.node) return '';
           const node = params.node as RowNode;
           if (!node.group) return '';
           const level = node.level || 0;
