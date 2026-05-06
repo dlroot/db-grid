@@ -64,6 +64,7 @@ import {
   DragDropService,
   FilterService,
   EditorService,
+  RowDragService,
   TreeNodeConfig,
   GroupConfig,
   CellDataTypeService,
@@ -367,6 +368,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   // ============ 拖拽排序 Inputs ============
   @Input() rowDragEnabled: boolean = false;
+  @Input() rowDragMultiRow: boolean = false;
   @Input() colDragEnabled: boolean = false;
 
   // ============ ViewChild ============
@@ -407,6 +409,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   private contextMenuService: ContextMenuService;
   private columnMenuService: ColumnMenuService;
   private dragDropService: DragDropService;
+  private rowDragService: RowDragService;
   private filterService: FilterService;
   private editorService: EditorService;
   private cellDataTypeService: CellDataTypeService;
@@ -486,6 +489,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.contextMenuService = new ContextMenuService();
     this.columnMenuService = new ColumnMenuService();
     this.dragDropService = new DragDropService();
+    this.rowDragService = new RowDragService();
     this.filterService = new FilterService();
     this.editorService = new EditorService();
     this.cellDataTypeService = new CellDataTypeService();
@@ -576,7 +580,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     // 初始化拖拽服务
     this.dragDropService.initialize({
       rowDragEnabled: this.rowDragEnabled,
+      rowDragMultiDrag: this.rowDragMultiRow,
       colDragEnabled: this.colDragEnabled,
+    });
+    this.rowDragService.initialize({
+      rowDragEnabled: this.rowDragEnabled,
+      rowDragMultiRow: this.rowDragMultiRow,
     });
 
     // 初始化服务端行模型
@@ -639,10 +648,15 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       this.refreshView();
     }
     // 拖拽配置变更
-    if (changes['rowDragEnabled'] || changes['colDragEnabled']) {
+    if (changes['rowDragEnabled'] || changes['colDragEnabled'] || changes['rowDragMultiRow']) {
       this.dragDropService.initialize({
         rowDragEnabled: this.rowDragEnabled,
+        rowDragMultiDrag: this.rowDragMultiRow,
         colDragEnabled: this.colDragEnabled,
+      });
+      this.rowDragService.initialize({
+        rowDragEnabled: this.rowDragEnabled,
+        rowDragMultiRow: this.rowDragMultiRow,
       });
     }
     // 透视配置变更
@@ -919,6 +933,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       startDrag: (rowNodes: any[], event: MouseEvent) => this.startDrag(rowNodes, event),
       endDrag: (targetIndex: number, event: MouseEvent) => this.endDrag(targetIndex, event),
       getDragDropService: () => this.dragDropService,
+      getRowDragService: () => this.rowDragService,
 
       // ========== 服务端行模型 ==========
       getServerSideService: () => this.serverSideService,
