@@ -93,8 +93,8 @@ export class RowRendererService {
       styles.push(`height: ${rowNode.rowHeight}px`);
     }
 
-    // 固定位置（用于虚拟滚动）
-    // 位置由容器控制，这里不需要设置 top
+    // 必须使用 flex 布局才能让单元格水平排列
+    styles.push(`display: flex`);
 
     return styles.join('; ');
   }
