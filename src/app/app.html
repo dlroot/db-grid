@@ -86,6 +86,8 @@
         [theme]="currentTheme()"
         [enableSorting]="true"
         [enableFilter]="true"
+        [pagination]="true"
+        [paginationPageSize]="20"
         (gridReady)="onGridReady($event)"
         (selectionChanged)="onSelectionChanged()"
         (cellClicked)="onCellClicked($event)"
@@ -111,6 +113,8 @@
         [rowSelection]="'multiple'"
         [treeData]="true"
         [treeConfig]="treeConfig"
+        [pagination]="true"
+        [paginationPageSize]="20"
         (gridReady)="onGridReady($event)"
       />
     </div>
@@ -133,6 +137,8 @@
         [theme]="currentTheme()"
         [enableGrouping]="true"
         [groupConfig]="groupConfig"
+        [pagination]="true"
+        [paginationPageSize]="20"
         (gridReady)="onGridReady($event)"
       />
       <!-- 临时调试信息 -->
@@ -245,6 +251,8 @@
         [theme]="currentTheme()"
         [rowSelection]="'multiple'"
         [editable]="true"
+        [pagination]="true"
+        [paginationPageSize]="20"
         (gridReady)="onGridReady($event)"
       />
     </div>
