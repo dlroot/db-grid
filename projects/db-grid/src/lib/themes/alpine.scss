@@ -261,3 +261,77 @@
     background: transparent;
   }
 }
+
+// 分页控件样式
+.db-grid-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: #fafafa;
+  border-top: 1px solid var(--db-grid-border-color, #ddd);
+  font-size: 13px;
+  color: #666;
+}
+
+.db-grid-pagination-info {
+  flex-shrink: 0;
+}
+
+.db-grid-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.db-grid-pagination-btn {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+  color: #333;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+
+  &:hover:not(:disabled) {
+    background: #e3f2fd;
+    border-color: #2196f3;
+    color: #2196f3;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &.active {
+    background: #2196f3;
+    border-color: #2196f3;
+    color: #fff;
+    font-weight: 600;
+  }
+}
+
+.db-grid-pagination-ellipsis {
+  padding: 0 4px;
+  color: #999;
+}
+
+.db-grid-pagination-size {
+  margin-left: 16px;
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+  color: #333;
+  font-size: 13px;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    border-color: #2196f3;
+  }
+}
