@@ -1133,15 +1133,15 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       if (data) rows.push(data);
     }
 
-    // 应用分页
-    if (this.pagination) {
-      const pageInfo = this.paginationService.getPageInfo();
-      if (pageInfo && pageInfo.totalRows > 0) {
-        const startIndex = this.paginationService.getStartRowIndex();
-        const endIndex = this.paginationService.getEndRowIndex();
-        return rows.slice(startIndex, endIndex);
-      }
-    }
+    // 应用分页 - 临时禁用以便测试
+    // if (this.pagination) {
+    //   const pageInfo = this.paginationService.getPageInfo();
+    //   if (pageInfo && pageInfo.totalRows > 0) {
+    //     const startIndex = this.paginationService.getStartRowIndex();
+    //     const endIndex = this.paginationService.getEndRowIndex();
+    //     return rows.slice(startIndex, endIndex);
+    //   }
+    // }
 
     return rows;
   }
