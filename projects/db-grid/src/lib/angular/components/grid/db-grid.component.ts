@@ -823,6 +823,29 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       // ========== 滚动 ==========
       ensureIndexVisible: (index: number, align?: string) => this.ensureIndexVisible(index, align),
       ensureNodeVisible: (node: any, align?: string) => this.ensureNodeVisible(node, align),
+      ensureColumnVisible: (colId: string) => {
+        // 横向滚动使指定列可见（列虚拟化模式下需要计算并滚动）
+        if (!this.enableColVirtualization) return;
+        const bodyWidth = this.bodyContainer?.nativeElement?.clientWidth || 800;
+        const colRange = this.columnService.getVisibleColumnsInRange(this.scrollLeft, bodyWidth, this.colVirtualBuffer);
+        const allCols = [...(colRange?.leftPinned || []), ...(colRange?.center || []), ...(colRange?.rightPinned || [])];
+        const colIndex = allCols.findIndex(c => (c.colId || c.field) === colId);
+        if (colIndex < 0) return;
+        // 计算当前滚动位置中该列的左边界
+        let offsetX = colRange?.offsetX || 0;
+        for (let i = 0; i < colIndex; i++) {
+          const col = allCols[i];
+          offsetX += (this.columnService.getColumnState(col)?.width || 200);
+        }
+        const colWidth = this.columnService.getColumnState(allCols[colIndex])?.width || 200;
+        // 如果列不在可见范围内，滚动到合适位置
+        if (offsetX < this.scrollLeft) {
+          this.bodyContainer.nativeElement.scrollLeft = offsetX;
+        } else if (offsetX + colWidth > this.scrollLeft + bodyWidth) {
+          this.bodyContainer.nativeElement.scrollLeft = offsetX + colWidth - bodyWidth;
+        }
+      },
+      getColumnDef: (colId: string) => this.columnService.getColumn(colId) || this.columnDefs.find(c => (c.colId || c.field) === colId),
       getViewportInfo: () => this.viewportInfo(),
 
       // ========== 树形数据 ==========
@@ -1896,9 +1919,11 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         const totalW = pinnedLeftWidth + colRange.totalScrollableWidth + pinnedRightWidth;
         virtualScroll.style.width = `${totalW}px`;
         rowsContainer.style.width = `${totalW}px`;
-        // 设置 pinned left 容器宽度
-        this.pinnedLeftContainer.nativeElement.style.width = `${pinnedLeftWidth}px`;
-        this.pinnedLeftContainer.nativeElement.style.height = `${totalHeight}px`;
+        // 设置 pinned left 容器宽度（容器可能不存在，需要防御性检查）
+        if (this.pinnedLeftContainer?.nativeElement) {
+          this.pinnedLeftContainer.nativeElement.style.width = `${pinnedLeftWidth}px`;
+          this.pinnedLeftContainer.nativeElement.style.height = `${totalHeight}px`;
+        }
       }
     }
 
@@ -1954,7 +1979,9 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
             pinnedRowEl.className = 'db-grid-row';
             pinnedRowEl.style.cssText = `display: flex; position: absolute; left: 0; transform: translateY(${viewport.offsetY + (viewport.startIndex + i) * this.rowHeight}px); z-index: 2;`;
             this.rowRenderer.renderCellsForColumns(pinnedRowEl, rowIndex, data, rowNode, colRange.leftPinned);
-            this.pinnedLeftContainer.nativeElement.appendChild(pinnedRowEl);
+            if (this.pinnedLeftContainer?.nativeElement) {
+              this.pinnedLeftContainer.nativeElement.appendChild(pinnedRowEl);
+            }
           }
         } else {
           // 非列虚拟化模式：渲染全部列（pinned 列的 sticky 样式会生效）
@@ -1970,7 +1997,9 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
               pinnedRowEl.className = 'db-grid-row';
               pinnedRowEl.style.cssText = `display: flex; position: absolute; left: 0; transform: translateY(${viewport.offsetY + (viewport.startIndex + i) * this.rowHeight}px); z-index: 2;`;
               this.rowRenderer.renderCellsForColumns(pinnedRowEl, rowIndex, data, rowNode, pinnedCols);
-              this.pinnedLeftContainer.nativeElement.appendChild(pinnedRowEl);
+              if (this.pinnedLeftContainer?.nativeElement) {
+                this.pinnedLeftContainer.nativeElement.appendChild(pinnedRowEl);
+              }
             }
           }
         }
