@@ -539,7 +539,10 @@ export class HeaderRendererService {
     const deltaX = e.clientX - this.resizeStartX;
     const newWidth = Math.max(50, this.resizeStartWidth + deltaX); // 最小宽度 50px
 
-    // 实时更新列宽样式
+    // 更新列宽配置
+    this.resizeColDef.width = newWidth;
+
+    // 实时更新表头单元格宽度
     const colId = this.resizeColDef.colId || this.resizeColDef.field || '';
     const headerCell = document.querySelector(`.db-grid-header-cell[data-col-id="${colId}"]`) as HTMLElement;
     if (headerCell) {
@@ -565,7 +568,7 @@ export class HeaderRendererService {
     // 更新列宽配置
     this.resizeColDef.width = newWidth;
 
-    // 通知回调
+    // 通知回调 - 触发完整的重新渲染
     const colId = this.resizeColDef.colId || this.resizeColDef.field || '';
     if (this.onColumnResize) {
       this.onColumnResize(colId, newWidth);
