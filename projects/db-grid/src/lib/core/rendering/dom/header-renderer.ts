@@ -509,6 +509,9 @@ export class HeaderRendererService {
     if (colDef.resizable !== false) {
       handle.classList.add('db-grid-resize-handle-active');
       this.setupColumnResize(handle, colDef, colId);
+      console.log('[HeaderRenderer] Created resize handle for col:', colId, 'resizable:', colDef.resizable);
+    } else {
+      console.log('[HeaderRenderer] Column NOT resizable:', colId, 'resizable:', colDef.resizable);
     }
 
     return handle;
@@ -517,12 +520,14 @@ export class HeaderRendererService {
   /** 设置列宽调整事件 */
   private setupColumnResize(handle: HTMLElement, colDef: ColDef, colId: string): void {
     handle.addEventListener('mousedown', (e: MouseEvent) => {
+      console.log('[HeaderRenderer] Resize mousedown on col:', colId, 'event:', e);
       e.preventDefault();
       e.stopPropagation();
 
       this.resizeColDef = colDef;
       this.resizeStartX = e.clientX;
       this.resizeStartWidth = colDef.width || 200;
+      console.log('[HeaderRenderer] Starting resize. startX:', this.resizeStartX, 'startWidth:', this.resizeStartWidth);
 
       const onMove = (ev: MouseEvent) => this.onResizeMove(ev);
       const onUp = (ev: MouseEvent) => this.onResizeUp(ev, onMove, onUp);

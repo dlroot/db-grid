@@ -1864,11 +1864,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       this.reorderColumn(fromColId, toColId);
     });
     this.headerRenderer.setOnColumnResize((colId, newWidth) => {
-      // 更新列宽并重新渲染
+      console.log('[DbGrid] Column resize callback:', colId, 'newWidth:', newWidth);
       const colDef = this.columnDefs.find(c => (c.colId || c.field) === colId);
       if (colDef) {
         colDef.width = newWidth;
         this.columnService.setColumnWidth(colId, newWidth);
+        console.log('[DbGrid] Refreshing header and rows');
         this.refreshHeader();
         this.renderRows();
       }
