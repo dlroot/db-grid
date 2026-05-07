@@ -690,6 +690,9 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
     this.renderHeader();
     this.renderRows();
+    if (this.pagination) {
+      this.renderFooter();
+    }
 
     // ========== 初始化 Accessibility Service ==========
     if (this.gridContainer?.nativeElement) {
@@ -1129,6 +1132,17 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       const data = this.dataService.getRowData(i);
       if (data) rows.push(data);
     }
+
+    // 应用分页
+    if (this.pagination) {
+      const pageInfo = this.paginationService.getPageInfo();
+      if (pageInfo && pageInfo.totalRows > 0) {
+        const startIndex = this.paginationService.getStartRowIndex();
+        const endIndex = this.paginationService.getEndRowIndex();
+        return rows.slice(startIndex, endIndex);
+      }
+    }
+
     return rows;
   }
 
@@ -1874,6 +1888,106 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         this.renderRows();
       }
     });
+  }
+
+  /** 渲染分页控件 */
+  private renderFooter(): void {
+    const container = this.footerContainer?.nativeElement;
+    if (!container) return;
+
+    const pageInfo = this.paginationService.getPageInfo();
+    const totalRows = pageInfo.totalRows || 0;
+    const pageSize = pageInfo.pageSize || 20;
+    const currentPage = pageInfo.currentPage || 1;
+    const totalPages = this.paginationService.getTotalPages();
+    const startRow = totalRows > 0 ? (currentPage - 1) * pageSize + 1 : 0;
+    const endRow = Math.min(currentPage * pageSize, totalRows);
+
+    container.innerHTML = `
+      <div class="db-grid-pagination">
+        <span class="db-grid-pagination-info">
+          显示 ${startRow}-${endRow} 条，共 ${totalRows} 条
+        </span>
+        <div class="db-grid-pagination-controls">
+          <button class="db-grid-pagination-btn" data-action="first" ${currentPage <= 1 ? 'disabled' : ''}>|&lt;</button>
+          <button class="db-grid-pagination-btn" data-action="prev" ${currentPage <= 1 ? 'disabled' : ''}>&lt;</button>
+          ${this.renderPageButtons(currentPage, totalPages)}
+          <button class="db-grid-pagination-btn" data-action="next" ${currentPage >= totalPages ? 'disabled' : ''}>&gt;</button>
+          <button class="db-grid-pagination-btn" data-action="last" ${currentPage >= totalPages ? 'disabled' : ''}>&gt;|</button>
+        </div>
+        <select class="db-grid-pagination-size">
+          <option value="10" ${pageSize === 10 ? 'selected' : ''}>10条/页</option>
+          <option value="20" ${pageSize === 20 ? 'selected' : ''}>20条/页</option>
+          <option value="50" ${pageSize === 50 ? 'selected' : ''}>50条/页</option>
+          <option value="100" ${pageSize === 100 ? 'selected' : ''}>100条/页</option>
+        </select>
+      </div>
+    `;
+
+    // 绑定分页按钮事件
+    container.querySelectorAll('.db-grid-pagination-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement;
+        const action = target.dataset['action'];
+        const page = target.dataset['page'] ? parseInt(target.dataset['page'], 10) : null;
+
+        if (action === 'first') this.paginationService.setCurrentPage(1);
+        else if (action === 'prev') this.paginationService.setCurrentPage(currentPage - 1);
+        else if (action === 'next') this.paginationService.setCurrentPage(currentPage + 1);
+        else if (action === 'last') this.paginationService.setCurrentPage(totalPages);
+        else if (page) this.paginationService.setCurrentPage(page);
+
+        this.renderFooter();
+        this.renderRows();
+      });
+    });
+
+    // 绑定每页条数选择事件
+    const sizeSelect = container.querySelector('.db-grid-pagination-size') as HTMLSelectElement;
+    if (sizeSelect) {
+      sizeSelect.addEventListener('change', (e) => {
+        const target = e.target as HTMLSelectElement;
+        this.paginationService.setPageSize(parseInt(target.value, 10));
+        this.renderFooter();
+        this.renderRows();
+      });
+    }
+  }
+
+  /** 渲染分页页码按钮 */
+  private renderPageButtons(currentPage: number, totalPages: number): string {
+    if (totalPages <= 1) return '';
+
+    const buttons: string[] = [];
+    const maxVisible = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+
+    if (endPage - startPage < maxVisible - 1) {
+      startPage = Math.max(1, endPage - maxVisible + 1);
+    }
+
+    if (startPage > 1) {
+      buttons.push(`<button class="db-grid-pagination-btn" data-page="1">1</button>`);
+      if (startPage > 2) buttons.push(`<span class="db-grid-pagination-ellipsis">...</span>`);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      const active = i === currentPage ? 'active' : '';
+      buttons.push(`<button class="db-grid-pagination-btn ${active}" data-page="${i}">${i}</button>`);
+    }
+
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) buttons.push(`<span class="db-grid-pagination-ellipsis">...</span>`);
+      buttons.push(`<button class="db-grid-pagination-btn" data-page="${totalPages}">${totalPages}</button>`);
+    }
+
+    return buttons.join('');
+  }
+
+  /** 刷新页脚 */
+  refreshFooter(): void {
+    if (this.pagination) this.renderFooter();
   }
 
   private renderRows(): void {
