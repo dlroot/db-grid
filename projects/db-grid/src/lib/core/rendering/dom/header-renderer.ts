@@ -30,6 +30,12 @@ export class HeaderRendererService {
   private dragIndicatorEl: HTMLElement | null = null;
   private onColDragEnd?: (fromColId: string, toColId: string) => void;
 
+  // ========== 列宽调整状态 ==========
+  private resizeColDef: ColDef | null = null;
+  private resizeStartX = 0;
+  private resizeStartWidth = 0;
+  private onColumnResize?: (colId: string, newWidth: number) => void;
+
   constructor(private columnService: ColumnService, private i18n?: I18nService) {}
 
   /** 渲染表头 */
@@ -312,7 +318,7 @@ export class HeaderRendererService {
     header.appendChild(menuButton);
 
     // 调整大小手柄
-    const resizeHandle = this.createResizeHandle(colDef);
+    const resizeHandle = this.createResizeHandle(colDef, colId);
     header.appendChild(resizeHandle);
 
     // 设置交互事件
@@ -496,15 +502,76 @@ export class HeaderRendererService {
   }
 
   /** 创建调整大小手柄 */
-  private createResizeHandle(colDef: ColDef): HTMLElement {
+  private createResizeHandle(colDef: ColDef, colId: string): HTMLElement {
     const handle = document.createElement('div');
     handle.className = 'db-grid-resize-handle';
 
     if (colDef.resizable !== false) {
       handle.classList.add('db-grid-resize-handle-active');
+      this.setupColumnResize(handle, colDef, colId);
     }
 
     return handle;
+  }
+
+  /** 设置列宽调整事件 */
+  private setupColumnResize(handle: HTMLElement, colDef: ColDef, colId: string): void {
+    handle.addEventListener('mousedown', (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      this.resizeColDef = colDef;
+      this.resizeStartX = e.clientX;
+      this.resizeStartWidth = colDef.width || 200;
+
+      const onMove = (ev: MouseEvent) => this.onResizeMove(ev);
+      const onUp = (ev: MouseEvent) => this.onResizeUp(ev, onMove, onUp);
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  }
+
+  /** 列宽调整移动 */
+  private onResizeMove(e: MouseEvent): void {
+    if (!this.resizeColDef) return;
+
+    const deltaX = e.clientX - this.resizeStartX;
+    const newWidth = Math.max(50, this.resizeStartWidth + deltaX); // 最小宽度 50px
+
+    // 实时更新列宽样式
+    const colId = this.resizeColDef.colId || this.resizeColDef.field || '';
+    const headerCell = document.querySelector(`.db-grid-header-cell[data-col-id="${colId}"]`) as HTMLElement;
+    if (headerCell) {
+      headerCell.style.width = `${newWidth}px`;
+      headerCell.style.minWidth = `${newWidth}px`;
+      headerCell.style.maxWidth = `${newWidth}px`;
+    }
+  }
+
+  /** 列宽调整结束 */
+  private onResizeUp(e: MouseEvent, onMove: (ev: MouseEvent) => void, onUp: (ev: MouseEvent) => void): void {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+
+    if (!this.resizeColDef) {
+      this.resizeColDef = null;
+      return;
+    }
+
+    const deltaX = e.clientX - this.resizeStartX;
+    const newWidth = Math.max(50, this.resizeStartWidth + deltaX);
+
+    // 更新列宽配置
+    this.resizeColDef.width = newWidth;
+
+    // 通知回调
+    const colId = this.resizeColDef.colId || this.resizeColDef.field || '';
+    if (this.onColumnResize) {
+      this.onColumnResize(colId, newWidth);
+    }
+
+    this.resizeColDef = null;
   }
 
   /** 设置表头交互事件 */
@@ -683,6 +750,11 @@ export class HeaderRendererService {
   /** 设置列拖拽回调（由 DbGridComponent 调用） */
   setOnColDragEnd(callback: (fromColId: string, toColId: string) => void): void {
     this.onColDragEnd = callback;
+  }
+
+  /** 设置列宽调整回调 */
+  setOnColumnResize(callback: (colId: string, newWidth: number) => void): void {
+    this.onColumnResize = callback;
   }
 
   /** 给拖拽手柄绑定事件 */
