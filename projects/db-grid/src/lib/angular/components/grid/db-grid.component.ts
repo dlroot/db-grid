@@ -189,8 +189,8 @@ import {
       font-family: var(--db-grid-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
       font-size: var(--db-grid-font-size, 14px);
     }
-    .db-grid-header-container { flex-shrink: 0; overflow-x: auto; overflow-y: hidden; }
-    .db-grid-body-container { flex: 1; overflow-y: auto; overflow-x: auto; position: relative; }
+    .db-grid-header-container { flex-shrink: 0; overflow-x: hidden; overflow-y: hidden; box-sizing: border-box; width: 100%; }
+    .db-grid-body-container { flex: 1; overflow-y: auto; overflow-x: auto; position: relative; box-sizing: border-box; width: 100%; }
     .db-grid-virtual-scroll { position: relative; min-width: 100%; }
     .db-grid-rows { display: flex; flex-direction: column; position: absolute; left: 0; min-width: 100%; }
     .db-grid-pinned-left { position: absolute; left: 0; top: 0; z-index: 2; overflow: hidden; }
@@ -1819,6 +1819,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   private renderHeader(): void {
     const container = this.headerContainer.nativeElement;
     let headerElement: HTMLElement;
+    let totalColWidth: number;
 
     if (this.enableColVirtualization) {
       // 列虚拟化：只渲染可见列的表头
@@ -1826,14 +1827,19 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       const colRange = this.columnService.getVisibleColumnsInRange(this.scrollLeft, bodyWidth, this.colVirtualBuffer);
       const result = this.headerRenderer.renderWithColumns(colRange);
       headerElement = result.headerElement as HTMLElement;
+      // 列虚拟化模式下，计算可见列的总宽度（leftPinned + center + rightPinned）
+      const pinnedLeftWidth = (colRange?.leftPinned || []).reduce((t, c) => t + (this.columnService.getColumnState(c)?.width || c.width || 200), 0);
+      const centerWidth = (colRange?.center || []).reduce((t, c) => t + (this.columnService.getColumnState(c)?.width || c.width || 200), 0);
+      const pinnedRightWidth = (colRange?.rightPinned || []).reduce((t, c) => t + (this.columnService.getColumnState(c)?.width || c.width || 200), 0);
+      totalColWidth = pinnedLeftWidth + centerWidth + pinnedRightWidth;
     } else {
       // 常规模式：渲染所有列
       const result = this.headerRenderer.render();
       headerElement = result.headerElement as HTMLElement;
+      totalColWidth = this.calculateTotalColumnWidth();
     }
 
     headerElement.style.height = `${this.headerHeight}px`;
-    const totalColWidth = this.calculateTotalColumnWidth();
     headerElement.style.width = `${totalColWidth}px`;
     headerElement.style.minWidth = `${totalColWidth}px`;
     container.innerHTML = '';
