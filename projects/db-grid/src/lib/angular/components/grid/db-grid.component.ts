@@ -688,6 +688,9 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     console.log('[DBGrid] ngAfterViewInit setRowData', { rowData: this.rowData?.length, enableGrouping: this.enableGrouping, groupConfig: !!this.groupConfig });
     this.setRowData(this.rowData || []);
 
+    // 初始化 viewportInfo（确保在 renderRows 之前）
+    this.viewportInfo.set(this.dataService.getViewportInfo());
+
     this.renderHeader();
     this.renderRows();
     if (this.pagination) {
