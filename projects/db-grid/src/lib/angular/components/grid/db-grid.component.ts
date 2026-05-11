@@ -590,15 +590,24 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
     // 初始化服务端行模型
     if (this.enableServerSide) {
+      console.log('[DBGrid] initServerSideService', {
+        hasServerSideDatasource: !!this.serverSideDatasource,
+        datasourceHasGetRows: !!(this.serverSideDatasource && this.serverSideDatasource.getRows),
+        enableServerSide: this.enableServerSide,
+      });
       this.serverSideService.initialize(this.serverSideConfig ?? {});
       this.serverSideService.onRowsUpdatedEvent(() => {
+        console.log('[DBGrid] serverSide onRowsUpdatedEvent');
         this.ngZone.run(() => {
           this.rowCount.set(this.serverSideService.getRowCount());
           this.refreshView();
         });
       });
       if (this.serverSideDatasource) {
+        console.log('[DBGrid] calling setDatasource');
         this.serverSideService.setDatasource(this.serverSideDatasource);
+      } else {
+        console.log('[DBGrid] serverSideDatasource is null/undefined - not calling setDatasource');
       }
     }
 
