@@ -1111,7 +1111,10 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   refreshCells(params?: any): void { this.renderRows(); }
   refreshRows(params?: any): void { this.refreshView(); }
   refreshView(): void {
-    this.rowCount.set(this.dataService.getRowCount());
+    // 服务端模式下，rowCount 由 onRowsUpdatedEvent 回调管理，不要覆盖
+    if (!this.enableServerSide) {
+      this.rowCount.set(this.dataService.getRowCount());
+    }
     this.viewportInfo.set(this.dataService.getViewportInfo());
     this.renderRows();
   }
