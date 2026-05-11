@@ -206,9 +206,8 @@ export class AppComponent implements OnInit {
           ...row,
           id: params.startRow + i + 1,
         }));
-        // 模拟总行数 1000
-        const lastRow = params.endRow >= 1000 ? 1000 : undefined;
-        params.successCallback(rows, lastRow);
+        // 模拟总行数 100
+        params.successCallback(rows, 100);
       }, 300);
     }
   };
