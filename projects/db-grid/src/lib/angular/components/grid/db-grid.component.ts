@@ -2023,11 +2023,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   private renderRows(): void {
     // Guard: skip if view references are not yet initialized (called before ngAfterViewInit)
-    if (!this.rowsContainer?.nativeElement || !this.virtualScroll?.nativeElement || !this.bodyContainer?.nativeElement) {
+    if (!this.rowsContainer?.nativeElement || !this.virtualScroll?.nativeElement || !this.bodyContainer?.nativeElement || !this.pinnedLeftContainer?.nativeElement) {
       console.log('[DBGrid] renderRows skipped: view not initialized', {
         rowsContainerNative: !!this.rowsContainer?.nativeElement,
         virtualScrollNative: !!this.virtualScroll?.nativeElement,
         bodyContainerNative: !!this.bodyContainer?.nativeElement,
+        pinnedLeftContainerNative: !!this.pinnedLeftContainer?.nativeElement,
       });
       return;
     }
@@ -2049,7 +2050,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       }
 
       rowsContainer.innerHTML = '';
-      this.pinnedLeftContainer.nativeElement.innerHTML = '';
+      this.pinnedLeftContainer?.nativeElement?.innerHTML = '';
       rowsContainer.style.transform = `translateY(${viewport.offsetY}px)`;
 
       const visibleData = this.serverSideService.getRowsInRange(viewport.startIndex, viewport.endIndex);
