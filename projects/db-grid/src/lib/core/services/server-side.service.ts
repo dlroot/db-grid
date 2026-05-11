@@ -198,6 +198,8 @@ export class ServerSideService {
     const startRow = blockNum * this.cacheBlockSize;
     const endRow = startRow + this.cacheBlockSize;
 
+    console.log('[ServerSideService] fetchBlock', { blockNum, startRow, endRow, cacheBlockSize: this.cacheBlockSize });
+
     // 创建缓存块
     const block: CacheBlock = {
       startRow,
@@ -218,9 +220,11 @@ export class ServerSideService {
       sortModel: this.sortModel,
       filterModel: this.filterModel,
       successCallback: (rowsThisPage: any[], lastRow?: number) => {
+        console.log('[ServerSideService] successCallback', { blockNum, rowsCount: rowsThisPage.length, lastRow });
         this.onBlockLoaded(blockNum, rowsThisPage, lastRow);
       },
       failCallback: () => {
+        console.log('[ServerSideService] failCallback', { blockNum });
         this.onBlockFailed(blockNum);
       },
     });
@@ -405,6 +409,7 @@ export class ServerSideService {
   }
 
   private emitRowsUpdated(): void {
+    console.log('[ServerSideService] emitRowsUpdated', { hasCallback: !!this.onRowsUpdated });
     if (this.onRowsUpdated) this.onRowsUpdated();
   }
 
