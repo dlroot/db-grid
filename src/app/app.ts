@@ -213,6 +213,7 @@ export class AppComponent implements OnInit {
     }
   };
   serverConfig = { pageSize: 50, cacheBlockSize: 50, maxBlocksInCache: 10 };
+  serverOptions = { rowSelection: "multiple" as const };
   serverLoading = signal<boolean>(false);
   serverRowCount = signal<number>(-1);
 
