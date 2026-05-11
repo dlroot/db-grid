@@ -674,12 +674,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         this.setRowData(this.rowData);
       }
     }
-    // 服务端数据源变更
-    if (changes['serverSideDatasource'] && this.enableServerSide) {
-      if (this.serverSideDatasource) {
-        this.serverSideService.setDatasource(this.serverSideDatasource);
-      }
-    }
+
     // 分组配置变更
     if ((changes['enableGrouping'] || changes['groupConfig']) && !changes['enableGrouping']?.firstChange) {
       if (this.enableGrouping && this.groupConfig && this.rowData && this.rowData.length > 0) {
