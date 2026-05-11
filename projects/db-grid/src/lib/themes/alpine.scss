@@ -340,3 +340,10 @@
     border-color: #2196f3;
   }
 }
+
+// 移动端隐藏分页控件
+@media (max-width: 576px) {
+  .db-grid-pagination {
+    display: none !important;
+  }
+}
