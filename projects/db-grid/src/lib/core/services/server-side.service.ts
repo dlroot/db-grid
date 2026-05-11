@@ -415,8 +415,18 @@ export class ServerSideService {
   }
 
   private emitRowsUpdated(): void {
-    console.log('[ServerSideService] emitRowsUpdated', { hasCallback: !!this.onRowsUpdated });
-    if (this.onRowsUpdated) this.onRowsUpdated();
+    console.log('[ServerSideService] emitRowsUpdated - START', { hasCallback: !!this.onRowsUpdated });
+    if (this.onRowsUpdated) {
+      console.log('[ServerSideService] emitRowsUpdated - about to CALL callback');
+      try {
+        this.onRowsUpdated();
+        console.log('[ServerSideService] emitRowsUpdated - SUCCESS');
+      } catch (e) {
+        console.error('[ServerSideService] emitRowsUpdated - ERROR:', e);
+      }
+    } else {
+      console.log('[ServerSideService] emitRowsUpdated - no callback');
+    }
   }
 
   private emitLoadingChanged(loading: boolean): void {

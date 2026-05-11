@@ -597,11 +597,18 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       });
       this.serverSideService.initialize(this.serverSideConfig ?? {});
       this.serverSideService.onRowsUpdatedEvent(() => {
-        console.log('[DBGrid] serverSide onRowsUpdatedEvent');
-        this.ngZone.run(() => {
-          this.rowCount.set(this.serverSideService.getRowCount());
-          this.refreshView();
-        });
+        console.log('[DBGrid] serverSide onRowsUpdatedEvent - ENTERED');
+        try {
+          this.ngZone.run(() => {
+            console.log('[DBGrid] serverSide onRowsUpdatedEvent - inside ngZone');
+            this.rowCount.set(this.serverSideService.getRowCount());
+            console.log('[DBGrid] serverSide onRowsUpdatedEvent - after rowCount.set');
+            this.refreshView();
+            console.log('[DBGrid] serverSide onRowsUpdatedEvent - after refreshView');
+          });
+        } catch (e) {
+          console.error('[DBGrid] serverSide onRowsUpdatedEvent - ERROR:', e);
+        }
       });
       if (this.serverSideDatasource) {
         console.log('[DBGrid] calling setDatasource');
