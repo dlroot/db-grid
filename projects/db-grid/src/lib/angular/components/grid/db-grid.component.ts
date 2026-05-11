@@ -1111,6 +1111,10 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   refreshCells(params?: any): void { this.renderRows(); }
   refreshRows(params?: any): void { this.refreshView(); }
   refreshView(): void {
+    // Guard: skip if view is not yet initialized
+    if (!this.bodyContainer || !this.rowsContainer || !this.virtualScroll) {
+      return;
+    }
     // 服务端模式下，rowCount 由 onRowsUpdatedEvent 回调管理，不要覆盖
     if (!this.enableServerSide) {
       this.rowCount.set(this.dataService.getRowCount());
@@ -1118,7 +1122,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     } else {
       // 服务端模式：使用 serverSideService 的行数来计算 viewport
       const ssRowCount = this.serverSideService.getRowCount();
-      const viewportHeight = this.bodyContainer?.nativeElement?.clientHeight || 600;
+      const viewportHeight = this.bodyContainer.nativeElement.clientHeight || 600;
       const viewport = this.viewportInfo();
       const scrollTop = viewport?.scrollTop || 0;
       const startIndex = Math.floor(scrollTop / this.rowHeight);
