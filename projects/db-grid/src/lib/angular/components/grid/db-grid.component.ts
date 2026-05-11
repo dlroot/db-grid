@@ -2030,12 +2030,17 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   private renderRows(): void {
     // Guard: skip if view references are not yet initialized (called before ngAfterViewInit)
-    if (!this.rowsContainer?.nativeElement || !this.virtualScroll?.nativeElement || !this.bodyContainer?.nativeElement || !this.pinnedLeftContainer?.nativeElement) {
+    // Guard: skip if view references are not yet initialized
+    // Note: pinnedLeftContainer only exists when there are pinned left columns, so we check conditionally
+    const hasRequiredContainers = this.rowsContainer?.nativeElement && this.virtualScroll?.nativeElement && this.bodyContainer?.nativeElement;
+    const needsPinnedLeft = this.pinnedLeftColumnIds.length > 0;
+    if (!hasRequiredContainers || (needsPinnedLeft && !this.pinnedLeftContainer?.nativeElement)) {
       console.log('[DBGrid] renderRows skipped: view not initialized', {
         rowsContainerNative: !!this.rowsContainer?.nativeElement,
         virtualScrollNative: !!this.virtualScroll?.nativeElement,
         bodyContainerNative: !!this.bodyContainer?.nativeElement,
         pinnedLeftContainerNative: !!this.pinnedLeftContainer?.nativeElement,
+        needsPinnedLeft,
       });
       return;
     }
@@ -2066,7 +2071,9 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       }
 
       rowsContainer.innerHTML = '';
-      this.pinnedLeftContainer.nativeElement.innerHTML = '';
+      if (this.pinnedLeftColumnIds.length > 0 && this.pinnedLeftContainer?.nativeElement) {
+        this.pinnedLeftContainer.nativeElement.innerHTML = '';
+      }
       rowsContainer.style.transform = `translateY(${viewport.offsetY}px)`;
 
       const visibleData = this.serverSideService.getRowsInRange(viewport.startIndex, viewport.endIndex);
