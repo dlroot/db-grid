@@ -2066,7 +2066,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       }
 
       rowsContainer.innerHTML = '';
-      this.pinnedLeftContainer?.nativeElement?.innerHTML = '';
+      this.pinnedLeftContainer.nativeElement.innerHTML = '';
       rowsContainer.style.transform = `translateY(${viewport.offsetY}px)`;
 
       const visibleData = this.serverSideService.getRowsInRange(viewport.startIndex, viewport.endIndex);
