@@ -1112,7 +1112,15 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   refreshRows(params?: any): void { this.refreshView(); }
   refreshView(): void {
     // Guard: skip if view is not yet initialized
-    if (!this.bodyContainer || !this.rowsContainer || !this.virtualScroll) {
+    if (!this.bodyContainer?.nativeElement || !this.rowsContainer?.nativeElement || !this.virtualScroll?.nativeElement) {
+      console.log('[DBGrid] refreshView skipped: view not initialized', {
+        bodyContainer: !!this.bodyContainer,
+        bodyContainerNative: !!this.bodyContainer?.nativeElement,
+        rowsContainer: !!this.rowsContainer,
+        rowsContainerNative: !!this.rowsContainer?.nativeElement,
+        virtualScroll: !!this.virtualScroll,
+        virtualScrollNative: !!this.virtualScroll?.nativeElement,
+      });
       return;
     }
     // 服务端模式下，rowCount 由 onRowsUpdatedEvent 回调管理，不要覆盖
@@ -1122,7 +1130,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     } else {
       // 服务端模式：使用 serverSideService 的行数来计算 viewport
       const ssRowCount = this.serverSideService.getRowCount();
-      const viewportHeight = this.bodyContainer.nativeElement.clientHeight || 600;
+      const viewportHeight = this.bodyContainer?.nativeElement?.clientHeight || 600;
       const scrollTop = this.scrollTop || 0;
       const startIndex = Math.floor(scrollTop / this.rowHeight);
       const visibleCount = Math.ceil(viewportHeight / this.rowHeight) + 1;
@@ -2015,8 +2023,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   private renderRows(): void {
     // Guard: skip if view references are not yet initialized (called before ngAfterViewInit)
-    if (!this.rowsContainer || !this.virtualScroll || !this.bodyContainer) {
-      console.log('[DBGrid] renderRows skipped: view not initialized');
+    if (!this.rowsContainer?.nativeElement || !this.virtualScroll?.nativeElement || !this.bodyContainer?.nativeElement) {
+      console.log('[DBGrid] renderRows skipped: view not initialized', {
+        rowsContainerNative: !!this.rowsContainer?.nativeElement,
+        virtualScrollNative: !!this.virtualScroll?.nativeElement,
+        bodyContainerNative: !!this.bodyContainer?.nativeElement,
+      });
       return;
     }
 
