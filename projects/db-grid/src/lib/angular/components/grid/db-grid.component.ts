@@ -681,6 +681,13 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   ngAfterViewInit(): void {
     if (!isPlatformBrowser(this.platformId)) return;
+    
+    // Guard: ensure ViewChildren are initialized before accessing them
+    if (!this.bodyContainer?.nativeElement) {
+      console.log('[DBGrid] ngAfterViewInit skipped: bodyContainer not initialized');
+      return;
+    }
+    
     const bodyHeight = this.bodyContainer.nativeElement.clientHeight;
     this.dataService.setScrollConfig({ viewportHeight: bodyHeight, rowHeight: this.rowHeight });
 
@@ -2034,8 +2041,17 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     }
 
     const viewport = this.viewportInfo();
-    const rowsContainer = this.rowsContainer.nativeElement;
-    const virtualScroll = this.virtualScroll.nativeElement;
+    const rowsContainer = this.rowsContainer?.nativeElement;
+    const virtualScroll = this.virtualScroll?.nativeElement;
+
+    // Safety check: if containers are still not available, skip rendering
+    if (!rowsContainer || !virtualScroll) {
+      console.log('[DBGrid] renderRows skipped: rowsContainer or virtualScroll not available', {
+        rowsContainer: !!rowsContainer,
+        virtualScroll: !!virtualScroll,
+      });
+      return;
+    }
 
     // 服务端模式：使用 serverSideService 获取数据
     if (this.enableServerSide && this.serverSideService.isEnabled()) {
