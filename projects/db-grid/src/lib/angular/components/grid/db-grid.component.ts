@@ -1994,6 +1994,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   }
 
   private renderRows(): void {
+    // Guard: skip if view references are not yet initialized (called before ngAfterViewInit)
+    if (!this.rowsContainer || !this.virtualScroll || !this.bodyContainer) {
+      console.log('[DBGrid] renderRows skipped: view not initialized');
+      return;
+    }
+
     const viewport = this.viewportInfo();
     const rowsContainer = this.rowsContainer.nativeElement;
     const virtualScroll = this.virtualScroll.nativeElement;
