@@ -108,6 +108,7 @@ export class ServerSideService {
 
   /** 设置数据源 */
   setDatasource(datasource: IServerSideDatasource): void {
+    console.log('[ServerSideService] setDatasource called', { datasource: !!datasource, hasGetRows: !!(datasource && datasource.getRows) });
     this.datasource = datasource;
     this.clearCache();
     this.requestInitialRows();
