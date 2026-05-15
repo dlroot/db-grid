@@ -419,6 +419,8 @@ export class ServerSideService {
     if (this.onRowsUpdated) {
       console.log('[ServerSideService] emitRowsUpdated - about to CALL callback');
       try {
+        // 直接测试：在调用回调前打印回调函数的 toString
+        console.log('[ServerSideService] emitRowsUpdated - callback toString:', this.onRowsUpdated.toString().substring(0, 200));
         this.onRowsUpdated();
         console.log('[ServerSideService] emitRowsUpdated - SUCCESS (callback returned)');
       } catch (e) {
