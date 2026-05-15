@@ -601,16 +601,19 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         console.log('[DBGrid] serverSide onRowsUpdatedEvent - ENTERED');
         const ssRowCount = this.serverSideService.getRowCount();
         console.log('[DBGrid] serverSide onRowsUpdatedEvent', { ssRowCount, viewReady: !!(this.bodyContainer?.nativeElement) });
-        // 使用 setTimeout 确保在 Angular 完成变更检测后再刷新视图
-        // 避免 ngZone.run() 触发的变更检测覆盖 DOM 操作
+        // 延迟到下一个宏任务执行，确保 Angular 完成当前变更检测周期
+        // 不使用 ngZone.run() 和 cdr.detectChanges()，避免触发模板重渲染清除手动 DOM
         setTimeout(() => {
           try {
-            this.ngZone.run(() => {
-              this.rowCount.set(ssRowCount);
-              this.refreshView();
-              this.cdr.detectChanges();
-              console.log('[DBGrid] serverSide onRowsUpdatedEvent - refresh completed', { ssRowCount });
-            });
+            if (!this.bodyContainer?.nativeElement || !this.rowsContainer?.nativeElement || !this.virtualScroll?.nativeElement) {
+              console.log('[DBGrid] serverSide onRowsUpdatedEvent - view still not ready, will retry');
+              // 视图仍未就绪，再次延迟重试
+              setTimeout(() => this.refreshView(), 100);
+              return;
+            }
+            this.rowCount.set(ssRowCount);
+            this.refreshView();
+            console.log('[DBGrid] serverSide onRowsUpdatedEvent - refresh completed', { ssRowCount });
           } catch (e) {
             console.error('[DBGrid] serverSide onRowsUpdatedEvent - ERROR:', e);
           }
@@ -723,18 +726,15 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
     // ========== 服务端模式：确保数据已渲染 ==========
     // 数据可能在 ngAfterViewInit 之前或之后到达
-    // 使用 setTimeout 确保在当前变更检测周期完成后检查
+    // 延迟检查，确保在当前变更检测周期完成后执行
     if (this.enableServerSide && this.serverSideService.isEnabled()) {
       setTimeout(() => {
         const currentRowCount = this.serverSideService.getRowCount();
         console.log('[DBGrid] ngAfterViewInit delayed check', { currentRowCount, viewReady: !!(this.bodyContainer?.nativeElement) });
         if (currentRowCount > 0) {
-          this.ngZone.run(() => {
-            this.rowCount.set(currentRowCount);
-            this.refreshView();
-            this.cdr.detectChanges();
-            console.log('[DBGrid] ngAfterViewInit: server-side data rendered', { rowCount: currentRowCount });
-          });
+          this.rowCount.set(currentRowCount);
+          this.refreshView();
+          console.log('[DBGrid] ngAfterViewInit: server-side data rendered', { rowCount: currentRowCount });
         }
       }, 0);
     } else if (this._pendingRefresh) {
