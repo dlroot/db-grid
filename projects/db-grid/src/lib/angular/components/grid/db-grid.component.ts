@@ -715,6 +715,22 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     if (this.enableServerSide && this.serverSideDatasource && this.serverSideService.isEnabled()) {
       console.log('[DBGrid] ngAfterViewInit: calling setDatasource (view now ready)');
       this.serverSideService.setDatasource(this.serverSideDatasource);
+      // 保底轮询：确保数据被渲染（最多重试 20 次，每 100ms 一次）
+      let pollCount = 0;
+      const pollInterval = setInterval(() => {
+        pollCount++;
+        const currentRowCount = this.serverSideService.getRowCount();
+        console.log(`[DBGrid] server-side poll #${pollCount}`, { currentRowCount });
+        if (currentRowCount > 0) {
+          this.rowCount.set(currentRowCount);
+          this.refreshView();
+          console.log('[DBGrid] server-side poll: data rendered', { currentRowCount });
+          clearInterval(pollInterval);
+        } else if (pollCount >= 20) {
+          console.log('[DBGrid] server-side poll: giving up after 20 attempts');
+          clearInterval(pollInterval);
+        }
+      }, 100);
     } else if (this._pendingRefresh) {
       // 非 server-side 模式下，如果有待刷新的标记，也执行刷新
       console.log('[DBGrid] ngAfterViewInit: pending refresh detected, refreshing view');
