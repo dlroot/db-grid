@@ -445,6 +445,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   gridMenuPosition = signal<{x: number; y: number}>({x: 0, y: 0});
   gridMenuItems = signal<ColumnMenuItemType[]>([]);
   private gridMenuColId = '';
+  private _pendingRefresh = false; // 标记是否需要在视图就绪后重试刷新
 
   // ============ Filter Popup State ============
   activeFilterPopup: { colDef: ColDef; position: { x: number; y: number } } | null = null;
@@ -716,13 +717,17 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     }
 
     // ========== 服务端模式：确保数据已渲染 ==========
+    // 处理数据在视图初始化之前就已到达的情况
     if (this.enableServerSide && this.serverSideService.isEnabled()) {
-      // 如果服务端已有数据但视图未渲染，强制刷新
       const currentRowCount = this.serverSideService.getRowCount();
       if (currentRowCount > 0) {
         console.log('[DBGrid] ngAfterViewInit: server-side data exists, refreshing view', { rowCount: currentRowCount });
         this.refreshView();
       }
+    } else if (this._pendingRefresh) {
+      // 非 server-side 模式下，如果有待刷新的标记，也执行刷新
+      console.log('[DBGrid] ngAfterViewInit: pending refresh detected, refreshing view');
+      this.refreshView();
     }
 
     // ========== 初始化 Accessibility Service ==========
@@ -1141,16 +1146,11 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   refreshView(): void {
     // Guard: skip if view is not yet initialized
     if (!this.bodyContainer?.nativeElement || !this.rowsContainer?.nativeElement || !this.virtualScroll?.nativeElement) {
-      console.log('[DBGrid] refreshView skipped: view not initialized', {
-        bodyContainer: !!this.bodyContainer,
-        bodyContainerNative: !!this.bodyContainer?.nativeElement,
-        rowsContainer: !!this.rowsContainer,
-        rowsContainerNative: !!this.rowsContainer?.nativeElement,
-        virtualScroll: !!this.virtualScroll,
-        virtualScrollNative: !!this.virtualScroll?.nativeElement,
-      });
+      console.log('[DBGrid] refreshView skipped: view not initialized, setting _pendingRefresh = true');
+      this._pendingRefresh = true;
       return;
     }
+    this._pendingRefresh = false;
     // 服务端模式下，rowCount 由 onRowsUpdatedEvent 回调管理，不要覆盖
     if (!this.enableServerSide) {
       this.rowCount.set(this.dataService.getRowCount());
@@ -2056,13 +2056,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     const hasRequiredContainers = this.rowsContainer?.nativeElement && this.virtualScroll?.nativeElement && this.bodyContainer?.nativeElement;
     const needsPinnedLeft = this.pinnedLeftColumnIds.length > 0;
     if (!hasRequiredContainers || (needsPinnedLeft && !this.pinnedLeftContainer?.nativeElement)) {
-      console.log('[DBGrid] renderRows skipped: view not initialized', {
-        rowsContainerNative: !!this.rowsContainer?.nativeElement,
-        virtualScrollNative: !!this.virtualScroll?.nativeElement,
-        bodyContainerNative: !!this.bodyContainer?.nativeElement,
-        pinnedLeftContainerNative: !!this.pinnedLeftContainer?.nativeElement,
-        needsPinnedLeft,
-      });
+      this._pendingRefresh = true;
       return;
     }
 
