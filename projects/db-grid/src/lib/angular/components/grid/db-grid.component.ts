@@ -599,17 +599,22 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       this.serverSideService.initialize(this.serverSideConfig ?? {});
       this.serverSideService.onRowsUpdatedEvent(() => {
         console.log('[DBGrid] serverSide onRowsUpdatedEvent - ENTERED');
-        try {
-          this.ngZone.run(() => {
-            console.log('[DBGrid] serverSide onRowsUpdatedEvent - inside ngZone');
-            this.rowCount.set(this.serverSideService.getRowCount());
-            console.log('[DBGrid] serverSide onRowsUpdatedEvent - after rowCount.set');
-            this.refreshView();
-            console.log('[DBGrid] serverSide onRowsUpdatedEvent - after refreshView');
-          });
-        } catch (e) {
-          console.error('[DBGrid] serverSide onRowsUpdatedEvent - ERROR:', e);
-        }
+        const ssRowCount = this.serverSideService.getRowCount();
+        console.log('[DBGrid] serverSide onRowsUpdatedEvent', { ssRowCount, viewReady: !!(this.bodyContainer?.nativeElement) });
+        // 使用 setTimeout 确保在 Angular 完成变更检测后再刷新视图
+        // 避免 ngZone.run() 触发的变更检测覆盖 DOM 操作
+        setTimeout(() => {
+          try {
+            this.ngZone.run(() => {
+              this.rowCount.set(ssRowCount);
+              this.refreshView();
+              this.cdr.detectChanges();
+              console.log('[DBGrid] serverSide onRowsUpdatedEvent - refresh completed', { ssRowCount });
+            });
+          } catch (e) {
+            console.error('[DBGrid] serverSide onRowsUpdatedEvent - ERROR:', e);
+          }
+        }, 0);
       });
       if (this.serverSideDatasource) {
         console.log('[DBGrid] calling setDatasource');
@@ -717,13 +722,21 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     }
 
     // ========== 服务端模式：确保数据已渲染 ==========
-    // 处理数据在视图初始化之前就已到达的情况
+    // 数据可能在 ngAfterViewInit 之前或之后到达
+    // 使用 setTimeout 确保在当前变更检测周期完成后检查
     if (this.enableServerSide && this.serverSideService.isEnabled()) {
-      const currentRowCount = this.serverSideService.getRowCount();
-      if (currentRowCount > 0) {
-        console.log('[DBGrid] ngAfterViewInit: server-side data exists, refreshing view', { rowCount: currentRowCount });
-        this.refreshView();
-      }
+      setTimeout(() => {
+        const currentRowCount = this.serverSideService.getRowCount();
+        console.log('[DBGrid] ngAfterViewInit delayed check', { currentRowCount, viewReady: !!(this.bodyContainer?.nativeElement) });
+        if (currentRowCount > 0) {
+          this.ngZone.run(() => {
+            this.rowCount.set(currentRowCount);
+            this.refreshView();
+            this.cdr.detectChanges();
+            console.log('[DBGrid] ngAfterViewInit: server-side data rendered', { rowCount: currentRowCount });
+          });
+        }
+      }, 0);
     } else if (this._pendingRefresh) {
       // 非 server-side 模式下，如果有待刷新的标记，也执行刷新
       console.log('[DBGrid] ngAfterViewInit: pending refresh detected, refreshing view');
