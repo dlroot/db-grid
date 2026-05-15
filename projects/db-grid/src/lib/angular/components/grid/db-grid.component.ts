@@ -715,6 +715,16 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       this.renderFooter();
     }
 
+    // ========== 服务端模式：确保数据已渲染 ==========
+    if (this.enableServerSide && this.serverSideService.isEnabled()) {
+      // 如果服务端已有数据但视图未渲染，强制刷新
+      const currentRowCount = this.serverSideService.getRowCount();
+      if (currentRowCount > 0) {
+        console.log('[DBGrid] ngAfterViewInit: server-side data exists, refreshing view', { rowCount: currentRowCount });
+        this.refreshView();
+      }
+    }
+
     // ========== 初始化 Accessibility Service ==========
     if (this.gridContainer?.nativeElement) {
       this.accessibilityService.setGridElement(this.gridContainer.nativeElement);
