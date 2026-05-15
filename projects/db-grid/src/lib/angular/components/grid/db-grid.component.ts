@@ -2103,7 +2103,21 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         if (!data) return;
         const rowIndex = viewport.startIndex + i;
         const rowId = data.id !== undefined ? String(data.id) : `row-${rowIndex}`;
-        const rowElement = this.rowRenderer.render(rowIndex, data, { id: rowId, data, rowIndex, selected: false, rowHeight: this.rowHeight, uiLevel: 0 } as any).rowElement;
+        const rowNode: RowNode = {
+          id: rowId,
+          data,
+          rowIndex,
+          selected: false,
+          rowHeight: this.rowHeight,
+          uiLevel: 0,
+          isFloating: () => false,
+          isFloatingRow: () => false,
+          isSelected: () => false,
+          setSelected: () => {},
+          floatLeft: () => {},
+          floatRight: () => {},
+        } as RowNode;
+        const rowElement = this.rowRenderer.render(rowIndex, data, rowNode).rowElement;
         rowsContainer.appendChild(rowElement);
       });
       this.cdr.detectChanges();
