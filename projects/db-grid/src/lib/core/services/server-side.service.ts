@@ -415,12 +415,12 @@ export class ServerSideService {
   }
 
   private emitRowsUpdated(): void {
-    console.log('[ServerSideService] emitRowsUpdated - START', { hasCallback: !!this.onRowsUpdated });
+    console.log('[ServerSideService] emitRowsUpdated - START', { hasCallback: !!this.onRowsUpdated, callbackType: typeof this.onRowsUpdated });
     if (this.onRowsUpdated) {
       console.log('[ServerSideService] emitRowsUpdated - about to CALL callback');
       try {
         this.onRowsUpdated();
-        console.log('[ServerSideService] emitRowsUpdated - SUCCESS');
+        console.log('[ServerSideService] emitRowsUpdated - SUCCESS (callback returned)');
       } catch (e) {
         console.error('[ServerSideService] emitRowsUpdated - ERROR:', e);
       }
