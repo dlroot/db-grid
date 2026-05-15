@@ -598,33 +598,16 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       });
       this.serverSideService.initialize(this.serverSideConfig ?? {});
       this.serverSideService.onRowsUpdatedEvent(() => {
-        console.log('[DBGrid] serverSide onRowsUpdatedEvent - ENTERED');
+        console.log('[DBGrid] serverSide onRowsUpdatedEvent - callback fired');
         const ssRowCount = this.serverSideService.getRowCount();
         console.log('[DBGrid] serverSide onRowsUpdatedEvent', { ssRowCount, viewReady: !!(this.bodyContainer?.nativeElement) });
-        // 延迟到下一个宏任务执行，确保 Angular 完成当前变更检测周期
-        // 不使用 ngZone.run() 和 cdr.detectChanges()，避免触发模板重渲染清除手动 DOM
-        setTimeout(() => {
-          try {
-            if (!this.bodyContainer?.nativeElement || !this.rowsContainer?.nativeElement || !this.virtualScroll?.nativeElement) {
-              console.log('[DBGrid] serverSide onRowsUpdatedEvent - view still not ready, will retry');
-              // 视图仍未就绪，再次延迟重试
-              setTimeout(() => this.refreshView(), 100);
-              return;
-            }
-            this.rowCount.set(ssRowCount);
-            this.refreshView();
-            console.log('[DBGrid] serverSide onRowsUpdatedEvent - refresh completed', { ssRowCount });
-          } catch (e) {
-            console.error('[DBGrid] serverSide onRowsUpdatedEvent - ERROR:', e);
-          }
-        }, 0);
+        // 直接刷新视图，不再使用 setTimeout/ngZone.run 延迟
+        // 因为 setDatasource 已移至 ngAfterViewInit，视图在数据到达时必定已就绪
+        this.rowCount.set(ssRowCount);
+        this.refreshView();
+        console.log('[DBGrid] serverSide onRowsUpdatedEvent - refresh completed', { ssRowCount });
       });
-      if (this.serverSideDatasource) {
-        console.log('[DBGrid] calling setDatasource');
-        this.serverSideService.setDatasource(this.serverSideDatasource);
-      } else {
-        console.log('[DBGrid] serverSideDatasource is null/undefined - not calling setDatasource');
-      }
+      // 注意：setDatasource 移至 ngAfterViewInit，确保视图先初始化
     }
 
     this.rowCount.set(this.dataService.getRowCount());
@@ -724,19 +707,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       this.renderFooter();
     }
 
-    // ========== 服务端模式：确保数据已渲染 ==========
-    // 数据可能在 ngAfterViewInit 之前或之后到达
-    // 延迟检查，确保在当前变更检测周期完成后执行
-    if (this.enableServerSide && this.serverSideService.isEnabled()) {
-      setTimeout(() => {
-        const currentRowCount = this.serverSideService.getRowCount();
-        console.log('[DBGrid] ngAfterViewInit delayed check', { currentRowCount, viewReady: !!(this.bodyContainer?.nativeElement) });
-        if (currentRowCount > 0) {
-          this.rowCount.set(currentRowCount);
-          this.refreshView();
-          console.log('[DBGrid] ngAfterViewInit: server-side data rendered', { rowCount: currentRowCount });
-        }
-      }, 0);
+    // ========== 服务端模式：视图就绪后发起数据请求 ==========
+    // 将 setDatasource 从 ngOnInit 移至 ngAfterViewInit，确保视图先初始化
+    // 这样当数据到达时，refreshView 不会被跳过
+    if (this.enableServerSide && this.serverSideDatasource && this.serverSideService.isEnabled()) {
+      console.log('[DBGrid] ngAfterViewInit: calling setDatasource (view now ready)');
+      this.serverSideService.setDatasource(this.serverSideDatasource);
     } else if (this._pendingRefresh) {
       // 非 server-side 模式下，如果有待刷新的标记，也执行刷新
       console.log('[DBGrid] ngAfterViewInit: pending refresh detected, refreshing view');
