@@ -601,11 +601,13 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         console.log('[DBGrid] serverSide onRowsUpdatedEvent - callback fired');
         const ssRowCount = this.serverSideService.getRowCount();
         console.log('[DBGrid] serverSide onRowsUpdatedEvent', { ssRowCount, viewReady: !!(this.bodyContainer?.nativeElement) });
-        // 直接刷新视图，不再使用 setTimeout/ngZone.run 延迟
-        // 因为 setDatasource 已移至 ngAfterViewInit，视图在数据到达时必定已就绪
-        this.rowCount.set(ssRowCount);
-        this.refreshView();
-        console.log('[DBGrid] serverSide onRowsUpdatedEvent - refresh completed', { ssRowCount });
+        // 使用 ngZone.run 确保 Angular 感知 signal 变更并触发变更检测
+        this.ngZone.run(() => {
+          this.rowCount.set(ssRowCount);
+          this.refreshView();
+          this.cdr.detectChanges();
+          console.log('[DBGrid] serverSide onRowsUpdatedEvent - refresh completed', { ssRowCount });
+        });
       });
       // 注意：setDatasource 移至 ngAfterViewInit，确保视图先初始化
     }
