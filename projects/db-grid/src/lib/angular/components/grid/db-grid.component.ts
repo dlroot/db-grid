@@ -439,6 +439,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   private isTreeMode = false;
   private isGroupMode = false;
   private isPivotMode = false;
+  private originalColumnDefs: any[] | null = null;
   private isPaginated = false;
   // 列虚拟化
   private lastColRenderScrollLeft = -1;
@@ -688,8 +689,17 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     }
     // 透视配置变更
     if (changes['pivotMode'] || changes['pivotColumn'] || changes['pivotRowGroupColumns'] || changes['pivotValueColumns']) {
-      if (this.pivotMode && this.rowData && this.rowData.length > 0) {
-        this.setRowData(this.rowData);
+      if (this.rowData && this.rowData.length > 0) {
+        if (this.pivotMode) {
+          this.setRowData(this.rowData);
+        } else if (this.isPivotMode) {
+          // 透视清除：恢复原始 columnDefs 和数据
+          this.isPivotMode = false;
+          this.columnDefs = this.originalColumnDefs || this.columnDefs;
+          this.columnService.initialize(this.columnDefs);
+          this.pivotService.disablePivotMode();
+          this.setRowData(this.rowData);
+        }
       }
     }
 
@@ -1085,7 +1095,10 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     } else if (this.pivotMode && this.pivotColumn && this.pivotRowGroupColumns.length > 0) {
       // ========== 透视模式 ==========
       this.isPivotMode = true;
-      // 保存原始数据，以便清除透视时恢复
+      // 保存原始列定义和数据，以便清除透视时恢复
+      if (!this.originalColumnDefs) {
+        this.originalColumnDefs = [...this.columnDefs];
+      }
       this.dataService.setOriginalRowData(rowData);
       this.pivotService.initialize({
         enabled: true,
@@ -1099,12 +1112,20 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       const pivotColDefs = this.pivotService.getPivotColumnDefs();
       // 使用展平的透视结果初始化数据服务
       this.dataService.initialize(pivotResult.flatRows, this.gridOptions, pivotColDefs);
+      // 更新 columnDefs 和 columnService，使 header 和 body 列定义一致
+      this.columnDefs = pivotColDefs as any;
+      this.columnService.initialize(this.columnDefs);
       this.rowCount.set(pivotResult.flatRows.length);
     } else {
       this.isPivotMode = false;
+      // 透视清除时恢复原始列定义
+      if (this.dataService.getOriginalRowData && (this.dataService as any).getOriginalRowData()) {
+        // columnDefs 仍为原始值，无需恢复
+      }
       this.dataService.initialize(rowData, this.gridOptions, this.columnDefs);
       this.rowCount.set(this.dataService.getRowCount());
     }
+    this.renderHeader();
     this.refreshView();
     this.rowDataUpdated.emit({ type: 'rowDataUpdated', api: this.gridApi });
   }
