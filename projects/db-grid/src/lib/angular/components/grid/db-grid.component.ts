@@ -43,6 +43,7 @@ import {
   ColumnResizedEvent,
   RowNode,
   GridApi,
+  DetailChartConfig,
 } from '../../../core/models';
 import { PdfExportService } from '../../../core/services';
 
@@ -2239,7 +2240,70 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         }
       }
     });
+
+    // 渲染详情图表（主从表展开行）
+    this.renderDetailCharts(viewport);
+
     this.cdr.detectChanges();
+  }
+
+  /** 渲染详情图表（主从表展开行） */
+  private renderDetailCharts(viewport: { startIndex: number; endIndex: number; offsetY: number }): void {
+    if (!this.masterDetailService?.isMasterDetail()) return;
+    const gridOpts = this.gridOptions || {};
+    const detailChart = (gridOpts as any).detailChartRenderer as DetailChartConfig | undefined;
+    if (!detailChart) return;
+
+    const rowsContainer = this.rowsContainer?.nativeElement;
+    if (!rowsContainer) return;
+
+    // 移除旧的详情行
+    rowsContainer.querySelectorAll('.db-grid-detail-chart-row').forEach(el => el.remove());
+
+    const expandedIds = this.masterDetailService.getExpandedNodeIds();
+    if (expandedIds.length === 0) return;
+
+    const visibleData = this.dataService.getVisibleRows();
+    const detailHeight = detailChart.height || 200;
+
+    visibleData.forEach((data, i) => {
+      if (!data) return;
+      const rowId = data.id !== undefined ? String(data.id) : `row-${viewport.startIndex + i}`;
+      if (!expandedIds.includes(rowId)) return;
+
+      const detailRow = document.createElement('div');
+      detailRow.className = 'db-grid-detail-chart-row';
+      detailRow.style.cssText = `display:flex;align-items:center;justify-content:center;padding:8px;background:#fafafa;border-top:1px solid #e0e0e0;border-bottom:1px solid #e0e0e0;`;
+      detailRow.style.height = `${detailHeight}px`;
+
+      const chartContainer = document.createElement('div');
+      chartContainer.style.cssText = `width:100%;height:100%;max-width:${detailChart.type === 'bar' ? '100%' : '300px'};margin:0 auto;`;
+      detailRow.appendChild(chartContainer);
+
+      let chartData = detailChart.dataField ? data[detailChart.dataField] : undefined;
+      let chartLabels = detailChart.labelsField ? data[detailChart.labelsField] : undefined;
+
+      if (chartData && Array.isArray(chartData)) {
+        this.chartsService.createDetailChart(chartContainer, {
+          type: detailChart.type,
+          title: detailChart.title,
+          data: chartData,
+          labels: chartLabels,
+          colors: detailChart.colors,
+          height: detailHeight,
+          options: detailChart.options,
+        });
+      }
+
+      // 插入到对应行之后
+      const rowIndex = viewport.startIndex + i;
+      const targetRow = rowsContainer.children[rowIndex] as HTMLElement;
+      if (targetRow) {
+        targetRow.after(detailRow);
+      } else {
+        rowsContainer.appendChild(detailRow);
+      }
+    });
   }
 
   // ============ 事件 ============

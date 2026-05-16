@@ -224,6 +224,7 @@ export class AppComponent implements OnInit {
     { field: "date", headerName: "日期", width: 120 },
     { field: "total", headerName: "总金额", width: 120 },
     { field: "status", headerName: "状态", width: 100 },
+    { field: "trend", headerName: "趋势", width: 120, chartCellRenderer: { type: 'sparklineArea', height: 28, width: 100, dataField: 'trend' } },
   ];
   masterRowData = this.generateOrdersWithDetails(20);
   detailColumnDefs = [
@@ -235,6 +236,14 @@ export class AppComponent implements OnInit {
   ];
   masterOptions = {
     masterDetail: true,
+    detailChartRenderer: {
+      type: 'doughnut',
+      title: '订单金额分布',
+      height: 180,
+      dataField: 'chartData',
+      labelsField: 'chartLabels',
+      colors: ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de'],
+    },
     detailCellRendererParams: {
       detailGridOptions: {
         columnDefs: this.detailColumnDefs,
@@ -460,7 +469,16 @@ export class AppComponent implements OnInit {
     }
   }
 
-  onRowClicked(event: any): void { console.log("Row clicked:", event.data); }
+  onRowClicked(event: any): void {
+    console.log("Row clicked:", event.data);
+    // 主从表模式：点击行展开/折叠详情图表
+    if (this.currentDemo() === 'master') {
+      const rowId = event.data?.id;
+      if (rowId && this.gridApi?.toggleDetail) {
+        this.gridApi.toggleDetail(rowId);
+      }
+    }
+  }
   onSortChanged(event: any): void { console.log("Sort:", event.colDef?.sort); }
   onSelectionChanged(event: any): void { this.selectedCount.set((this.gridApi?.getSelectedRows() || []).length); }
   onNodeExpanded(event: any): void { console.log("Node expanded:", event.node?.id); }
@@ -688,6 +706,11 @@ export class AppComponent implements OnInit {
         total: total.toLocaleString(),
         status: statuses[i % statuses.length],
         details,
+        // 单元格 sparkline 数据（6个月趋势）
+        trend: Array.from({ length: 6 }, () => Math.floor(Math.random() * 100) + 20),
+        // 详情图表数据
+        chartLabels: details.map(d => d.productName),
+        chartData: details.map(d => d.subtotal),
       });
     }
     return data;
