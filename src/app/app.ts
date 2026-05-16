@@ -1,6 +1,7 @@
 import { Component, OnInit, signal, ViewChild } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { Chart } from "chart.js";
+import { Chart, registerables } from 'chart.js';
+Chart.register(...registerables);
 import { DbGridComponent } from "../../projects/db-grid/src/lib/angular/components/grid/db-grid.component";
 
 @Component({
