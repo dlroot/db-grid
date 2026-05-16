@@ -2267,12 +2267,22 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     if (newScrollTop !== this.scrollTop) {
       this.scrollTop = newScrollTop;
       this.dataService.setScrollTop(newScrollTop);
-      this.viewportInfo.set(this.dataService.getViewportInfo());
 
-      // 服务端模式：触发数据预取
-      if (this.enableServerSide) {
+      // 服务端模式：使用 serverSideService 计算正确的 viewport
+      if (this.enableServerSide && this.serverSideService.isEnabled()) {
+        const ssRowCount = this.serverSideService.getRowCount();
         const bodyHeight = this.bodyContainer.nativeElement.clientHeight;
+        const startIndex = Math.floor(newScrollTop / this.rowHeight);
+        const visibleCount = Math.ceil(bodyHeight / this.rowHeight) + 1;
+        const endIndex = Math.min(startIndex + visibleCount, ssRowCount);
+        this.viewportInfo.set({
+          startIndex,
+          endIndex,
+          offsetY: startIndex * this.rowHeight,
+        });
         this.serverSideService.onScroll(newScrollTop, bodyHeight, this.rowHeight);
+      } else {
+        this.viewportInfo.set(this.dataService.getViewportInfo());
       }
 
       this.renderRows();
@@ -2284,7 +2294,16 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   private onWindowResize(): void {
     const bodyHeight = this.bodyContainer.nativeElement.clientHeight;
     this.dataService.setScrollConfig({ viewportHeight: bodyHeight });
-    this.viewportInfo.set(this.dataService.getViewportInfo());
+    // 服务端模式：使用 serverSideService 计算正确的 viewport
+    if (this.enableServerSide && this.serverSideService.isEnabled()) {
+      const ssRowCount = this.serverSideService.getRowCount();
+      const startIndex = Math.floor(this.scrollTop / this.rowHeight);
+      const visibleCount = Math.ceil(bodyHeight / this.rowHeight) + 1;
+      const endIndex = Math.min(startIndex + visibleCount, ssRowCount);
+      this.viewportInfo.set({ startIndex, endIndex, offsetY: startIndex * this.rowHeight });
+    } else {
+      this.viewportInfo.set(this.dataService.getViewportInfo());
+    }
     this.renderRows();
   }
 
