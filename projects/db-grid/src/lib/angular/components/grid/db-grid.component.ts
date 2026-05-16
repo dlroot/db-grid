@@ -2312,9 +2312,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
     const rows = rowsContainer.querySelectorAll('.db-grid-row');
     rows.forEach((rowEl) => {
-      const rowId = (rowEl as HTMLElement).dataset['rowId'] || '';
-      // 通过 rowId 推算 rowIndex（data-row-index）
       const rowIndex = parseInt((rowEl as HTMLElement).dataset['rowIndex'] || '0', 10);
+      let rowHasSpanStart = false;
 
       // 遍历行中的单元格
       const cells = rowEl.querySelectorAll('.db-grid-cell');
@@ -2322,9 +2321,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         const colId = (cellEl as HTMLElement).dataset['colId'] || '';
         if (!colId) return;
 
-        // 检查是否被合并掉
+        // 被合并掉的单元格：保留占位（visibility:hidden），保持列对齐
         if (this.cellSpanService.isSwappedOut(rowIndex, colId)) {
-          (cellEl as HTMLElement).style.display = 'none';
+          (cellEl as HTMLElement).style.visibility = 'hidden';
+          (cellEl as HTMLElement).style.border = 'none';
+          (cellEl as HTMLElement).style.padding = '0';
+          (cellEl as HTMLElement).style.pointerEvents = 'none';
           return;
         }
 
@@ -2346,11 +2348,19 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         }
 
         if (rowSpan > 1) {
+          rowHasSpanStart = true;
           // 计算合并后的高度
           const totalHeight = rowSpan * this.rowHeight;
           (cellEl as HTMLElement).style.height = `${totalHeight}px`;
+          (cellEl as HTMLElement).style.position = 'relative';
+          (cellEl as HTMLElement).style.zIndex = '1';
         }
       });
+
+      // 允许行溢出，使 rowspan 合并单元格可以覆盖下方行
+      if (rowHasSpanStart) {
+        (rowEl as HTMLElement).style.overflow = 'visible';
+      }
     });
   }
 
