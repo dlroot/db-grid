@@ -49,7 +49,7 @@ export class MasterDetailService {
 
   /** 展开详情行 */
   expandDetail(nodeId: string, data?: any): void {
-    if (!this.enabled) return;
+    if (!this.enabled && !this.masterDetail) return;
     this.expandedNodes.add(nodeId);
     if (this.onDetailExpanded) {
       this.onDetailExpanded({ nodeId, data });
@@ -66,6 +66,7 @@ export class MasterDetailService {
 
   /** 切换详情展开 */
   toggleDetail(nodeId: string, data?: any): void {
+    if (!this.enabled && !this.masterDetail) return;
     if (this.isDetailExpanded(nodeId)) {
       this.collapseDetail(nodeId);
     } else {
