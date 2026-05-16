@@ -67,7 +67,7 @@ export class RowRendererService {
     }
 
     // 浮动行
-    if (rowNode.isFloating()) {
+    if (rowNode.isFloating?.()) {
       classes.push('db-grid-row-floating');
     }
 
