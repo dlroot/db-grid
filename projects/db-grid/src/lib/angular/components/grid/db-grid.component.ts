@@ -2310,9 +2310,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         });
       }
 
-      // 插入到对应行之后
-      const rowIndex = viewport.startIndex + i;
-      const targetRow = rowsContainer.children[rowIndex] as HTMLElement;
+      // 插入到对应行之后（通过 data-row-id 精确定位，避免插入详情行后索引错位）
+      const targetRow = rowsContainer.querySelector(`[data-row-id="${rowId}"]`) as HTMLElement;
       if (targetRow) {
         targetRow.after(detailRow);
       } else {
