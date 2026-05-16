@@ -475,7 +475,7 @@ export class AppComponent implements OnInit {
     if (this.currentDemo() === 'master') {
       const rowId = event.data?.id;
       if (rowId && this.gridApi?.toggleDetail) {
-        this.gridApi.toggleDetail(rowId);
+        this.gridApi.toggleDetail(rowId, event.data);
       }
     }
   }
