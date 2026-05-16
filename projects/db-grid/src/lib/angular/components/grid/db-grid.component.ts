@@ -1028,12 +1028,6 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       // ========== 刷新 ==========
       refreshView: () => this.refreshView(),
 
-      // ========== 主从表 ==========
-      expandDetail: (nodeId: string, data?: any) => this.masterDetailService.expandDetail(nodeId, data),
-      collapseDetail: (nodeId: string) => this.masterDetailService.collapseDetail(nodeId),
-      toggleDetail: (nodeId: string, data?: any) => this.masterDetailService.toggleDetail(nodeId, data),
-      isDetailExpanded: (nodeId: string) => this.masterDetailService.isDetailExpanded(nodeId),
-      getMasterDetailService: () => this.masterDetailService,
     };
   }
 
@@ -2123,7 +2117,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       rowsContainer.style.transform = `translateY(${viewport.offsetY}px)`;
 
       const visibleData = this.serverSideService.getRowsInRange(viewport.startIndex, viewport.endIndex);
-      visibleData.forEach((data, i)) => {
+      visibleData.forEach((data, i) => {
         if (!data) return;
         const rowIndex = viewport.startIndex + i;
         const rowId = data.id !== undefined ? String(data.id) : `row-${rowIndex}`;
@@ -2183,7 +2177,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       }
     }
 
-    visibleData.forEach((data, i)) => {
+    visibleData.forEach((data, i) => {
       const rowIndex = viewport.startIndex + i;
       // 使用和 dataService 相同的 ID 生成逻辑
       let rowId: string;
@@ -2287,7 +2281,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     const visibleData = this.dataService.getVisibleRows();
     const detailHeight = detailChart.height || 200;
 
-    visibleData.forEach((data, i)) => {
+    visibleData.forEach((data, i) => {
       if (!data) return;
       const rowId = data.id !== undefined ? String(data.id) : `row-${viewport.startIndex + i}`;
       if (!expandedIds.includes(rowId)) return;
