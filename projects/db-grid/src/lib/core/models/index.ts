@@ -60,6 +60,9 @@ export interface ColDef {
   cellRendererFramework?: any;
   cellRendererParams?: any;
 
+  // 图表单元格
+  chartCellRenderer?: ChartCellRendererConfig;
+
   // 样式
   cellStyle?: CellStyle | ((params: any) => CellStyle);
   cellClass?: string | string[] | ((params: any) => string | string[] | object);
@@ -664,6 +667,31 @@ export interface IRowNode {
 
   // 克隆
   clone(): IRowNode;
+}
+
+// ============ 图表配置 ============
+
+/** 图表单元格渲染器配置 */
+export interface ChartCellRendererConfig {
+  type: 'bar' | 'line' | 'pie' | 'doughnut' | 'sparkline' | 'sparklineArea';
+  height?: number; // 默认 30 (sparkline) 或 60
+  width?: number;
+  data?: any[]; // 数据数组，或通过 dataField 从行数据获取
+  dataField?: string; // 从行数据的哪个字段获取图表数据
+  labelsField?: string; // 从行数据获取 labels
+  colors?: string[];
+  options?: any; // Chart.js 额外选项
+}
+
+/** 详情图表配置 */
+export interface DetailChartConfig {
+  type: 'bar' | 'line' | 'pie' | 'doughnut';
+  title?: string;
+  height?: number; // 默认 200
+  dataField?: string; // 从行数据获取图表数据
+  labelsField?: string;
+  colors?: string[];
+  options?: any;
 }
 
 export { RowNode, createEmptyRowNode } from './row-node';

@@ -4,8 +4,9 @@
  */
 
 import { Injectable } from '@angular/core';
-import { ColDef, CellRendererParams, ValueFormatterParams, CellStyle, RowNode } from '../../models';
+import { ColDef, CellRendererParams, ValueFormatterParams, CellStyle, RowNode, ChartCellRendererConfig } from '../../models';
 import { ColumnService } from '../../services/column.service';
+import { ChartsService } from '../../services/charts.service';
 
 export interface CellRenderResult {
   value: any;
@@ -20,7 +21,7 @@ export class CellRendererService {
   private _isTreeMode = false;
   private _firstColumnField: string | null = null;
 
-  constructor(private columnService: ColumnService) {}
+  constructor(private columnService: ColumnService, private chartsService?: ChartsService) {}
 
   /** 设置树模式 */
   setTreeMode(isTreeMode: boolean, firstColumnField: string | null): void {
@@ -208,6 +209,12 @@ export class CellRendererService {
     // 如果是树模式且是第一列，渲染树形单元格
     if (this._isTreeMode && colDef.field === this._firstColumnField && rowNode) {
       this.renderTreeCell(container, formattedValue, rowNode);
+      return;
+    }
+
+    // 如果有图表单元格渲染器
+    if (colDef.chartCellRenderer) {
+      this.renderChartCell(container, colDef.chartCellRenderer, data);
       return;
     }
 
@@ -669,5 +676,33 @@ export class CellRendererService {
     });
     this.editingCells.clear();
     this.rendererCache.clear();
+  }
+
+  /** 渲染图表单元格 */
+  private renderChartCell(container: HTMLElement, config: ChartCellRendererConfig, data: any): void {
+    if (!this.chartsService) return;
+    let chartData = config.data;
+    let chartLabels: string[] | undefined;
+    if (config.dataField && data) {
+      chartData = data[config.dataField];
+      if (config.labelsField) {
+        chartLabels = data[config.labelsField];
+      }
+    }
+    if (!chartData || !Array.isArray(chartData) || chartData.length === 0) return;
+
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'display:flex;align-items:center;justify-content:center;width:100%;height:100%;';
+    container.appendChild(wrapper);
+
+    this.chartsService.createCellChart(wrapper, {
+      type: config.type,
+      data: chartData,
+      labels: chartLabels,
+      colors: config.colors,
+      height: config.height,
+      width: config.width,
+      extraOptions: config.options,
+    });
   }
 }
