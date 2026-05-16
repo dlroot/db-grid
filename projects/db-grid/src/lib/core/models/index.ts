@@ -432,6 +432,13 @@ export interface GridApi {
   getColumnDef(colId: string): ColDef | null;
   getAllColumnDefs(): ColDef[];
   sizeColumnsToFit(): void;
+
+  // 主从表
+  expandDetail(nodeId: string, data?: any): void;
+  collapseDetail(nodeId: string): void;
+  toggleDetail(nodeId: string, data?: any): void;
+  isDetailExpanded(nodeId: string): boolean;
+  getMasterDetailService(): any;
 }
 
 export interface RowDataTransaction {
