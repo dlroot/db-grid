@@ -375,6 +375,10 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   @Input() rowDragMultiRow: boolean = false;
   @Input() colDragEnabled: boolean = false;
 
+  // 单元格合并
+  @Input() enableCellSpan: boolean = false;
+  @Input() cellSpanConfig: { autoMerge?: boolean; mergeColumns?: string[] } | null = null;
+
   // ============ ViewChild ============
   @ViewChild('gridContainer') gridContainer!: ElementRef<HTMLDivElement>;
   @ViewChild('headerContainer') headerContainer!: ElementRef<HTMLDivElement>;
@@ -706,6 +710,13 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     // 分组配置变更
     if ((changes['enableGrouping'] || changes['groupConfig']) && !changes['enableGrouping']?.firstChange) {
       if (this.enableGrouping && this.groupConfig && this.rowData && this.rowData.length > 0) {
+        this.setRowData(this.rowData);
+      }
+    }
+
+    // 单元格合并配置变更
+    if ((changes['enableCellSpan'] || changes['cellSpanConfig']) && !changes['enableCellSpan']?.firstChange) {
+      if (this.enableCellSpan && this.rowData && this.rowData.length > 0) {
         this.setRowData(this.rowData);
       }
     }
@@ -1124,6 +1135,13 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       }
       this.dataService.initialize(rowData, this.gridOptions, this.columnDefs);
       this.rowCount.set(this.dataService.getRowCount());
+    }
+    // 初始化单元格合并服务
+    if (this.enableCellSpan) {
+      this.cellSpanService.initialize(this.columnDefs, rowData, {
+        autoMerge: this.cellSpanConfig?.autoMerge ?? false,
+        mergeColumns: this.cellSpanConfig?.mergeColumns ?? [],
+      });
     }
     this.renderHeader();
     this.refreshView();
@@ -2277,10 +2295,63 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       }
     });
 
+    // 应用单元格合并
+    if (this.enableCellSpan) {
+      this.applyCellSpans(rowsContainer);
+    }
+
     // 渲染详情图表（主从表展开行）
     this.renderDetailCharts(viewport);
 
     this.cdr.detectChanges();
+  }
+
+  /** 应用单元格合并 */
+  private applyCellSpans(rowsContainer: HTMLElement): void {
+    if (!this.enableCellSpan || !this.cellSpanService) return;
+
+    const rows = rowsContainer.querySelectorAll('.db-grid-row');
+    rows.forEach((rowEl) => {
+      const rowId = (rowEl as HTMLElement).dataset['rowId'] || '';
+      // 通过 rowId 推算 rowIndex（data-row-index）
+      const rowIndex = parseInt((rowEl as HTMLElement).dataset['rowIndex'] || '0', 10);
+
+      // 遍历行中的单元格
+      const cells = rowEl.querySelectorAll('.db-grid-cell');
+      cells.forEach((cellEl) => {
+        const colId = (cellEl as HTMLElement).dataset['colId'] || '';
+        if (!colId) return;
+
+        // 检查是否被合并掉
+        if (this.cellSpanService.isSwappedOut(rowIndex, colId)) {
+          (cellEl as HTMLElement).style.display = 'none';
+          return;
+        }
+
+        // 获取合并信息
+        const colSpan = this.cellSpanService.getColSpan(rowIndex, colId);
+        const rowSpan = this.cellSpanService.getRowSpan(rowIndex, colId);
+
+        if (colSpan > 1) {
+          // 计算合并后的宽度
+          let totalWidth = 0;
+          const visibleCols = this.columnService.getVisibleColumns();
+          const startIdx = visibleCols.findIndex(c => (c.colId || c.field) === colId);
+          for (let c = startIdx; c < Math.min(startIdx + colSpan, visibleCols.length); c++) {
+            totalWidth += this.columnService.getColumnState(visibleCols[c])?.width || visibleCols[c].width || 200;
+          }
+          (cellEl as HTMLElement).style.width = `${totalWidth}px`;
+          (cellEl as HTMLElement).style.minWidth = `${totalWidth}px`;
+          (cellEl as HTMLElement).style.flex = 'none';
+        }
+
+        if (rowSpan > 1) {
+          // 计算合并后的高度
+          const totalHeight = rowSpan * this.rowHeight;
+          (cellEl as HTMLElement).style.height = `${totalHeight}px`;
+        }
+      });
+    });
   }
 
   /** 渲染详情图表（主从表展开行） */
