@@ -2103,7 +2103,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         if (!data) return;
         const rowIndex = viewport.startIndex + i;
         const rowId = data.id !== undefined ? String(data.id) : `row-${rowIndex}`;
-        const rowNode: RowNode = {
+        const rowNode = {
           id: rowId,
           data,
           rowIndex,
@@ -2116,7 +2116,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
           setSelected: () => {},
           floatLeft: () => {},
           floatRight: () => {},
-        } as RowNode;
+        } as any;
         const rowElement = this.rowRenderer.render(rowIndex, data, rowNode).rowElement;
         rowsContainer.appendChild(rowElement);
       });
