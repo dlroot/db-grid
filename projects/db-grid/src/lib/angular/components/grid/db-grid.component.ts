@@ -277,7 +277,9 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   // ============ Inputs ============
   @Input() columnDefs: ColDef[] = [];
   @Input() rowData: any[] = [];
-  @Input() gridOptions: GridOptions = {};
+  private _gridOptions: GridOptions = {};
+  @Input() set gridOptions(value: GridOptions) { this._gridOptions = value || {}; }
+  get gridOptions(): GridOptions { return this._gridOptions; }
   theme = input<'alpine' | 'balham' | 'material' | 'custom'>('alpine');
   @Input() rowHeight: number = 40;
   @Input() headerHeight: number = 40;

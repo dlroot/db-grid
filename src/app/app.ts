@@ -232,6 +232,17 @@ export class AppComponent implements OnInit {
     { field: "price", headerName: "单价", width: 100 },
     { field: "subtotal", headerName: "小计", width: 120 },
   ];
+  masterOptions = {
+    masterDetail: true,
+    detailCellRendererParams: {
+      detailGridOptions: {
+        columnDefs: this.detailColumnDefs,
+      },
+      getDetailRowData: (params: any) => {
+        params.successCallback(params.data.details);
+      },
+    },
+  };
   masterDetailConfig = {
     masterDetail: true,
     detailCellRendererParams: {
