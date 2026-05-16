@@ -472,6 +472,10 @@ export class AppComponent implements OnInit {
     this.selectedCount.set(0);
     this.gridApi = null;
     this.apiStatus.set("未连接");
+    // 图表 demo：等 DOM 渲染完成后再初始化 Chart.js
+    if (demo === 'charts') {
+      setTimeout(() => this.renderChart(), 50);
+    }
   }
 
 
