@@ -2196,6 +2196,13 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     rowsContainer.style.transform = `translateY(${viewport.offsetY}px)`;
 
     const visibleData = this.dataService.getVisibleRows();
+    console.log('[DBGrid] renderRows client-side:', {
+      totalRows: this.dataService.getRowCount(),
+      visibleRows: visibleData.length,
+      viewport,
+      totalHeight,
+      firstRowId: visibleData[0]?.id,
+    });
 
     // 列虚拟化：计算可见列范围
     let colRange: { leftPinned: ColDef[]; center: ColDef[]; rightPinned: ColDef[]; offsetX: number; totalScrollableWidth: number } | null = null;
