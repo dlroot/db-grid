@@ -660,7 +660,7 @@ export class AppComponent implements OnInit {
   }
 
   addRow(): void {
-    const id = this.undoRedoRowData.length + 1;
+    const id = Math.max(...this.undoRedoRowData.map((r: any) => r.id || 0), 0) + 1;
     const names = ['张三', '李四', '王五', '赵六', '钱七', '孙八'];
     const depts = ['技术部', '产品部', '市场部', '财务部'];
     const positions = ['工程师', '经理', '总监', '专员'];
@@ -674,7 +674,8 @@ export class AppComponent implements OnInit {
       salary: 5000 + Math.floor(Math.random() * 30000),
       status: statuses[Math.floor(Math.random() * statuses.length)],
     };
-    this.undoRedoRowData = [...this.undoRedoRowData, newRow];
+    // 插入到开头，确保在当前页面可见
+    this.undoRedoRowData = [newRow, ...this.undoRedoRowData];
     if (this.gridApi?.setRowData) {
       this.gridApi.setRowData(this.undoRedoRowData);
     }

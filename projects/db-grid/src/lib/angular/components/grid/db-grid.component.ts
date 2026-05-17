@@ -1056,6 +1056,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   // --- 数据 ---
   setRowData(rowData: any[]): void {
+    console.log('[DBGrid] setRowData called, rows:', rowData?.length, 'enableServerSide:', this.enableServerSide);
     // 服务端模式下跳过本地数据处理
     if (this.enableServerSide) {
       this.rowCount.set(this.serverSideService.getRowCount());
