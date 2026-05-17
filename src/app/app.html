@@ -126,6 +126,11 @@
       <div class="demo-header">
         <h2>行分组</h2>
         <p class="demo-desc">按字段值自动分组，支持展开/折叠组</p>
+        <div class="demo-actions">
+          <button class="btn" (click)="expandAll()">➕ 展开全部</button>
+          <button class="btn" (click)="collapseAll()">➖ 折叠全部</button>
+          <button class="btn btn-danger" (click)="resetGroup()">🔄 重置分组</button>
+        </div>
       </div>
       <db-grid
         #myGrid
@@ -141,20 +146,6 @@
         [paginationPageSize]="20"
         (gridReady)="onGridReady($event)"
       />
-      <!-- 临时调试信息 -->
-      <div style="background:#ff6b6b;color:white;padding:8px;margin-bottom:8px;border-radius:4px;">
-        rowData={{ groupRowData?.length }} 条
-        @if (groupRowData?.length > 0) {
-          第一条：{{ groupRowData[0] | json }}
-        }
-        <br/>
-        gridApi: {{ gridApi ? '已连接' : '未连接' }}
-        rowCount: {{ rowCount() }}
-        <br/>
-        groupConfig: {{ groupConfig | json }}
-        <br/>
-        currentDemo: {{ currentDemo() }}
-      </div>
     </div>
   }
 

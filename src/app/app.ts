@@ -515,6 +515,25 @@ export class AppComponent implements OnInit {
     if (this.currentDemo() === "group") this.gridApi.collapseAllGroups();
   }
 
+  resetGroup(): void {
+    if (!this.gridApi) return;
+    // 切换分组字段：category → region → 两个都分 → 不分
+    const current = this.groupConfig?.groupFields || [];
+    let newFields: string[];
+    if (current.length === 0) {
+      newFields = ['category'];
+    } else if (current.length === 1 && current[0] === 'category') {
+      newFields = ['region'];
+    } else if (current.length === 1 && current[0] === 'region') {
+      newFields = ['category', 'region'];
+    } else {
+      newFields = [];
+    }
+    this.groupConfig = { groupFields: newFields, autoCreateGroupColumn: newFields.length > 0, expandAll: true };
+    // 触发组件检测变化
+    this.gridApi.setGridOption?.('groupConfig', this.groupConfig);
+  }
+
   selectAll(): void { if (this.gridApi) this.gridApi.selectAll(); }
   clearSelection(): void { if (this.gridApi) this.gridApi.deselectAll(); }
   exportCsv(): void { if (this.gridApi) this.gridApi.downloadExcel({ exportMode: "csv", fileName: "db-grid-export.csv" }); }

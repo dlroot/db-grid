@@ -520,7 +520,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   // ============ Lifecycle ============
 
   ngOnInit(): void {
-    console.log('[DBGrid] ngOnInit, rowSelection:', this.rowSelection, 'enableCellSpan:', this.enableCellSpan);
+
     // 初始化列服务
     this.columnService.initialize(this.columnDefs);
     this.pinnedLeftColumnIds.set(this.pinningService.getPinnedLeftIds());
@@ -1063,7 +1063,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   // --- 数据 ---
   setRowData(rowData: any[]): void {
-    console.log('[DBGrid] setRowData called, rows:', rowData?.length, 'enableServerSide:', this.enableServerSide);
+
     // 服务端模式下跳过本地数据处理
     if (this.enableServerSide) {
       this.rowCount.set(this.serverSideService.getRowCount());
@@ -1820,27 +1820,27 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   // ========== 撤销/重做 API ==========
 
   undo(): void {
-    console.log('[DBGrid] undo called, stack size:', this.undoRedoService.getUndoStackSize());
+
     const action = this.undoRedoService.undo();
     if (action) {
       this.applyUndoAction(action);
     } else {
-      console.log('[DBGrid] nothing to undo');
+
     }
   }
 
   redo(): void {
-    console.log('[DBGrid] redo called, stack size:', this.undoRedoService.getRedoStackSize());
+
     const action = this.undoRedoService.redo();
     if (action) {
       this.applyRedoAction(action);
     } else {
-      console.log('[DBGrid] nothing to redo');
+
     }
   }
 
   private applyUndoAction(action: any): void {
-    console.log('[DBGrid] applyUndoAction:', action.type, action);
+
     switch (action.type) {
       case 'edit':
         const rowNode = this.dataService.getRowNode(String(action.rowIndex));
@@ -2152,7 +2152,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   }
 
   private renderRows(): void {
-    console.log('[DBGrid] renderRows ENTER');
+
     // Guard: skip if view references are not yet initialized (called before ngAfterViewInit)
     // Guard: skip if view references are not yet initialized
     // Note: pinnedLeftContainer only exists when there are pinned left columns, so we check conditionally
@@ -2559,15 +2559,15 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   }
 
   private setupRowEvents(rowElement: HTMLElement, rowIndex: number, data: any, rowNode: any): void {
-    console.log('[DBGrid] setupRowEvents for row:', rowNode.id);
+
     rowElement.addEventListener('click', (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      console.log('[DBGrid] CLICK on row:', rowNode.id, 'target:', target.className);
+
       // 仅排除正在编辑的单元格
       if (target.closest('.db-grid-cell-editor')) return;
       // 触发行选择
       this.selectionService.selectNode(rowNode, e);
-      console.log('[DBGrid] after selectNode, selected:', this.selectionService.getSelectedNodes().length);
+
       this.ngZone.run(() => this.rowClicked.emit({ type: 'rowClicked', data, node: rowNode, rowIndex, event: e, api: this.gridApi }));
     });
 

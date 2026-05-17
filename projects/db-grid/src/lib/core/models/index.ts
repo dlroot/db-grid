@@ -442,6 +442,12 @@ export interface GridApi {
 
   // 撤销/重做
   getUndoRedoService(): any;
+
+  // 树形/分组 展开折叠
+  expandAll(): void;
+  collapseAll(): void;
+  expandAllGroups(): void;
+  collapseAllGroups(): void;
 }
 
 export interface RowDataTransaction {
