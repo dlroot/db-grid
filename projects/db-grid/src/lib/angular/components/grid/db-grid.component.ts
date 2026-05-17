@@ -1820,36 +1820,49 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   // ========== 撤销/重做 API ==========
 
   undo(): void {
+    console.log('[DBGrid] undo called, stack size:', this.undoRedoService.getUndoStackSize());
     const action = this.undoRedoService.undo();
     if (action) {
       this.applyUndoAction(action);
+    } else {
+      console.log('[DBGrid] nothing to undo');
     }
   }
 
   redo(): void {
+    console.log('[DBGrid] redo called, stack size:', this.undoRedoService.getRedoStackSize());
     const action = this.undoRedoService.redo();
     if (action) {
       this.applyRedoAction(action);
+    } else {
+      console.log('[DBGrid] nothing to redo');
     }
   }
 
   private applyUndoAction(action: any): void {
+    console.log('[DBGrid] applyUndoAction:', action.type, action);
     switch (action.type) {
       case 'edit':
-        // 恢复旧值
-        const rowNode = this.dataService.getRowNode(action.rowIndex);
+        const rowNode = this.dataService.getRowNode(String(action.rowIndex));
         if (rowNode && action.colId) {
           rowNode.data[action.colId] = action.oldValue;
           this.refreshView();
         }
         break;
       case 'rowAdd':
-        // 撤销添加 = 删除行
-        // TODO: 实现行删除
+        // 撤销添加 = 删除最后一行
+        const currentData = this.getRowData();
+        if (currentData.length > 0) {
+          currentData.pop();
+          this.setRowData(currentData);
+        }
         break;
       case 'rowDelete':
-        // 撤销删除 = 添加行
-        // TODO: 实现行添加
+        // 撤销删除 = 恢复行
+        const allData = this.getRowData();
+        const insertIdx = Math.min(action.rowIndex, allData.length);
+        allData.splice(insertIdx, 0, action.rowData);
+        this.setRowData(allData);
         break;
     }
   }
@@ -1865,12 +1878,17 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         }
         break;
       case 'rowAdd':
-        // 重做添加
-        // TODO: 实现行添加
+        // 重做添加 = 重新添加行
+        const rdData = this.getRowData();
+        rdData.push(action.rowData);
+        this.setRowData(rdData);
         break;
       case 'rowDelete':
-        // 重做删除
-        // TODO: 实现行删除
+        // 重做删除 = 重新删除行
+        const ddData = this.getRowData();
+        const delIdx = Math.min(action.rowIndex, ddData.length - 1);
+        ddData.splice(delIdx, 1);
+        this.setRowData(ddData);
         break;
     }
   }
