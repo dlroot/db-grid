@@ -1215,6 +1215,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       this._pendingRefresh = true;
       return;
     }
+    console.log('[DBGrid] refreshView called');
     this._pendingRefresh = false;
     // 服务端模式下，rowCount 由 onRowsUpdatedEvent 回调管理，不要覆盖
     if (!this.enableServerSide) {
@@ -2115,6 +2116,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   }
 
   private renderRows(): void {
+    console.log('[DBGrid] renderRows ENTER');
     // Guard: skip if view references are not yet initialized (called before ngAfterViewInit)
     // Guard: skip if view references are not yet initialized
     // Note: pinnedLeftContainer only exists when there are pinned left columns, so we check conditionally
