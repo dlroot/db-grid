@@ -1137,6 +1137,11 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       this.dataService.initialize(rowData, this.gridOptions, this.columnDefs);
       this.rowCount.set(this.dataService.getRowCount());
     }
+    // 数据变化时重置滚动位置，确保新增行可见
+    this.scrollTop = 0;
+    if (this.bodyContainer?.nativeElement) {
+      this.bodyContainer.nativeElement.scrollTop = 0;
+    }
     // 初始化单元格合并服务
     if (this.enableCellSpan) {
       this.cellSpanService.initialize(this.columnDefs, rowData, {
@@ -1215,7 +1220,6 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       this._pendingRefresh = true;
       return;
     }
-    console.log('[DBGrid] refreshView called');
     this._pendingRefresh = false;
     // 服务端模式下，rowCount 由 onRowsUpdatedEvent 回调管理，不要覆盖
     if (!this.enableServerSide) {
@@ -1235,6 +1239,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         offsetY: startIndex * this.rowHeight,
       });
     }
+    this.renderRows();
+  }
+
+  /** 仅刷新行数据，保留滚动位置（用于编辑等场景） */
+  refreshRowsOnly(): void {
+    if (!this.bodyContainer?.nativeElement || !this.rowsContainer?.nativeElement || !this.virtualScroll?.nativeElement) return;
     this.renderRows();
   }
 
@@ -2201,7 +2211,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     console.log('[DBGrid] renderRows client-side:', {
       totalRows: this.dataService.getRowCount(),
       visibleRows: visibleData.length,
-      viewport,
+      viewport: JSON.stringify(viewport),
       totalHeight,
       firstRowId: visibleData[0]?.id,
     });
