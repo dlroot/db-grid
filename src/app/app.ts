@@ -659,6 +659,39 @@ export class AppComponent implements OnInit {
     }
   }
 
+  addRow(): void {
+    const id = this.undoRedoRowData.length + 1;
+    const names = ['张三', '李四', '王五', '赵六', '钱七', '孙八'];
+    const depts = ['技术部', '产品部', '市场部', '财务部'];
+    const positions = ['工程师', '经理', '总监', '专员'];
+    const statuses = ['在职', '出差', '休假', '离职'];
+    const newRow = {
+      id,
+      name: names[Math.floor(Math.random() * names.length)],
+      age: 25 + Math.floor(Math.random() * 30),
+      department: depts[Math.floor(Math.random() * depts.length)],
+      position: positions[Math.floor(Math.random() * positions.length)],
+      salary: 5000 + Math.floor(Math.random() * 30000),
+      status: statuses[Math.floor(Math.random() * statuses.length)],
+    };
+    this.undoRedoRowData = [...this.undoRedoRowData, newRow];
+    if (this.gridApi?.setRowData) {
+      this.gridApi.setRowData(this.undoRedoRowData);
+    }
+    this.updateUndoRedoState();
+  }
+
+  deleteRow(): void {
+    if (this.gridApi) {
+      const selectedRows = this.gridApi.getSelectedRows?.() || [];
+      if (selectedRows.length === 0) return;
+      const selectedIds = new Set(selectedRows.map((r: any) => r.id));
+      this.undoRedoRowData = this.undoRedoRowData.filter((r: any) => !selectedIds.has(r.id));
+      this.gridApi.setRowData?.(this.undoRedoRowData);
+      this.updateUndoRedoState();
+    }
+  }
+
   private updateUndoRedoState(): void {
     const undoRedoService = this.gridApi?.getUndoRedoService?.();
     if (undoRedoService) {
