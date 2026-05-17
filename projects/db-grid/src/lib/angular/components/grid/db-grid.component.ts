@@ -520,6 +520,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   // ============ Lifecycle ============
 
   ngOnInit(): void {
+    console.log('[DBGrid] ngOnInit, rowSelection:', this.rowSelection, 'enableCellSpan:', this.enableCellSpan);
     // 初始化列服务
     this.columnService.initialize(this.columnDefs);
     this.pinnedLeftColumnIds.set(this.pinningService.getPinnedLeftIds());
@@ -2535,11 +2536,11 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   }
 
   private setupRowEvents(rowElement: HTMLElement, rowIndex: number, data: any, rowNode: any): void {
+    console.log('[DBGrid] setupRowEvents for row:', rowNode.id);
     rowElement.addEventListener('click', (e: MouseEvent) => {
       const target = e.target as HTMLElement;
+      console.log('[DBGrid] row CLICK event, target:', target.className, 'rowId:', rowNode.id);
       if (target.closest('.db-grid-cell-editor') || target.closest('.db-grid-cell')) return;
-      console.log('[DBGrid] row click, rowNode.id:', rowNode.id, 'current selection mode:', this.rowSelection);
-      this.selectionService.selectNode(rowNode, e);
       console.log('[DBGrid] row clicked, selected nodes:', this.selectionService.getSelectedNodes().length);
       this.ngZone.run(() => this.rowClicked.emit({ type: 'rowClicked', data, node: rowNode, rowIndex, event: e, api: this.gridApi }));
     });
