@@ -683,16 +683,27 @@ export class AppComponent implements OnInit {
   }
 
   deleteRow(): void {
-    if (this.gridApi) {
-      const selectedRows = this.gridApi.getSelectedRows?.() || [];
-      console.log('[App] deleteRow, selectedRows:', selectedRows.length, selectedRows);
-      if (selectedRows.length === 0) return;
-      const selectedIds = new Set(selectedRows.map((r: any) => r.id));
-      this.undoRedoRowData = this.undoRedoRowData.filter((r: any) => !selectedIds.has(r.id));
-      console.log('[App] after delete, undoRedoRowData length:', this.undoRedoRowData.length);
-      this.gridApi.setRowData?.(this.undoRedoRowData);
-      this.updateUndoRedoState();
+    console.log('[App] deleteRow called, gridApi:', !!this.gridApi);
+    // 方式1：通过API获取选中行
+    let selectedRows = this.gridApi?.getSelectedRows?.() || [];
+    console.log('[App] selectedRows (API):', selectedRows.length);
+
+    // 方式2：直接读取selectionService
+    const nodes = this.gridApi?.getSelectedNodes?.() || [];
+    console.log('[App] selectedNodes:', nodes.length);
+
+    if (selectedRows.length === 0 && nodes.length > 0) {
+      selectedRows = nodes.map((n: any) => n.data).filter(Boolean);
     }
+    if (selectedRows.length === 0) {
+      console.log('[App] No rows selected!');
+      return;
+    }
+    const selectedIds = new Set(selectedRows.map((r: any) => r.id));
+    this.undoRedoRowData = this.undoRedoRowData.filter((r: any) => !selectedIds.has(r.id));
+    console.log('[App] after delete, undoRedoRowData length:', this.undoRedoRowData.length);
+    this.gridApi?.setRowData?.(this.undoRedoRowData);
+    this.updateUndoRedoState();
   }
 
   private updateUndoRedoState(): void {

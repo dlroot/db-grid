@@ -745,6 +745,11 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
     this.renderHeader();
     this.renderRows();
+
+    // 确保选择服务用最新的 rowSelection 值初始化
+    const rowSel = this.gridOptions.rowSelection || this.rowSelection || 'single';
+    this.selectionService.initialize({ mode: rowSel as any, multiSortKey: this.gridOptions.multiSortKey === 'ctrl' });
+
     if (this.pagination) {
       this.renderFooter();
     }
