@@ -439,6 +439,9 @@ export interface GridApi {
   toggleDetail(nodeId: string, data?: any): void;
   isDetailExpanded(nodeId: string): boolean;
   getMasterDetailService(): any;
+
+  // 撤销/重做
+  getUndoRedoService(): any;
 }
 
 export interface RowDataTransaction {

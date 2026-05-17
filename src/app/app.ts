@@ -679,19 +679,18 @@ export class AppComponent implements OnInit {
     if (this.gridApi?.setRowData) {
       this.gridApi.setRowData(this.undoRedoRowData);
     }
+    // 记录撤销操作
+    this.gridApi?.getUndoRedoService()?.recordRowAdd({
+      rowIndex: 0,
+      rowData: newRow,
+    });
     this.updateUndoRedoState();
   }
 
   deleteRow(): void {
     console.log('[App] deleteRow called, gridApi:', !!this.gridApi);
-    // 方式1：通过API获取选中行
     let selectedRows = this.gridApi?.getSelectedRows?.() || [];
-    console.log('[App] selectedRows (API):', selectedRows.length);
-
-    // 方式2：直接读取selectionService
     const nodes = this.gridApi?.getSelectedNodes?.() || [];
-    console.log('[App] selectedNodes:', nodes.length);
-
     if (selectedRows.length === 0 && nodes.length > 0) {
       selectedRows = nodes.map((n: any) => n.data).filter(Boolean);
     }
@@ -699,9 +698,18 @@ export class AppComponent implements OnInit {
       console.log('[App] No rows selected!');
       return;
     }
+    // 删除前先记录，供撤销使用
+    const undoRedoService = this.gridApi?.getUndoRedoService?.();
+    if (undoRedoService) {
+      selectedRows.forEach((row: any) => {
+        const idx = this.undoRedoRowData.findIndex((r: any) => r.id === row.id);
+        if (idx >= 0) {
+          undoRedoService.recordRowDelete({ rowIndex: idx, rowData: row });
+        }
+      });
+    }
     const selectedIds = new Set(selectedRows.map((r: any) => r.id));
     this.undoRedoRowData = this.undoRedoRowData.filter((r: any) => !selectedIds.has(r.id));
-    console.log('[App] after delete, undoRedoRowData length:', this.undoRedoRowData.length);
     this.gridApi?.setRowData?.(this.undoRedoRowData);
     this.updateUndoRedoState();
   }
