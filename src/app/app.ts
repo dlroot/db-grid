@@ -685,9 +685,11 @@ export class AppComponent implements OnInit {
   deleteRow(): void {
     if (this.gridApi) {
       const selectedRows = this.gridApi.getSelectedRows?.() || [];
+      console.log('[App] deleteRow, selectedRows:', selectedRows.length, selectedRows);
       if (selectedRows.length === 0) return;
       const selectedIds = new Set(selectedRows.map((r: any) => r.id));
       this.undoRedoRowData = this.undoRedoRowData.filter((r: any) => !selectedIds.has(r.id));
+      console.log('[App] after delete, undoRedoRowData length:', this.undoRedoRowData.length);
       this.gridApi.setRowData?.(this.undoRedoRowData);
       this.updateUndoRedoState();
     }

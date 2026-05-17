@@ -283,6 +283,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   get gridOptions(): GridOptions { return this._gridOptions; }
   theme = input<'alpine' | 'balham' | 'material' | 'custom'>('alpine');
   @Input() rowHeight: number = 40;
+  @Input() rowSelection: string = 'single';
   @Input() headerHeight: number = 40;
   @Input() loading: boolean = false;
   @Input() loadingMessage: string = '';
@@ -548,7 +549,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     });
 
     // 初始化选择服务
-    const rowSelection = this.gridOptions.rowSelection;
+    const rowSelection = this.gridOptions.rowSelection || this.rowSelection || 'single';
     this.selectionService.initialize({ mode: rowSelection as any, multiSortKey: this.gridOptions.multiSortKey === 'ctrl' });
 
     // 选择事件
@@ -1892,7 +1893,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     (this.gridOptions as any)[key] = value;
     switch (key) {
       case 'rowHeight': this.dataService.setScrollConfig({ rowHeight: value }); this.refreshView(); break;
-      case 'rowSelection': this.selectionService.initialize({ mode: value as any }); break;
+      case 'rowSelection':
+      case 'rowSelectionMode': this.selectionService.initialize({ mode: value as any }); this.refreshView(); break;
     }
   }
 
@@ -2537,6 +2539,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       const target = e.target as HTMLElement;
       if (target.closest('.db-grid-cell')) return;
       this.selectionService.selectNode(rowNode, e);
+      console.log('[DBGrid] row clicked, selected nodes:', this.selectionService.getSelectedNodes().length);
       this.ngZone.run(() => this.rowClicked.emit({ type: 'rowClicked', data, node: rowNode, rowIndex, event: e, api: this.gridApi }));
     });
 
