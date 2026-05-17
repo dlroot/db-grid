@@ -44,6 +44,7 @@ export class SelectionService {
 
   /** 处理节点点击选择 */
   selectNode(node: RowNode, event?: MouseEvent): void {
+    console.log('[SelectionService] selectNode called, mode:', this.mode, 'nodeId:', node.id, 'ctrlKey:', event?.ctrlKey);
     if (this.mode === 'none') return;
 
     if (this.mode === 'single') {

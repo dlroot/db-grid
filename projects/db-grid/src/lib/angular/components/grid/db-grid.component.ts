@@ -2537,7 +2537,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   private setupRowEvents(rowElement: HTMLElement, rowIndex: number, data: any, rowNode: any): void {
     rowElement.addEventListener('click', (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (target.closest('.db-grid-cell')) return;
+      if (target.closest('.db-grid-cell-editor') || target.closest('.db-grid-cell')) return;
+      console.log('[DBGrid] row click, rowNode.id:', rowNode.id, 'current selection mode:', this.rowSelection);
       this.selectionService.selectNode(rowNode, e);
       console.log('[DBGrid] row clicked, selected nodes:', this.selectionService.getSelectedNodes().length);
       this.ngZone.run(() => this.rowClicked.emit({ type: 'rowClicked', data, node: rowNode, rowIndex, event: e, api: this.gridApi }));
