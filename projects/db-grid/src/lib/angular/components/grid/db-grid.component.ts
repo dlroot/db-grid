@@ -2645,9 +2645,24 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   }
 
   /** 打开单元格编辑器 */
+  // 当前编辑上下文（用于 undo/redo）
+  private editingRowIndex: number | null = null;
+  private editingColId: string | null = null;
+  private editingOldValue: any = null;
+
   openCellEditor(rowIndex: number, colDef: ColDef, value: any, trigger?: { key?: string; click?: boolean }): void {
+    // 记录编辑上下文，供 onEditorStopped 调 recordEdit 用
+    this.editingRowIndex = rowIndex;
+    this.editingColId = colDef.field || colDef.colId || null;
+    this.editingOldValue = value;
+
     const session = this.editorService.startEditing(`row-${rowIndex}`, colDef, value, trigger);
-    if (!session) return;
+    if (!session) {
+      this.editingRowIndex = null;
+      this.editingColId = null;
+      this.editingOldValue = null;
+      return;
+    }
 
     this.activeCellEditor = {
       value: session.currentValue,
@@ -2672,10 +2687,25 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     if (this.activeCellEditor) {
       if (commit) {
         this.editorService.commitEdit();
+        // 记录撤销操作
+        if (this.editingRowIndex != null && this.editingColId && this.undoRedoService.isEnabled()) {
+          const rowData = this.dataService.getRowData(this.editingRowIndex);
+          const newValue = rowData?.[this.editingColId] ?? null;
+          this.undoRedoService.recordEdit({
+            rowIndex: this.editingRowIndex,
+            colId: this.editingColId,
+            oldValue: this.editingOldValue,
+            newValue: newValue,
+            rowData: rowData || {},
+          });
+        }
       } else {
         this.editorService.cancelEdit();
       }
       this.activeCellEditor = null;
+      this.editingRowIndex = null;
+      this.editingColId = null;
+      this.editingOldValue = null;
       this.cdr.detectChanges();
     }
   }
@@ -2701,8 +2731,18 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     if (event.committed) {
       const commit = this.editorService.commitEdit();
       if (commit) {
+        // 记录撤销操作
+        if (this.editingRowIndex != null && this.editingColId && this.undoRedoService.isEnabled()) {
+          const rowData = this.dataService.getRowData(this.editingRowIndex);
+          this.undoRedoService.recordEdit({
+            rowIndex: this.editingRowIndex,
+            colId: this.editingColId,
+            oldValue: this.editingOldValue,
+            newValue: event.value,
+            rowData: rowData || {},
+          });
+        }
         this.ngZone.run(() => {
-          // 触发 cellValueChanged 事件（可通过 gridApi 访问）
           this.refreshView();
         });
       }
@@ -2710,6 +2750,9 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       this.editorService.cancelEdit();
     }
     this.activeCellEditor = null;
+    this.editingRowIndex = null;
+    this.editingColId = null;
+    this.editingOldValue = null;
     this.cdr.detectChanges();
   }
 
