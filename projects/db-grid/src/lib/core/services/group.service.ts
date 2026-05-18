@@ -75,7 +75,18 @@ export class GroupService {
           const level = node.level || 0;
           const indent = '  '.repeat(level);
           const icon = node.expanded ? '▼' : '▶';
-          return `${indent}${icon} ${node.key || node.data?.__groupKey || ''}`;
+          const key = node.key || node.data?.__groupKey || '';
+          const el = document.createElement('span');
+          el.className = 'db-grid-group-cell';
+          el.style.cursor = 'pointer';
+          el.style.userSelect = 'none';
+          el.innerHTML = `${indent}<span class="group-icon">${icon}</span> ${key}`;
+          el.addEventListener('click', () => {
+            const rowEl = el.closest('.db-grid-row');
+            const nodeId = node.id;
+            rowEl?.dispatchEvent(new CustomEvent('groupToggle', { detail: { nodeId }, bubbles: true }));
+          });
+          return el;
         },
       });
     }
@@ -128,7 +139,17 @@ export class GroupService {
 
         if (level < levelFields.length - 1) {
           const subGrouped = this.groupByField(rows, levelFields[level + 1]);
+          const childCountBefore = this.flatNodes.length;
           buildGroups(subGrouped, level + 1, groupId, levelFields);
+          // 将子分组节点添加到父分组的 children 中
+          const childCountAfter = this.flatNodes.length;
+          for (let ci = childCountBefore; ci < childCountAfter; ci++) {
+            const childNode = this.flatNodes[ci];
+            if (childNode.level === level + 1) {
+              childNode.parent = groupNode;
+              groupNode.children.push(childNode);
+            }
+          }
         } else {
           rows.forEach((data, i) => {
             const leafNode = createEmptyRowNode();

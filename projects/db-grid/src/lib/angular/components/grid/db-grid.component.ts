@@ -1107,9 +1107,10 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         this.pinnedLeftColumnIds.set(this.pinningService.getPinnedLeftIds());
         this.refreshHeader();
       }
-      // 使用 initializeNodes 直接传入节点数组
-      this.dataService.initializeNodes(result.flatNodes, this.gridOptions, this.columnDefs);
-      this.rowCount.set(this.groupService.getFlattenedNodes().length);
+      // 使用 initializeNodes 传入展开后的扁平节点数组（只渲染展开状态的节点）
+      const displayNodes = this.groupService.getFlattenedNodes();
+      this.dataService.initializeNodes(displayNodes, this.gridOptions, this.columnDefs);
+      this.rowCount.set(displayNodes.length);
       console.log('[DBGrid] 分组模式 rowCount:', this.groupService.getFlattenedNodes().length, 'flatNodes:', this.groupService.getResult().flatNodes.length);
     } else if (this.pivotMode && this.pivotColumn && this.pivotRowGroupColumns.length > 0) {
       // ========== 透视模式 ==========
@@ -1354,11 +1355,18 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.refreshView();
   }
 
-  expandGroup(nodeId: string): void { this.groupService.setGroupExpanded(nodeId, true); this.refreshView(); }
-  collapseGroup(nodeId: string): void { this.groupService.setGroupExpanded(nodeId, false); this.refreshView(); }
-  toggleGroup(nodeId: string): void { this.groupService.toggleGroup(nodeId); this.refreshView(); }
-  expandAllGroups(): void { this.groupService.expandAll(); this.refreshView(); }
-  collapseAllGroups(): void { this.groupService.collapseAll(); this.refreshView(); }
+  expandGroup(nodeId: string): void { this.groupService.setGroupExpanded(nodeId, true); this.syncGroupNodes(); this.refreshView(); }
+  collapseGroup(nodeId: string): void { this.groupService.setGroupExpanded(nodeId, false); this.syncGroupNodes(); this.refreshView(); }
+  toggleGroup(nodeId: string): void { this.groupService.toggleGroup(nodeId); this.syncGroupNodes(); this.refreshView(); }
+  expandAllGroups(): void { this.groupService.expandAll(); this.syncGroupNodes(); this.refreshView(); }
+  collapseAllGroups(): void { this.groupService.collapseAll(); this.syncGroupNodes(); this.refreshView(); }
+
+  /** 同步分组节点到 dataService（展开/折叠后刷新） */
+  private syncGroupNodes(): void {
+    const displayNodes = this.groupService.getFlattenedNodes();
+    this.dataService.initializeNodes(displayNodes, this.gridOptions, this.columnDefs);
+    this.rowCount.set(displayNodes.length);
+  }
 
   // ========== 数据透视 API ==========
   setPivotMode(pivotColumn: string, rowGroupColumns: string[], valueColumns: { field: string; aggFunc: string }[]): void {
@@ -2283,6 +2291,21 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
             rowNode.hasChildren = treeNode.hasChildren;
             rowNode.level = treeNode.level;
             rowNode.expanded = treeNode.expanded;
+          }
+        }
+
+        // 分组模式：合并分组节点属性
+        if (this.isGroupMode) {
+          const groupNode = this.groupService['groupNodes'].get(rowId) || this.groupService.getResult().flatNodes.find(n => n.id === rowId);
+          if (groupNode) {
+            rowNode.group = groupNode.group;
+            rowNode.level = groupNode.level;
+            rowNode.uiLevel = groupNode.uiLevel;
+            rowNode.expanded = groupNode.expanded;
+            rowNode.key = groupNode.key;
+            rowNode.allChildrenCount = groupNode.allChildrenCount;
+            rowNode.children = groupNode.children;
+            rowNode.data = groupNode.data;
           }
         }
 

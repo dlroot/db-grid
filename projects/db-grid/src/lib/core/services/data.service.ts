@@ -60,7 +60,13 @@ export class DataService {
     this.gridOptions = gridOptions;
     this.colDefs = colDefs;
     this.rowNodeMap.clear();
-    this.rowData = nodes.map(n => n.data);
+    this.rowData = nodes.map(n => {
+      // 确保分组节点的 data 中包含 id，以便渲染时 data.id 能匹配 rowNodeMap 的 key
+      if (n.data && n.id && n.data.id === undefined) {
+        n.data = { ...n.data, id: n.id };
+      }
+      return n.data;
+    });
     
     nodes.forEach((node, index) => {
       if (!node.id) node.id = `node-${index}`;
