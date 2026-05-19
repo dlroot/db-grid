@@ -2091,10 +2091,11 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   }
 
   /** 更新全选 checkbox 状态 */
-  private updateSelectAllCheckboxState(): void {
+  updateSelectAllCheckboxState(): void {
     const totalRows = this.rowCount();
     const selectedCount = this.selectionService.getSelectionCount();
     const state: 'all' | 'some' | 'none' = selectedCount === 0 ? 'none' : selectedCount === totalRows ? 'all' : 'some';
+    console.log('[DBGrid] updateSelectAllCheckboxState', { totalRows, selectedCount, state });
     this.headerRenderer.updateSelectAllState(state);
   }
 
@@ -2509,6 +2510,10 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       // 确保从 selectionService 同步选中状态
       const isCurrentlySelected = rowNode ? this.selectionService.isSelected(rowNode) : false;
       if (rowNode) {
+        // 确保 isSelected 方法存在
+        if (typeof rowNode.isSelected !== 'function') {
+          rowNode.isSelected = () => this.selectionService.isSelected({ id: rowId } as any);
+        }
         // 树模式：合并树节点属性（children, hasChildren, level, expanded）
         if (this.isTreeMode) {
           const treeNode = this.treeService.getNode(rowId);

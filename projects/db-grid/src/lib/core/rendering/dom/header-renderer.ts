@@ -430,6 +430,7 @@ export class HeaderRendererService {
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.className = 'db-grid-checkbox db-grid-select-all-checkbox';
+    checkbox.id = 'db-grid-select-all';
     checkbox.setAttribute('aria-label', 'Select All');
     checkbox.style.cursor = 'pointer';
 
@@ -438,11 +439,13 @@ export class HeaderRendererService {
     // 点击事件：触发 selectAllToggle 自定义事件
     container.addEventListener('click', (e: MouseEvent) => {
       e.stopPropagation();
+      e.preventDefault();
       // 切换 checkbox 状态
-      checkbox.checked = !checkbox.checked;
+      const newState = !checkbox.checked;
+      checkbox.checked = newState;
       const event = new CustomEvent('selectAllToggle', {
         bubbles: true,
-        detail: { checked: checkbox.checked, event: e },
+        detail: { checked: newState, event: e },
       });
       container.dispatchEvent(event);
     });
