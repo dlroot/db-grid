@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { ColDef, IRowNode } from '../models';
+import { ColDef } from '../models';
 
 /**
  * 范围选择服务 — 支持单元格区域选择、复制、填充
