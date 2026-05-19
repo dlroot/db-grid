@@ -481,6 +481,7 @@ export class AppComponent implements OnInit {
   }
   onSortChanged(event: any): void { console.log("Sort:", event.colDef?.sort); }
   onSelectionChanged(event: any): void { this.selectedCount.set((this.gridApi?.getSelectedRows() || []).length); }
+  onCellClicked(event: any): void { console.log("Cell clicked:", event); }
   onNodeExpanded(event: any): void { console.log("Node expanded:", event.node?.id); }
   onNodeCollapsed(event: any): void { console.log("Node collapsed:", event.node?.id); }
   onGroupExpanded(event: any): void { console.log("Group expanded:", event.node?.id); }
