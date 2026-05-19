@@ -2116,6 +2116,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     if (!rowsContainer) return;
 
     const selectedIds = new Set(this.selectionService.getSelectedIds());
+    console.log('[DBGrid] updateSelectionStyles', { selectedCount: selectedIds.size, selectedIds: [...selectedIds].slice(0, 5) });
 
     const updateRowElements = (container: HTMLElement) => {
       const rows = container.querySelectorAll<HTMLElement>('.db-grid-row');
@@ -2123,6 +2124,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         const rowId = rowEl.dataset['rowId'];
         if (!rowId) return;
         const shouldBeSelected = selectedIds.has(rowId);
+        console.log('[DBGrid] row', rowId, 'shouldBeSelected:', shouldBeSelected);
         if (shouldBeSelected) {
           rowEl.classList.add('db-grid-row-selected');
           rowEl.setAttribute('aria-selected', 'true');
@@ -2606,6 +2608,9 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     // 渲染详情图表（主从表展开行）
     this.renderDetailCharts(viewport);
 
+    console.log('[DBGrid] renderRows done, calling updateSelectionStyles + updateSelectAllCheckboxState');
+    this.updateSelectionStyles();
+    this.updateSelectAllCheckboxState();
     this.cdr.detectChanges();
   }
 
