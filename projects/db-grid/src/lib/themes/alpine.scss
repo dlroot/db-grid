@@ -44,6 +44,22 @@
   font-family: var(--db-grid-alpine-font-family);
   font-size: var(--db-grid-alpine-font-size);
 
+  // Checkbox 样式
+  .db-grid-checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--db-grid-alpine-checkbox-checked, #2196f3);
+  }
+  .db-grid-checkbox:indeterminate {
+    opacity: 0.6;
+  }
+  .db-grid-select-all-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
   // 表头样式
   .db-grid-header {
     background: var(--db-grid-alpine-header-bg);

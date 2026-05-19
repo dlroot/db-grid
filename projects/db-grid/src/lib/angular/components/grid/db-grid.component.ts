@@ -586,6 +586,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.selectionService.setOnSelectionChanged((event) => {
       this.ngZone.run(() => {
         this.updateSelectionStyles();
+        this.updateSelectAllCheckboxState();
         this.selectionChanged.emit({ type: 'selectionChanged', source: 'api', api: this.gridApi });
       });
     });
@@ -2079,6 +2080,24 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   deselectAll(): void { this.selectionService.clearSelection(); }
 
+  /** 全选/取消全选切换 */
+  private toggleSelectAll(checked: boolean): void {
+    if (checked) {
+      this.selectAll();
+    } else {
+      this.deselectAll();
+    }
+    this.updateSelectAllCheckboxState();
+  }
+
+  /** 更新全选 checkbox 状态 */
+  private updateSelectAllCheckboxState(): void {
+    const totalRows = this.rowCount();
+    const selectedCount = this.selectionService.getSelectionCount();
+    const state: 'all' | 'some' | 'none' = selectedCount === 0 ? 'none' : selectedCount === totalRows ? 'all' : 'some';
+    this.headerRenderer.updateSelectAllState(state);
+  }
+
   selectNode(node: any, clearSelection = false): void {
     if (clearSelection) this.selectionService.clearSelection();
     this.selectionService.selectNode(node);
@@ -2238,6 +2257,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     headerElement.addEventListener('headerContextMenu', ((e: CustomEvent) => {
       const { colDef, event } = e.detail;
       this.ngZone.run(() => this.showColumnGridMenu(colDef?.colId || colDef?.field || '', event));
+    }) as EventListener);
+
+    // 全选 checkbox 事件监听
+    headerElement.addEventListener('selectAllToggle', ((e: CustomEvent) => {
+      const { checked } = e.detail;
+      this.ngZone.run(() => this.toggleSelectAll(checked));
     }) as EventListener);
 
     // 列拖拽回调
@@ -2825,6 +2850,18 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     rowElement.addEventListener('groupToggle', ((e: CustomEvent) => {
       const { nodeId } = e.detail;
       this.ngZone.run(() => { this.toggleGroup(nodeId); });
+    }) as EventListener);
+
+    // 行 checkbox 点击事件：切换单行选择状态
+    rowElement.addEventListener('rowCheckboxToggle', ((e: CustomEvent) => {
+      const { checked } = e.detail;
+      if (checked) {
+        this.selectionService.selectNode(rowNode);
+      } else {
+        this.selectionService.deselectNode(rowNode);
+      }
+      this.updateSelectionStyles();
+      this.updateSelectAllCheckboxState();
     }) as EventListener);
 
     // 右键菜单

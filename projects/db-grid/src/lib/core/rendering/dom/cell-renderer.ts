@@ -301,9 +301,21 @@ export class CellRendererService {
   private renderCheckbox(container: HTMLElement, checked: boolean): void {
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
-    checkbox.className = 'db-grid-checkbox';
+    checkbox.className = 'db-grid-checkbox db-grid-row-checkbox';
     checkbox.checked = !!checked;
     checkbox.disabled = false;
+    checkbox.style.cursor = 'pointer';
+
+    // 点击事件：触发 rowCheckboxToggle 自定义事件
+    checkbox.addEventListener('click', (e: MouseEvent) => {
+      e.stopPropagation();
+      const event = new CustomEvent('rowCheckboxToggle', {
+        bubbles: true,
+        detail: { checked: checkbox.checked, event: e },
+      });
+      checkbox.dispatchEvent(event);
+    });
+
     container.appendChild(checkbox);
   }
 

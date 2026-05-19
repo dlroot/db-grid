@@ -290,6 +290,12 @@ export class HeaderRendererService {
     header.setAttribute('aria-sort', colDef.sort === 'asc' ? 'ascending' : colDef.sort === 'desc' ? 'descending' : 'none');
     header.setAttribute('tabindex', '-1');
 
+    // 全选 checkbox（仅当 headerCheckboxSelection 为 true 时）
+    if (colDef.headerCheckboxSelection === true) {
+      const selectAllCheckbox = this.createSelectAllCheckbox();
+      header.appendChild(selectAllCheckbox);
+    }
+
     // 标题内容
     const label = document.createElement('span');
     label.className = 'db-grid-header-label';
@@ -407,6 +413,51 @@ export class HeaderRendererService {
       default:
         return 'flex-start';
     }
+  }
+
+  /** 创建全选 checkbox */
+  private createSelectAllCheckbox(): HTMLElement {
+    const container = document.createElement('label');
+    container.className = 'db-grid-select-all-container';
+    container.style.cssText = `
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 8px;
+      cursor: pointer;
+    `;
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'db-grid-checkbox db-grid-select-all-checkbox';
+    checkbox.setAttribute('aria-label', 'Select All');
+    checkbox.style.cursor = 'pointer';
+
+    container.appendChild(checkbox);
+
+    // 点击事件：触发 selectAllToggle 自定义事件
+    container.addEventListener('click', (e: MouseEvent) => {
+      e.stopPropagation();
+      const event = new CustomEvent('selectAllToggle', {
+        bubbles: true,
+        detail: { checked: checkbox.checked, event: e },
+      });
+      checkbox.dispatchEvent(event);
+    });
+
+    return container;
+  }
+
+  /** 更新全选 checkbox 状态 */
+  updateSelectAllState(state: 'all' | 'some' | 'none'): void {
+    const checkbox = document.querySelector('.db-grid-select-all-checkbox') as HTMLInputElement;
+    if (!checkbox) return;
+
+    checkbox.checked = state === 'all';
+    checkbox.indeterminate = state === 'some';
+
+    const ariaLabel = state === 'all' ? 'Deselect All' : 'Select All';
+    checkbox.setAttribute('aria-label', ariaLabel);
   }
 
   /** 创建排序图标 */

@@ -22,7 +22,7 @@ export class AppComponent implements OnInit {
   @ViewChild("myGrid") myGrid!: DbGridComponent;
 
   basicColumnDefs = [
-    { field: "id", headerName: "ID", width: 80, sortable: true, resizable: true, filter: false },
+    { field: "id", headerName: "ID", width: 80, sortable: true, resizable: true, filter: false, headerCheckboxSelection: true, checkboxSelection: true },
     { field: "name", headerName: "姓名", width: 150, sortable: true, resizable: true, filter: "text" },
     { field: "age", headerName: "年龄", width: 100, sortable: true, resizable: true, filter: "number" },
     { field: "email", headerName: "邮箱", width: 220, sortable: true, resizable: true, filter: "text" },
