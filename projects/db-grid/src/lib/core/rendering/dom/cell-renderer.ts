@@ -228,7 +228,9 @@ export class CellRendererService {
 
     // 如果是复选框列
     if (colDef.checkboxSelection) {
-      this.renderCheckbox(container, displayValue);
+      // 使用 rowNode.selected 而不是 value
+      const isSelected = rowNode?.isSelected?.() ?? rowNode?.selected ?? false;
+      this.renderCheckbox(container, isSelected);
       return;
     }
 

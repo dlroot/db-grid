@@ -438,11 +438,13 @@ export class HeaderRendererService {
     // 点击事件：触发 selectAllToggle 自定义事件
     container.addEventListener('click', (e: MouseEvent) => {
       e.stopPropagation();
+      // 切换 checkbox 状态
+      checkbox.checked = !checkbox.checked;
       const event = new CustomEvent('selectAllToggle', {
         bubbles: true,
         detail: { checked: checkbox.checked, event: e },
       });
-      checkbox.dispatchEvent(event);
+      container.dispatchEvent(event);
     });
 
     return container;

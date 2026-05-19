@@ -2506,6 +2506,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         rowId = `row-${rowIndex}`;
       }
       const rowNode = this.dataService.getRowNode(rowId);
+      // 确保从 selectionService 同步选中状态
+      const isCurrentlySelected = rowNode ? this.selectionService.isSelected(rowNode) : false;
       if (rowNode) {
         // 树模式：合并树节点属性（children, hasChildren, level, expanded）
         if (this.isTreeMode) {
@@ -2532,6 +2534,9 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
             rowNode.data = groupNode.data;
           }
         }
+        
+        // 同步选中状态
+        rowNode.selected = isCurrentlySelected;
 
         if (this.enableColVirtualization && colRange) {
           // 列虚拟化：只渲染可见列（不含 pinned left，pinned 在独立层渲染）
@@ -2810,8 +2815,9 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     rowElement.addEventListener('click', (e: MouseEvent) => {
       const target = e.target as HTMLElement;
 
-      // 仅排除正在编辑的单元格
+      // 排除正在编辑的单元格和 checkbox 点击
       if (target.closest('.db-grid-cell-editor')) return;
+      if (target.closest('.db-grid-checkbox')) return; // checkbox 点击由单独的事件处理器处理
       // 触发行选择
       this.selectionService.selectNode(rowNode, e);
       // 即时更新行选中样式（不依赖 onSelectionChanged 的批量刷新）
