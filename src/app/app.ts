@@ -34,7 +34,7 @@ export class AppComponent implements OnInit {
   ];
 
   basicRowData = this.generateEmployeeData(100);
-  basicOptions = { rowSelection: "multiple", animateRows: true, sortable: true, filter: true };
+  basicOptions = { rowSelection: "multiple", animateRows: true, sortable: true, filter: true, enableRangeSelection: true };
 
   // Tree data
   treeColumnDefs = [
