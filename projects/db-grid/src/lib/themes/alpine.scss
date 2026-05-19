@@ -22,6 +22,8 @@
   --db-grid-alpine-row-height: 40px;
   --db-grid-alpine-header-height: 40px;
   --db-grid-alpine-cell-padding: 8px;
+  --db-grid-alpine-range-selection-bg: rgba(33, 150, 243, 0.12);
+  --db-grid-alpine-range-selection-border: #2196f3;
 }
 
 // Grid 容器
@@ -34,6 +36,8 @@
   --db-grid-row-height: var(--db-grid-alpine-row-height);
   --db-grid-header-bg: var(--db-grid-alpine-header-bg);
   --db-grid-header-text-color: var(--db-grid-alpine-header-text-color);
+  --db-grid-range-selection-background: var(--db-grid-alpine-range-selection-bg);
+  --db-grid-range-selection-border-color: var(--db-grid-alpine-range-selection-border);
 
   border: 1px solid var(--db-grid-alpine-border-color);
   border-radius: 4px;

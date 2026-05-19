@@ -28,6 +28,8 @@
   --db-grid-material-row-height: 48px;
   --db-grid-material-header-height: 56px;
   --db-grid-material-cell-padding: 16px;
+  --db-grid-material-range-selection-bg: rgba(98, 0, 238, 0.12);
+  --db-grid-material-range-selection-border: #6200ee;
 }
 
 // Grid 容器
@@ -40,6 +42,8 @@
   --db-grid-row-height: var(--db-grid-material-row-height);
   --db-grid-header-bg: var(--db-grid-material-header-bg);
   --db-grid-header-text-color: var(--db-grid-material-text-color);
+  --db-grid-range-selection-background: var(--db-grid-material-range-selection-bg);
+  --db-grid-range-selection-border-color: var(--db-grid-material-range-selection-border);
 
   border: none;
   border-radius: 4px;

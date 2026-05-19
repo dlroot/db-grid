@@ -213,11 +213,29 @@ export class RangeSelectionService {
     this.emitRangeChanged();
   }
 
+  private _columnOrder: string[] = [];
+
+  /** 设置可见列的顺序（供 isCellInRange 列范围判断使用） */
+  setColumnOrder(colIds: string[]): void {
+    this._columnOrder = colIds;
+  }
+
   private isCellInSingleRange(rowIndex: number, colId: string, range: CellRange): boolean {
     const minRow = Math.min(range.start.rowIndex, range.end.rowIndex);
     const maxRow = Math.max(range.start.rowIndex, range.end.rowIndex);
-    return rowIndex >= minRow && rowIndex <= maxRow &&
-           (colId === range.start.colId || colId === range.end.colId);
+    if (rowIndex < minRow || rowIndex > maxRow) return false;
+    // 列匹配：需要知道列的顺序才能判断 colId 是否在 start~end 范围内
+    if (this._columnOrder.length === 0) {
+      // 降级：只匹配起止列
+      return colId === range.start.colId || colId === range.end.colId;
+    }
+    const startIdx = this._columnOrder.indexOf(range.start.colId);
+    const endIdx = this._columnOrder.indexOf(range.end.colId);
+    const colIdx = this._columnOrder.indexOf(colId);
+    if (startIdx < 0 || endIdx < 0 || colIdx < 0) return false;
+    const minCol = Math.min(startIdx, endIdx);
+    const maxCol = Math.max(startIdx, endIdx);
+    return colIdx >= minCol && colIdx <= maxCol;
   }
 
   private emitRangeChanged(): void {

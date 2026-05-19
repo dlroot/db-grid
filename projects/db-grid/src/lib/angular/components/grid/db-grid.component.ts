@@ -271,6 +271,35 @@ import {
       outline: 2px solid var(--db-grid-cell-editing-border-color, #ff9800);
       background: rgba(255, 152, 0, 0.08);
     }
+
+    /* ========== Range Selection Styles ========== */
+    .db-grid-cell-in-range {
+      background: var(--db-grid-range-selection-background, rgba(33, 150, 243, 0.15)) !important;
+    }
+    .db-grid-row {
+      .db-grid-cell-in-range {
+        border-color: var(--db-grid-range-selection-border-color, #2196f3);
+        border-right-width: 1px;
+      }
+    }
+    /* 范围右下角填充柄 */
+    .db-grid-cell-range-corner {
+      position: relative;
+    }
+    .db-grid-cell-range-corner::after {
+      content: '';
+      position: absolute;
+      right: -3px;
+      bottom: -3px;
+      width: 7px;
+      height: 7px;
+      background: var(--db-grid-range-selection-border-color, #2196f3);
+      border: 1px solid #fff;
+      border-radius: 1px;
+      cursor: crosshair;
+      z-index: 5;
+    }
+
     :host(:focus) { outline: none; }
   `],
 })
@@ -831,6 +860,9 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         .pipe(debounceTime(100), takeUntil(this.destroy$))
         .subscribe(() => this.onWindowResize());
     });
+
+    // ========== 初始化 Range Selection Service ==========
+    this.initRangeSelection();
 
     this.ngZone.run(() => {
       this.gridReady.emit({ type: 'gridReady', api: this.gridApi, columnApi: null });
@@ -1803,6 +1835,121 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   }
 
   // ========== 范围选择 & 剪贴板 API ==========
+
+  /** 初始化区域选择：绑定 DOM 事件和范围变更回调 */
+  private initRangeSelection(): void {
+    const enableRange = this.gridOptions.enableRangeSelection === true;
+    const enableCell = this.gridOptions.enableCellSelection === true;
+    if (!enableRange && !enableCell) return;
+
+    this.rangeSelectionService.initialize({
+      enableRangeSelection: enableRange,
+      enableCellSelection: enableCell,
+    });
+
+    // 同步可见列顺序
+    this.syncRangeColumnOrder();
+
+    // 范围变更时更新高亮样式
+    this.rangeSelectionService.onRangeSelectionChanged((ranges) => {
+      this.updateRangeStyles();
+    });
+
+    // 绑定鼠标事件到 bodyContainer
+    const bodyEl = this.bodyContainer?.nativeElement;
+    if (!bodyEl) return;
+
+    this.ngZone.runOutsideAngular(() => {
+      bodyEl.addEventListener('mousedown', this.onRangeMouseDown);
+      bodyEl.addEventListener('mousemove', this.onRangeMouseMove);
+      window.addEventListener('mouseup', this.onRangeMouseUp);
+    });
+  }
+
+  /** 同步可见列的 colId 顺序到 RangeSelectionService */
+  private syncRangeColumnOrder(): void {
+    const cols = this.columnService.getVisibleColumns();
+    const colIds = cols.map(c => c.field || c.colId || '');
+    this.rangeSelectionService.setColumnOrder(colIds);
+  }
+
+  /** 区域选择 mousedown：开始新的区域选择 */
+  private onRangeMouseDown = (e: MouseEvent): void => {
+    const cell = (e.target as HTMLElement).closest('.db-grid-cell') as HTMLElement;
+    if (!cell) return;
+    const rowEl = cell.closest('.db-grid-row') as HTMLElement;
+    if (!rowEl) return;
+    const rowIndex = parseInt(rowEl.dataset['rowIndex'] || '0', 10);
+    const colId = cell.dataset['colId'] || '';
+    this.rangeSelectionService.startRangeSelection(rowIndex, colId, e);
+    this.updateRangeStyles();
+  };
+
+  /** 区域选择 mousemove：扩展区域范围 */
+  private onRangeMouseMove = (e: MouseEvent): void => {
+    if (!this.rangeSelectionService.getActiveRange()) return;
+    const cell = (e.target as HTMLElement).closest('.db-grid-cell') as HTMLElement;
+    if (!cell) return;
+    const rowEl = cell.closest('.db-grid-row') as HTMLElement;
+    if (!rowEl) return;
+    const rowIndex = parseInt(rowEl.dataset['rowIndex'] || '0', 10);
+    const colId = cell.dataset['colId'] || '';
+    this.rangeSelectionService.extendRange(rowIndex, colId);
+    this.updateRangeStyles();
+  };
+
+  /** 区域选择 mouseup：结束区域选择 */
+  private onRangeMouseUp = (): void => {
+    this.rangeSelectionService.endRangeSelection();
+  };
+
+  /** 更新区域选择高亮样式 */
+  private updateRangeStyles(): void {
+    const rowsContainer = this.rowsContainer?.nativeElement;
+    const pinnedLeftContainer = this.pinnedLeftContainer?.nativeElement;
+    if (!rowsContainer) return;
+
+    const ranges = this.rangeSelectionService.getRanges();
+    const clearAll = ranges.length === 0;
+
+    const updateCells = (container: HTMLElement) => {
+      const rows = container.querySelectorAll<HTMLElement>('.db-grid-row');
+      rows.forEach(rowEl => {
+        const rowIndex = parseInt(rowEl.dataset['rowIndex'] || '0', 10);
+        const cells = rowEl.querySelectorAll<HTMLElement>('.db-grid-cell');
+        cells.forEach(cellEl => {
+          const colId = cellEl.dataset['colId'] || '';
+          if (clearAll) {
+            cellEl.classList.remove('db-grid-cell-in-range');
+            cellEl.classList.remove('db-grid-cell-range-start');
+            cellEl.classList.remove('db-grid-cell-range-end');
+            cellEl.classList.remove('db-grid-cell-range-corner');
+          } else {
+            const inRange = this.rangeSelectionService.isCellInRange(rowIndex, colId);
+            cellEl.classList.toggle('db-grid-cell-in-range', inRange);
+            // 角标记（范围右下角单元格）
+            if (inRange) {
+              const activeRange = this.rangeSelectionService.getActiveRange();
+              if (activeRange) {
+                const maxRow = Math.max(activeRange.start.rowIndex, activeRange.end.rowIndex);
+                const maxCol = activeRange.start.colId || activeRange.end.colId;
+                const minCol = activeRange.start.colId || activeRange.end.colId;
+                cellEl.classList.toggle('db-grid-cell-range-corner',
+                  rowIndex === maxRow && colId === maxCol);
+              }
+            } else {
+              cellEl.classList.remove('db-grid-cell-range-corner');
+            }
+          }
+        });
+      });
+    };
+
+    updateCells(rowsContainer);
+    if (pinnedLeftContainer) {
+      updateCells(pinnedLeftContainer);
+    }
+  }
 
   copyToClipboard(data?: any[], columns?: any[]): void {
     const rowData = data || this.getRowData();

@@ -261,6 +261,7 @@ export interface GridOptions {
   rowSelection?: RowSelectionType;
   suppressRowClickSelection?: boolean;
   enableRangeSelection?: boolean;
+  enableCellSelection?: boolean;
   suppressCopyRowsToClipboard?: boolean;
 
   // 排序
