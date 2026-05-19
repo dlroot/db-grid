@@ -553,9 +553,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     const rowSelection = this.gridOptions.rowSelection || this.rowSelection || 'single';
     this.selectionService.initialize({ mode: rowSelection as any, multiSortKey: this.gridOptions.multiSortKey === 'ctrl' });
 
-    // 选择事件
+    // 选择事件 — 同步更新行元素的选中样式
     this.selectionService.setOnSelectionChanged((event) => {
-      this.ngZone.run(() => this.selectionChanged.emit({ type: 'selectionChanged', source: 'api', api: this.gridApi }));
+      this.ngZone.run(() => {
+        this.updateSelectionStyles();
+        this.selectionChanged.emit({ type: 'selectionChanged', source: 'api', api: this.gridApi });
+      });
     });
 
     // 树形数据事件
@@ -1921,6 +1924,36 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   getSelectedRows(): any[] { return this.selectionService.getSelectedData(); }
   getSelectedRowNodes(): any[] { return this.selectionService.getSelectedNodes(); }
 
+  /** 更新所有行元素的选中样式（同步 selectionService 状态到 DOM） */
+  private updateSelectionStyles(): void {
+    const rowsContainer = this.rowsContainer?.nativeElement;
+    const pinnedLeftContainer = this.pinnedLeftContainer?.nativeElement;
+    if (!rowsContainer) return;
+
+    const selectedIds = new Set(this.selectionService.getSelectedIds());
+
+    const updateRowElements = (container: HTMLElement) => {
+      const rows = container.querySelectorAll<HTMLElement>('.db-grid-row');
+      rows.forEach(rowEl => {
+        const rowId = rowEl.dataset['rowId'];
+        if (!rowId) return;
+        const shouldBeSelected = selectedIds.has(rowId);
+        if (shouldBeSelected) {
+          rowEl.classList.add('db-grid-row-selected');
+          rowEl.setAttribute('aria-selected', 'true');
+        } else {
+          rowEl.classList.remove('db-grid-row-selected');
+          rowEl.setAttribute('aria-selected', 'false');
+        }
+      });
+    };
+
+    updateRowElements(rowsContainer);
+    if (pinnedLeftContainer) {
+      updateRowElements(pinnedLeftContainer);
+    }
+  }
+
   setGridOption(key: string, value: any): void {
     (this.gridOptions as any)[key] = value;
     switch (key) {
@@ -2207,16 +2240,17 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         if (!data) return;
         const rowIndex = viewport.startIndex + i;
         const rowId = data.id !== undefined ? String(data.id) : `row-${rowIndex}`;
+        const isCurrentlySelected = this.selectionService.isSelected({ id: rowId } as any);
         const rowNode = {
           id: rowId,
           data,
           rowIndex,
-          selected: false,
+          selected: isCurrentlySelected,
           rowHeight: this.rowHeight,
           uiLevel: 0,
           isFloating: () => false,
           isFloatingRow: () => false,
-          isSelected: () => false,
+          isSelected: () => isCurrentlySelected,
           setSelected: () => {},
           floatLeft: () => {},
           floatRight: () => {},
@@ -2590,6 +2624,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       if (target.closest('.db-grid-cell-editor')) return;
       // 触发行选择
       this.selectionService.selectNode(rowNode, e);
+      // 即时更新行选中样式（不依赖 onSelectionChanged 的批量刷新）
+      this.updateSelectionStyles();
 
       this.ngZone.run(() => this.rowClicked.emit({ type: 'rowClicked', data, node: rowNode, rowIndex, event: e, api: this.gridApi }));
     });
