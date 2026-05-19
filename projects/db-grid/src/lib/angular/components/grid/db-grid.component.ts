@@ -1840,7 +1840,11 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   private initRangeSelection(): void {
     const enableRange = this.gridOptions.enableRangeSelection === true;
     const enableCell = this.gridOptions.enableCellSelection === true;
-    if (!enableRange && !enableCell) return;
+    console.log('[DBGrid] initRangeSelection', { enableRange, enableCell, hasBodyContainer: !!this.bodyContainer?.nativeElement });
+    if (!enableRange && !enableCell) {
+      console.log('[DBGrid] range selection not enabled');
+      return;
+    }
 
     this.rangeSelectionService.initialize({
       enableRangeSelection: enableRange,
