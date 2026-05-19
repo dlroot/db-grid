@@ -5,7 +5,7 @@ import { ColDef, IRowNode } from '../models';
  * 范围选择服务 — 支持单元格区域选择、复制、填充
  * AG Grid 对应功能：Range Selection, Cell Selection, Clipboard
  */
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class RangeSelectionService {
   private enabled = false;
   private cellSelection = false;
