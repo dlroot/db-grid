@@ -1838,36 +1838,40 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   /** 初始化区域选择：绑定 DOM 事件和范围变更回调 */
   private initRangeSelection(): void {
-    const enableRange = this.gridOptions.enableRangeSelection === true;
-    const enableCell = this.gridOptions.enableCellSelection === true;
-    console.log('[DBGrid] initRangeSelection', { enableRange, enableCell, hasBodyContainer: !!this.bodyContainer?.nativeElement });
-    if (!enableRange && !enableCell) {
-      console.log('[DBGrid] range selection not enabled');
-      return;
+    try {
+      const enableRange = this.gridOptions.enableRangeSelection === true;
+      const enableCell = this.gridOptions.enableCellSelection === true;
+      console.log('[DBGrid] initRangeSelection', { enableRange, enableCell, hasBodyContainer: !!this.bodyContainer?.nativeElement });
+      if (!enableRange && !enableCell) {
+        console.log('[DBGrid] range selection not enabled');
+        return;
+      }
+
+      this.rangeSelectionService.initialize({
+        enableRangeSelection: enableRange,
+        enableCellSelection: enableCell,
+      });
+
+      // 同步可见列顺序
+      this.syncRangeColumnOrder();
+
+      // 范围变更时更新高亮样式
+      this.rangeSelectionService.onRangeSelectionChanged((ranges) => {
+        this.updateRangeStyles();
+      });
+
+      // 绑定鼠标事件到 bodyContainer
+      const bodyEl = this.bodyContainer?.nativeElement;
+      if (!bodyEl) return;
+
+      this.ngZone.runOutsideAngular(() => {
+        bodyEl.addEventListener('mousedown', this.onRangeMouseDown);
+        bodyEl.addEventListener('mousemove', this.onRangeMouseMove);
+        window.addEventListener('mouseup', this.onRangeMouseUp);
+      });
+    } catch (err) {
+      console.error('[DBGrid] initRangeSelection error:', err);
     }
-
-    this.rangeSelectionService.initialize({
-      enableRangeSelection: enableRange,
-      enableCellSelection: enableCell,
-    });
-
-    // 同步可见列顺序
-    this.syncRangeColumnOrder();
-
-    // 范围变更时更新高亮样式
-    this.rangeSelectionService.onRangeSelectionChanged((ranges) => {
-      this.updateRangeStyles();
-    });
-
-    // 绑定鼠标事件到 bodyContainer
-    const bodyEl = this.bodyContainer?.nativeElement;
-    if (!bodyEl) return;
-
-    this.ngZone.runOutsideAngular(() => {
-      bodyEl.addEventListener('mousedown', this.onRangeMouseDown);
-      bodyEl.addEventListener('mousemove', this.onRangeMouseMove);
-      window.addEventListener('mouseup', this.onRangeMouseUp);
-    });
   }
 
   /** 同步可见列的 colId 顺序到 RangeSelectionService */
@@ -1879,14 +1883,19 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   /** 区域选择 mousedown：开始新的区域选择 */
   private onRangeMouseDown = (e: MouseEvent): void => {
-    const cell = (e.target as HTMLElement).closest('.db-grid-cell') as HTMLElement;
-    if (!cell) return;
-    const rowEl = cell.closest('.db-grid-row') as HTMLElement;
-    if (!rowEl) return;
-    const rowIndex = parseInt(rowEl.dataset['rowIndex'] || '0', 10);
-    const colId = cell.dataset['colId'] || '';
-    this.rangeSelectionService.startRangeSelection(rowIndex, colId, e);
-    this.updateRangeStyles();
+    try {
+      const cell = (e.target as HTMLElement).closest('.db-grid-cell') as HTMLElement;
+      if (!cell) return;
+      const rowEl = cell.closest('.db-grid-row') as HTMLElement;
+      if (!rowEl) return;
+      const rowIndex = parseInt(rowEl.dataset['rowIndex'] || '0', 10);
+      const colId = cell.dataset['colId'] || '';
+      console.log('[DBGrid] onRangeMouseDown', { rowIndex, colId });
+      this.rangeSelectionService.startRangeSelection(rowIndex, colId, e);
+      this.updateRangeStyles();
+    } catch (err) {
+      console.error('[DBGrid] onRangeMouseDown error:', err);
+    }
   };
 
   /** 区域选择 mousemove：扩展区域范围 */
@@ -1909,49 +1918,54 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   /** 更新区域选择高亮样式 */
   private updateRangeStyles(): void {
-    const rowsContainer = this.rowsContainer?.nativeElement;
-    const pinnedLeftContainer = this.pinnedLeftContainer?.nativeElement;
-    if (!rowsContainer) return;
+    try {
+      const rowsContainer = this.rowsContainer?.nativeElement;
+      const pinnedLeftContainer = this.pinnedLeftContainer?.nativeElement;
+      if (!rowsContainer) return;
 
-    const ranges = this.rangeSelectionService.getRanges();
-    const clearAll = ranges.length === 0;
+      const ranges = this.rangeSelectionService.getRanges();
+      const clearAll = ranges.length === 0;
+      console.log('[DBGrid] updateRangeStyles', { rangesCount: ranges.length, clearAll });
 
-    const updateCells = (container: HTMLElement) => {
-      const rows = container.querySelectorAll<HTMLElement>('.db-grid-row');
-      rows.forEach(rowEl => {
-        const rowIndex = parseInt(rowEl.dataset['rowIndex'] || '0', 10);
-        const cells = rowEl.querySelectorAll<HTMLElement>('.db-grid-cell');
-        cells.forEach(cellEl => {
-          const colId = cellEl.dataset['colId'] || '';
-          if (clearAll) {
-            cellEl.classList.remove('db-grid-cell-in-range');
-            cellEl.classList.remove('db-grid-cell-range-start');
-            cellEl.classList.remove('db-grid-cell-range-end');
-            cellEl.classList.remove('db-grid-cell-range-corner');
-          } else {
-            const inRange = this.rangeSelectionService.isCellInRange(rowIndex, colId);
-            cellEl.classList.toggle('db-grid-cell-in-range', inRange);
-            // 角标记（范围右下角单元格）
-            if (inRange) {
-              const activeRange = this.rangeSelectionService.getActiveRange();
-              if (activeRange) {
-                const maxRow = Math.max(activeRange.start.rowIndex, activeRange.end.rowIndex);
-                const maxCol = activeRange.start.colId || activeRange.end.colId;
-                const minCol = activeRange.start.colId || activeRange.end.colId;
-                cellEl.classList.toggle('db-grid-cell-range-corner',
-                  rowIndex === maxRow && colId === maxCol);
-              }
-            } else {
+      const updateCells = (container: HTMLElement) => {
+        const rows = container.querySelectorAll<HTMLElement>('.db-grid-row');
+        rows.forEach(rowEl => {
+          const rowIndex = parseInt(rowEl.dataset['rowIndex'] || '0', 10);
+          const cells = rowEl.querySelectorAll<HTMLElement>('.db-grid-cell');
+          cells.forEach(cellEl => {
+            const colId = cellEl.dataset['colId'] || '';
+            if (clearAll) {
+              cellEl.classList.remove('db-grid-cell-in-range');
+              cellEl.classList.remove('db-grid-cell-range-start');
+              cellEl.classList.remove('db-grid-cell-range-end');
               cellEl.classList.remove('db-grid-cell-range-corner');
+            } else {
+              const inRange = this.rangeSelectionService.isCellInRange(rowIndex, colId);
+              cellEl.classList.toggle('db-grid-cell-in-range', inRange);
+              // 角标记（范围右下角单元格）
+              if (inRange) {
+                const activeRange = this.rangeSelectionService.getActiveRange();
+                if (activeRange) {
+                  const maxRow = Math.max(activeRange.start.rowIndex, activeRange.end.rowIndex);
+                  const maxCol = activeRange.start.colId || activeRange.end.colId;
+                  const minCol = activeRange.start.colId || activeRange.end.colId;
+                  cellEl.classList.toggle('db-grid-cell-range-corner',
+                    rowIndex === maxRow && colId === maxCol);
+                }
+              } else {
+                cellEl.classList.remove('db-grid-cell-range-corner');
+              }
             }
-          }
+          });
         });
-      });
-    };
+      };
 
-    updateCells(rowsContainer);
-    if (pinnedLeftContainer) {
-      updateCells(pinnedLeftContainer);
+      updateCells(rowsContainer);
+      if (pinnedLeftContainer) {
+        updateCells(pinnedLeftContainer);
+      }
+    } catch (err) {
+      console.error('[DBGrid] updateRangeStyles error:', err);
     }
   }
 
