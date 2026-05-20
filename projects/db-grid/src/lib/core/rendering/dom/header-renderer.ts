@@ -447,15 +447,11 @@ export class HeaderRendererService {
 
     container.appendChild(checkbox);
 
-    // 点击事件：触发回调
-    container.addEventListener('click', (e: MouseEvent) => {
-      console.log('[HeaderRenderer] SelectAll checkbox clicked, checkbox.checked:', checkbox.checked);
+    // 使用 change 事件（确保 checkbox 状态已更新）
+    checkbox.addEventListener('change', (e: Event) => {
+      const newState = checkbox.checked;
+      console.log('[HeaderRenderer] SelectAll checkbox changed, newState:', newState);
       e.stopPropagation();
-      // 切换 checkbox 状态
-      const newState = !checkbox.checked;
-      checkbox.checked = newState;
-      console.log('[HeaderRenderer] After toggle - newState:', newState);
-      console.log('[HeaderRenderer] Calling onSelectAllToggle callback');
       this.onSelectAllToggle?.(newState);
     });
 
