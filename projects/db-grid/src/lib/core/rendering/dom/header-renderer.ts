@@ -43,6 +43,7 @@ export class HeaderRendererService {
 
   /** 设置全选 toggle 回调 */
   setOnSelectAllToggle(callback: (checked: boolean) => void): void {
+    console.log("[HeaderRenderer] setOnSelectAllToggle called");
     this.onSelectAllToggle = callback;
   }
 
@@ -426,6 +427,7 @@ export class HeaderRendererService {
 
   /** 创建全选 checkbox */
   private createSelectAllCheckbox(): HTMLElement {
+    console.log('[HeaderRenderer] createSelectAllCheckbox called');
     const container = document.createElement('label');
     container.className = 'db-grid-select-all-container';
     container.style.cssText = `
