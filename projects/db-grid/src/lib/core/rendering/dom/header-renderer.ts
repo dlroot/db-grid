@@ -292,6 +292,7 @@ export class HeaderRendererService {
 
     // 全选 checkbox（仅当 headerCheckboxSelection 为 true 时）
     if (colDef.headerCheckboxSelection === true) {
+      console.log('[HeaderRenderer] Creating selectAllCheckbox for col:', colId);
       const selectAllCheckbox = this.createSelectAllCheckbox();
       header.appendChild(selectAllCheckbox);
     }
@@ -438,16 +439,18 @@ export class HeaderRendererService {
 
     // 点击事件：触发 selectAllToggle 自定义事件
     container.addEventListener('click', (e: MouseEvent) => {
+      console.log('[HeaderRenderer] SelectAll checkbox clicked', e);
       e.stopPropagation();
-      e.preventDefault();
       // 切换 checkbox 状态
       const newState = !checkbox.checked;
       checkbox.checked = newState;
+      console.log('[HeaderRenderer] Dispatching selectAllToggle event, checked:', newState);
       const event = new CustomEvent('selectAllToggle', {
         bubbles: true,
         detail: { checked: newState, event: e },
       });
       container.dispatchEvent(event);
+      console.log('[HeaderRenderer] Event dispatched');
     });
 
     return container;

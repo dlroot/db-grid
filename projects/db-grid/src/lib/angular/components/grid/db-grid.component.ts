@@ -2073,15 +2073,23 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   // ========== 选择 API ==========
 
   selectAll(): void {
+    console.log('[DBGrid] selectAll() called');
     const nodes: any[] = [];
     this.forEachNode(n => nodes.push(n));
+    console.log('[DBGrid] selectAll - total nodes:', nodes.length);
     this.selectionService.selectAll(nodes);
+    this.updateSelectAllCheckboxState();
   }
 
-  deselectAll(): void { this.selectionService.clearSelection(); }
+  deselectAll(): void {
+    console.log('[DBGrid] deselectAll() called');
+    this.selectionService.clearSelection();
+    this.updateSelectAllCheckboxState();
+  }
 
   /** 全选/取消全选切换 */
   private toggleSelectAll(checked: boolean): void {
+    console.log('[DBGrid] toggleSelectAll called, checked:', checked);
     if (checked) {
       this.selectAll();
     } else {
@@ -2264,6 +2272,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
     // 全选 checkbox 事件监听
     headerElement.addEventListener('selectAllToggle', ((e: CustomEvent) => {
+      console.log('[DBGrid] selectAllToggle event received', e.detail);
       const { checked } = e.detail;
       this.ngZone.run(() => this.toggleSelectAll(checked));
     }) as EventListener);
