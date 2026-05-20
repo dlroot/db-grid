@@ -36,7 +36,15 @@ export class HeaderRendererService {
   private resizeStartWidth = 0;
   private onColumnResize?: (colId: string, newWidth: number) => void;
 
+  // ========== 全选 checkbox 回调 ==========
+  private onSelectAllToggle?: (checked: boolean) => void;
+
   constructor(private columnService: ColumnService, private i18n?: I18nService) {}
+
+  /** 设置全选 toggle 回调 */
+  setOnSelectAllToggle(callback: (checked: boolean) => void): void {
+    this.onSelectAllToggle = callback;
+  }
 
   /** 渲染表头 */
   render(): HeaderRenderResult {
@@ -437,20 +445,15 @@ export class HeaderRendererService {
 
     container.appendChild(checkbox);
 
-    // 点击事件：触发 selectAllToggle 自定义事件
+    // 点击事件：触发回调
     container.addEventListener('click', (e: MouseEvent) => {
       console.log('[HeaderRenderer] SelectAll checkbox clicked', e);
       e.stopPropagation();
       // 切换 checkbox 状态
       const newState = !checkbox.checked;
       checkbox.checked = newState;
-      console.log('[HeaderRenderer] Dispatching selectAllToggle event, checked:', newState);
-      const event = new CustomEvent('selectAllToggle', {
-        bubbles: true,
-        detail: { checked: newState, event: e },
-      });
-      container.dispatchEvent(event);
-      console.log('[HeaderRenderer] Event dispatched');
+      console.log('[HeaderRenderer] Calling onSelectAllToggle callback, checked:', newState);
+      this.onSelectAllToggle?.(newState);
     });
 
     return container;

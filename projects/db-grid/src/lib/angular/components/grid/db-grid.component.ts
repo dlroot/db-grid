@@ -2270,12 +2270,11 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       this.ngZone.run(() => this.showColumnGridMenu(colDef?.colId || colDef?.field || '', event));
     }) as EventListener);
 
-    // 全选 checkbox 事件监听
-    headerElement.addEventListener('selectAllToggle', ((e: CustomEvent) => {
-      console.log('[DBGrid] selectAllToggle event received', e.detail);
-      const { checked } = e.detail;
+    // 全选 checkbox 回调
+    this.headerRenderer.setOnSelectAllToggle((checked: boolean) => {
+      console.log('[DBGrid] onSelectAllToggle callback triggered, checked:', checked);
       this.ngZone.run(() => this.toggleSelectAll(checked));
-    }) as EventListener);
+    });
 
     // 列拖拽回调
     this.headerRenderer.setOnColDragEnd((fromColId, toColId) => {
