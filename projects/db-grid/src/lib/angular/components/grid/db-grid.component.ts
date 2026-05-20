@@ -2078,7 +2078,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.forEachNode(n => nodes.push(n));
     console.log('[DBGrid] selectAll - total nodes:', nodes.length);
     this.selectionService.selectAll(nodes);
+    
+    // 强制更新样式和视图
+    this.updateSelectionStyles();
     this.updateSelectAllCheckboxState();
+    this.cdr.detectChanges();
+    console.log('[DBGrid] selectAll - forced update complete');
   }
 
   deselectAll(): void {
@@ -2119,20 +2124,24 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   /** 更新所有行元素的选中样式（同步 selectionService 状态到 DOM） */
   private updateSelectionStyles(): void {
+    console.log('[DBGrid] updateSelectionStyles START');
     const rowsContainer = this.rowsContainer?.nativeElement;
     const pinnedLeftContainer = this.pinnedLeftContainer?.nativeElement;
-    if (!rowsContainer) return;
+    if (!rowsContainer) {
+      console.log('[DBGrid] updateSelectionStyles - no rowsContainer');
+      return;
+    }
 
     const selectedIds = new Set(this.selectionService.getSelectedIds());
-    console.log('[DBGrid] updateSelectionStyles', { selectedCount: selectedIds.size, selectedIds: [...selectedIds].slice(0, 5) });
+    console.log('[DBGrid] updateSelectionStyles', { selectedCount: selectedIds.size, totalRows: this.rowCount() });
 
     const updateRowElements = (container: HTMLElement) => {
       const rows = container.querySelectorAll<HTMLElement>('.db-grid-row');
+      console.log('[DBGrid] updateRowElements - found rows:', rows.length);
       rows.forEach(rowEl => {
         const rowId = rowEl.dataset['rowId'];
         if (!rowId) return;
         const shouldBeSelected = selectedIds.has(rowId);
-        console.log('[DBGrid] row', rowId, 'shouldBeSelected:', shouldBeSelected);
         if (shouldBeSelected) {
           rowEl.classList.add('db-grid-row-selected');
           rowEl.setAttribute('aria-selected', 'true');
@@ -2147,6 +2156,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     if (pinnedLeftContainer) {
       updateRowElements(pinnedLeftContainer);
     }
+    console.log('[DBGrid] updateSelectionStyles END');
   }
 
   setGridOption(key: string, value: any): void {

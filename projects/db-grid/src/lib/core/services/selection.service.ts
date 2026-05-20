@@ -106,14 +106,20 @@ export class SelectionService {
 
   /** 全选 */
   selectAll(nodes: RowNode[]): void {
-    if (this.mode === 'none') return;
+    console.log('[SelectionService] selectAll called, nodes.length:', nodes.length);
+    if (this.mode === 'none') {
+      console.log('[SelectionService] mode is none, returning');
+      return;
+    }
 
     this.clearSelection();
     nodes.forEach(node => {
+      console.log('[SelectionService] Selecting node:', node.id, 'rowIndex:', node.rowIndex);
       node.selected = true;
       node.setSelected?.(true);
       this.selectedNodes.set(node.id, node);
     });
+    console.log('[SelectionService] selectAll complete, selected count:', this.selectedNodes.size);
     this.emitSelectionChange({ type: 'selectAll', nodes: Array.from(this.selectedNodes.values()) });
   }
 
