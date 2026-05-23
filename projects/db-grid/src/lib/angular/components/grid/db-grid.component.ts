@@ -2461,8 +2461,15 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
           uiLevel: 0,
           isFloating: () => false,
           isFloatingRow: () => false,
-          isSelected: () => isCurrentlySelected,
-          setSelected: () => {},
+          // 实时查询 selectionService，避免闭包捕获静态值
+          isSelected: () => this.selectionService.isSelected({ id: rowId } as any),
+          setSelected: (selected: boolean) => {
+            if (selected) {
+              this.selectionService.selectNode(rowNode);
+            } else {
+              this.selectionService.deselectNode(rowNode);
+            }
+          },
           floatLeft: () => {},
           floatRight: () => {},
         } as any;
