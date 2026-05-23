@@ -649,13 +649,14 @@ export class HeaderRendererService {
 
     // 点击排序
     header.addEventListener('click', (e: MouseEvent) => {
-      // 忽略图标和手柄的点击
+      // 忽略图标、手柄和 checkbox 的点击
       const target = e.target as HTMLElement;
       if (
         target.classList.contains('db-grid-sort-icon') ||
         target.classList.contains('db-grid-filter-icon') ||
         target.classList.contains('db-grid-drag-handle') ||
-        target.classList.contains('db-grid-resize-handle')
+        target.classList.contains('db-grid-resize-handle') ||
+        target.closest('.db-grid-checkbox')
       ) {
         return;
       }
