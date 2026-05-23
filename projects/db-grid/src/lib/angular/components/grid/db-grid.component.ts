@@ -2149,6 +2149,11 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
           rowEl.classList.remove('db-grid-row-selected');
           rowEl.setAttribute('aria-selected', 'false');
         }
+        // 更新复选框状态
+        const checkbox = rowEl.querySelector<HTMLInputElement>('.db-grid-row-checkbox');
+        if (checkbox) {
+          checkbox.checked = shouldBeSelected;
+        }
       });
     };
 
