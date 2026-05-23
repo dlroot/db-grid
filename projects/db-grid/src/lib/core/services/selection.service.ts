@@ -114,6 +114,8 @@ export class SelectionService {
 
     this.clearSelection();
     nodes.forEach(node => {
+      // 只选中 checkable 的行
+      if (node.checkable === false) return;
       console.log('[SelectionService] Selecting node:', node.id, 'rowIndex:', node.rowIndex);
       node.selected = true;
       node.setSelected?.(true);

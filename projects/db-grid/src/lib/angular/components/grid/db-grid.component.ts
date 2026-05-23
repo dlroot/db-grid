@@ -2096,8 +2096,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   selectAll(): void {
     console.log('[DBGrid] selectAll() called');
     const nodes: any[] = [];
-    this.forEachNode(n => nodes.push(n));
-    console.log('[DBGrid] selectAll - total nodes:', nodes.length);
+    this.forEachNode(n => { if (n.checkable !== false) nodes.push(n); });
+    console.log('[DBGrid] selectAll - total CHECKABLE nodes:', nodes.length);
     this.selectionService.selectAll(nodes);
     
     // 强制更新样式和视图
