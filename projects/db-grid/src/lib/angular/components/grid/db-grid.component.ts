@@ -2125,10 +2125,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   /** 更新全选 checkbox 状态 */
   updateSelectAllCheckboxState(): void {
-    const totalRows = this.rowCount();
+    // 只计算 checkable 的行
+    let totalCheckable = 0;
+    this.forEachNode(n => { if (n.checkable !== false) totalCheckable++; });
     const selectedCount = this.selectionService.getSelectionCount();
-    const state: 'all' | 'some' | 'none' = selectedCount === 0 ? 'none' : selectedCount === totalRows ? 'all' : 'some';
-    console.log('[DBGrid] updateSelectAllCheckboxState', { totalRows, selectedCount, state });
+    const state: 'all' | 'some' | 'none' = selectedCount === 0 ? 'none' : selectedCount >= totalCheckable ? 'all' : 'some';
+    console.log('[DBGrid] updateSelectAllCheckboxState', { totalCheckable, selectedCount, state });
     this.headerRenderer.updateSelectAllState(state);
   }
 
