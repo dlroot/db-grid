@@ -2900,12 +2900,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
     // 行 checkbox 点击事件：切换单行选择状态
     rowElement.addEventListener('rowCheckboxToggle', ((e: CustomEvent) => {
-      const { checked } = e.detail;
-      if (checked) {
-        this.selectionService.selectNode(rowNode);
-      } else {
-        this.selectionService.deselectNode(rowNode);
-      }
+      this.selectionService.toggleNode(rowNode);
       this.updateSelectionStyles();
       this.updateSelectAllCheckboxState();
     }) as EventListener);

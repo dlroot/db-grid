@@ -169,6 +169,18 @@ export class SelectionService {
     return Array.from(this.selectedNodes.keys());
   }
 
+  /** 切换节点选择状态（用于 checkbox 点击） */
+  toggleNode(node: RowNode): void {
+    console.log('[SelectionService] toggleNode called, mode:', this.mode, 'nodeId:', node.id);
+    if (this.mode === 'none') return;
+    
+    if (this.isSelected(node)) {
+      this.deselectNode(node);
+    } else {
+      this.addSelection(node);
+    }
+  }
+
   /** 获取选择数量 */
   getSelectionCount(): number {
     return this.selectedNodes.size;
