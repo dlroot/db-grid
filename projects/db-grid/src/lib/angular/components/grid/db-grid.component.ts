@@ -1341,6 +1341,13 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
             selected: isSelected,
             checkable: data.checkable !== false,
             isSelected: () => this.selectionService.isSelected({ id: rowId } as any),
+            setSelected: (selected: boolean) => {
+              if (selected) {
+                this.selectionService.selectNode({ id: rowId } as any);
+              } else {
+                this.selectionService.deselectNode({ id: rowId } as any);
+              }
+            },
           });
         }
       }
