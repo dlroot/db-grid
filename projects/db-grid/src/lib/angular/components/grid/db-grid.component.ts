@@ -2880,8 +2880,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       // 排除正在编辑的单元格和 checkbox 点击
       if (target.closest('.db-grid-cell-editor')) return;
       if (target.closest('.db-grid-checkbox')) return; // checkbox 点击由单独的事件处理器处理
-      // 触发行选择
-      this.selectionService.selectNode(rowNode, e);
+      // 触发行选择：直接 toggle（不需要 Ctrl 键）
+      this.selectionService.toggleNode(rowNode);
       // 即时更新行选中样式（不依赖 onSelectionChanged 的批量刷新）
       this.updateSelectionStyles();
 
