@@ -2095,7 +2095,22 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   selectAll(): void {
     console.log('[DBGrid] selectAll() called');
     const nodes: any[] = [];
-    this.forEachNode(n => nodes.push(n));
+    
+    // 方法1：从 DOM 获取可见行的 rowNode
+    const rowsContainer = this.rowsContainer?.nativeElement;
+    if (rowsContainer) {
+      const rowElements = rowsContainer.querySelectorAll('.db-grid-row');
+      rowElements.forEach((row: HTMLElement) => {
+        const rowNode = (row as any)._rowNode || (row as any).rowNode;
+        if (rowNode) nodes.push(rowNode);
+      });
+    }
+    
+    // 方法2：如果 DOM 方法没找到节点，使用 forEachNode
+    if (nodes.length === 0) {
+      this.forEachNode(n => nodes.push(n));
+    }
+    
     console.log('[DBGrid] selectAll - total nodes:', nodes.length);
     this.selectionService.selectAll(nodes);
     
@@ -2125,9 +2140,23 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   /** 更新全选 checkbox 状态 */
   updateSelectAllCheckboxState(): void {
-    // 只计算 checkable 的行
     let totalCheckable = 0;
-    this.forEachNode(n => { if (n.checkable !== false) totalCheckable++; });
+    
+    // 方法1：从 DOM 获取可见行
+    const rowsContainer = this.rowsContainer?.nativeElement;
+    if (rowsContainer) {
+      const rowElements = rowsContainer.querySelectorAll('.db-grid-row');
+      rowElements.forEach((row: HTMLElement) => {
+        const rowNode = (row as any)._rowNode || (row as any).rowNode;
+        if (rowNode && rowNode.checkable !== false) totalCheckable++;
+      });
+    }
+    
+    // 方法2：如果 DOM 方法没找到节点，使用 forEachNode
+    if (totalCheckable === 0) {
+      this.forEachNode(n => { if (n.checkable !== false) totalCheckable++; });
+    }
+    
     const selectedCount = this.selectionService.getSelectionCount();
     const state: 'all' | 'some' | 'none' = selectedCount === 0 ? 'none' : selectedCount >= totalCheckable ? 'all' : 'some';
     console.log('[DBGrid] updateSelectAllCheckboxState', { totalCheckable, selectedCount, state });
