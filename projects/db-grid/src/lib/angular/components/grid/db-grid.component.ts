@@ -1330,7 +1330,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     if (this.enableServerSide && this.serverSideService.isEnabled()) {
       const rowCount = this.serverSideService.getRowCount();
       for (let i = 0; i < rowCount; i++) {
-        const data = this.serverSideService.getRowData(i);
+        const data = this.serverSideService.getRow(i);
         if (data) {
           const rowId = data.id !== undefined ? String(data.id) : `row-${i}`;
           const isSelected = this.selectionService.isSelected({ id: rowId } as any);
