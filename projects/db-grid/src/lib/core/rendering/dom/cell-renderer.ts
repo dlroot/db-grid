@@ -230,7 +230,7 @@ export class CellRendererService {
     if (colDef.checkboxSelection) {
       // 使用 rowNode.selected 而不是 value
       const isSelected = rowNode?.isSelected?.() ?? rowNode?.selected ?? false;
-      this.renderCheckbox(container, isSelected);
+      this.renderCheckbox(container, isSelected, rowIndex, rowNode?.id);
       return;
     }
 
@@ -300,10 +300,15 @@ export class CellRendererService {
   }
 
   /** 渲染复选框 */
-  private renderCheckbox(container: HTMLElement, checked: boolean): void {
+  private renderCheckbox(container: HTMLElement, checked: boolean, rowIndex?: number, rowId?: string): void {
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.className = 'db-grid-checkbox db-grid-row-checkbox';
+    
+    // 设置唯一 id（优先使用 rowId，否则使用 rowIndex）
+    const checkboxId = rowId ? `db-grid-checkbox-${rowId}` : `db-grid-checkbox-row-${rowIndex ?? 0}`;
+    checkbox.id = checkboxId;
+    
     checkbox.checked = !!checked;
     checkbox.disabled = false;
     checkbox.style.cursor = 'pointer';
