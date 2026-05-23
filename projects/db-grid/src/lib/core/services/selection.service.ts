@@ -73,7 +73,7 @@ export class SelectionService {
   private addSelection(node: RowNode): void {
     if (!this.selectedNodes.has(node.id)) {
       node.selected = true;
-      // 注意：不要调用 node.setSelected，避免反向触发 selectNode() 导致 clearSelection
+      node.setSelected?.(true);
       this.selectedNodes.set(node.id, node);
       this.lastSelectedNode = node;
       this.rangeStartNode = node;
@@ -114,10 +114,9 @@ export class SelectionService {
 
     this.clearSelection();
     nodes.forEach(node => {
-      if (node.checkable === false) return;
       console.log('[SelectionService] Selecting node:', node.id, 'rowIndex:', node.rowIndex);
       node.selected = true;
-      // 注意：不要调用 node.setSelected，对于服务端模式虚拟 node 这会反向触发 selectNode() 导致 clearSelection
+      node.setSelected?.(true);
       this.selectedNodes.set(node.id, node);
     });
     console.log('[SelectionService] selectAll complete, selected count:', this.selectedNodes.size);
