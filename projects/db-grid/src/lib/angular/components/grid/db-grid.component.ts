@@ -1326,9 +1326,29 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   }
 
   forEachNode(callback: (node: any) => void): void {
-    for (let i = 0; i < this.dataService.getRowCount(); i++) {
-      const node = this.dataService.getRowNode(`row-${i}`);
-      if (node) callback(node);
+    // 服务端模式：使用 serverSideService
+    if (this.enableServerSide && this.serverSideService.isEnabled()) {
+      const rowCount = this.serverSideService.getRowCount();
+      for (let i = 0; i < rowCount; i++) {
+        const data = this.serverSideService.getRowData(i);
+        if (data) {
+          const rowId = data.id !== undefined ? String(data.id) : `row-${i}`;
+          const isSelected = this.selectionService.isSelected({ id: rowId } as any);
+          callback({
+            id: rowId,
+            data,
+            rowIndex: i,
+            selected: isSelected,
+            isSelected: () => this.selectionService.isSelected({ id: rowId } as any),
+          });
+        }
+      }
+    } else {
+      // 客户端模式
+      for (let i = 0; i < this.dataService.getRowCount(); i++) {
+        const node = this.dataService.getRowNode(`row-${i}`);
+        if (node) callback(node);
+      }
     }
   }
 
