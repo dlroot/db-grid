@@ -2201,7 +2201,9 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       rows.forEach(rowEl => {
         const rowId = rowEl.dataset['rowId'];
         if (!rowId) return;
-        const shouldBeSelected = selectedIds.has(rowId);
+        // 全选状态下，所有行都视为已选中（服务端模式：新加载行自动选中）
+        const isAllSelected = this.selectionService.isAllSelectedForRender?.() ?? false;
+        const shouldBeSelected = isAllSelected || selectedIds.has(rowId);
         if (shouldBeSelected) {
           rowEl.classList.add('db-grid-row-selected');
           rowEl.setAttribute('aria-selected', 'true');
