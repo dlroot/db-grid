@@ -182,6 +182,8 @@ export class SelectionService {
 
   /** 检查节点是否选中 */
   isSelected(node: RowNode): boolean {
+    // 全选模式下，所有行都视为已选中
+    if (this.isAllSelected) return true;
     return this.selectedNodes.has(node.id);
   }
 
@@ -197,7 +199,29 @@ export class SelectionService {
 
   /** 获取选中的ID列表 */
   getSelectedIds(): string[] {
+    // 全选模式下，动态返回所有行ID（支持虚拟滚动场景）
+    if (this.isAllSelected) {
+      const allIds: string[] = [];
+      // 如果有 getRowCount 回调，遍历所有行
+      if (this.getAllRowIds) {
+        const count = this.getRowCount?.() ?? 0;
+        for (let i = 0; i < count; i++) {
+          const id = this.getAllRowIds(i);
+          if (id) allIds.push(id);
+        }
+      } else {
+        // 降级：只返回当前已选中的ID
+        allIds.push(...Array.from(this.selectedNodes.keys()));
+      }
+      return allIds;
+    }
     return Array.from(this.selectedNodes.keys());
+  }
+
+  /** 设置获取所有行ID的回调（由 db-grid.component 设置） */
+  setGetAllRowIdsCallback(getAllRowIds: (index: number) => string | null, getRowCount: () => number): void {
+    this.getAllRowIds = getAllRowIds;
+    this.getRowCount = getRowCount;
   }
 
   /** 切换节点选择状态（用于 checkbox 点击） */
@@ -214,6 +238,9 @@ export class SelectionService {
 
   /** 获取选择数量 */
   getSelectionCount(): number {
+    if (this.isAllSelected) {
+      return this.getRowCount?.() ?? this.selectedNodes.size;
+    }
     return this.selectedNodes.size;
   }
 
