@@ -2125,6 +2125,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   deselectAll(): void {
     console.log('[DBGrid] deselectAll() called');
     this.selectionService.clearSelection();
+    this.selectionService.resetAllSelected?.();
     this.updateSelectAllCheckboxState();
   }
 
