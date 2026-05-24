@@ -2096,7 +2096,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   selectAll(): void {
     console.log('[DBGrid] selectAll() called');
 
-    // 服务端模式：从 DOM 获取所有渲染行的 rowId，逐个 selectNode
+    // 服务端模式：从 DOM 获取所有渲染行的 rowId
     const ids: string[] = [];
     const rowsContainer = this.rowsContainer?.nativeElement;
     if (rowsContainer) {
@@ -2106,21 +2106,11 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         if (rowId) ids.push(rowId);
       });
     }
-
     console.log('[DBGrid] selectAll - DOM ids:', ids.length);
 
-    // 关键修复：行 checkbox 触发 selectAll 时 selectedCount > 0，跳过 clearSelection
-    // 否则 clearSelection 会把之前选中的行清掉，导致每次只选中 1 行
-    const currentCount = this.selectionService.getSelectionCount();
-    if (currentCount === 0) {
-      this.selectionService.clearSelection();
-    }
-    ids.forEach(id => {
-      const node: any = { id };
-      if (!this.selectionService.isSelected(node)) {
-        this.selectionService.selectNode(node);
-      }
-    });
+    // 关键修复：用 selectionService.selectAllByIds 批量追加，只触发一次事件
+    // 绕过 selectNode 内部的 clearSelection()，彻底解决每次只选中 1 行的问题
+    this.selectionService.selectAllByIds(ids, (id: string) => ({ id } as any));
 
     // 强制更新样式
     setTimeout(() => {
