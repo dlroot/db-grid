@@ -1328,20 +1328,29 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   forEachNode(callback: (node: any) => void): void {
     // 服务端模式：使用 serverSideService
     if (this.enableServerSide && this.serverSideService.isEnabled()) {
-      const rowCount = this.serverSideService.getRowCount();
-      for (let i = 0; i < rowCount; i++) {
-        const data = this.serverSideService.getRow(i);
-        if (data) {
-          const rowId = data.id !== undefined ? String(data.id) : `row-${i}`;
-          const isSelected = this.selectionService.isSelected({ id: rowId } as any);
-          callback({
-            id: rowId,
-            data,
-            rowIndex: i,
-            selected: isSelected,
-            isSelected: () => this.selectionService.isSelected({ id: rowId } as any),
-          });
-        }
+      // 直接遍历 allRows 稀疏数组，跳过空洞
+      const allRows = (this.serverSideService as any).allRows as any[];
+      const maxIndex = allRows ? allRows.length : 0;
+      for (let i = 0; i < maxIndex; i++) {
+        const data = allRows[i];
+        if (!data) continue;
+        const rowId = data.id !== undefined ? String(data.id) : `row-${i}`;
+        const isSelected = this.selectionService.isSelected({ id: rowId } as any);
+        callback({
+          id: rowId,
+          data,
+          rowIndex: i,
+          selected: isSelected,
+          isSelected: () => this.selectionService.isSelected({ id: rowId } as any),
+          setSelected: (value: boolean, clearSelection?: boolean) => {
+            if (clearSelection) this.selectionService.clearSelection();
+            if (value) {
+              this.selectionService.selectNode({ id: rowId, data });
+            } else {
+              this.selectionService.deselectNode({ id: rowId, data });
+            }
+          },
+        });
       }
     } else {
       // 客户端模式
@@ -2095,25 +2104,13 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   selectAll(): void {
     console.log('[DBGrid] selectAll() called');
     const nodes: any[] = [];
-    
-    // 方法1：从 DOM 获取可见行的 rowNode
-    const rowsContainer = this.rowsContainer?.nativeElement;
-    if (rowsContainer) {
-      const rowElements = rowsContainer.querySelectorAll('.db-grid-row');
-      rowElements.forEach((row: HTMLElement) => {
-        const rowNode = (row as any)._rowNode || (row as any).rowNode;
-        if (rowNode) nodes.push(rowNode);
-      });
-    }
-    
-    // 方法2：如果 DOM 方法没找到节点，使用 forEachNode
-    if (nodes.length === 0) {
-      this.forEachNode(n => nodes.push(n));
-    }
-    
+
+    // 统一使用 forEachNode（已兼容服务端模式）
+    this.forEachNode(n => nodes.push(n));
+
     console.log('[DBGrid] selectAll - total nodes:', nodes.length);
     this.selectionService.selectAll(nodes);
-    
+
     // 强制更新样式和视图
     this.updateSelectionStyles();
     this.updateSelectAllCheckboxState();
@@ -2141,24 +2138,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   /** 更新全选 checkbox 状态 */
   updateSelectAllCheckboxState(): void {
     let totalCheckable = 0;
-    
-    // 方法1：从 DOM 获取可见行
-    const rowsContainer = this.rowsContainer?.nativeElement;
-    if (rowsContainer) {
-      const rowElements = rowsContainer.querySelectorAll('.db-grid-row');
-      rowElements.forEach((row: HTMLElement) => {
-        const rowNode = (row as any)._rowNode || (row as any).rowNode;
-        if (rowNode && rowNode.checkable !== false) totalCheckable++;
-      });
-    }
-    
-    // 方法2：如果 DOM 方法没找到节点，使用 forEachNode
-    if (totalCheckable === 0) {
-      this.forEachNode(n => { if (n.checkable !== false) totalCheckable++; });
-    }
-    
+
+    // 统一使用 forEachNode（已兼容服务端模式）
+    this.forEachNode(n => { if (n.checkable !== false) totalCheckable++; });
+
     const selectedCount = this.selectionService.getSelectionCount();
-    const state: 'all' | 'some' | 'none' = selectedCount === 0 ? 'none' : selectedCount >= totalCheckable ? 'all' : 'some';
+    const state: 'all' | 'some' | 'none' = totalCheckable === 0 ? 'none' : selectedCount >= totalCheckable ? 'all' : 'some';
     console.log('[DBGrid] updateSelectAllCheckboxState', { totalCheckable, selectedCount, state });
     this.headerRenderer.updateSelectAllState(state);
   }
