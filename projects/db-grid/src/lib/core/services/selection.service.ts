@@ -123,6 +123,33 @@ export class SelectionService {
     this.emitSelectionChange({ type: 'selectAll', nodes: Array.from(this.selectedNodes.values()) });
   }
 
+  /** 服务端模式批量选中：直接操作 Map，只发一次事件 */
+  selectAllByIds(ids: string[], getNodeById: (id: string) => RowNode | null): void {
+    console.log('[SelectionService] selectAllByIds called, ids.length:', ids.length);
+    if (this.mode === 'none') return;
+
+    // 追加模式：保留已有选择，只追加新选中的
+    const newNodes: RowNode[] = [];
+    ids.forEach(id => {
+      if (!this.selectedNodes.has(id)) {
+        const node = getNodeById(id);
+        if (node) {
+          node.selected = true;
+          node.setSelected?.(true);
+          this.selectedNodes.set(id, node);
+          newNodes.push(node);
+        }
+      }
+    });
+
+    if (newNodes.length > 0) {
+      console.log('[SelectionService] selectAllByIds added', newNodes.length, 'new nodes, total:', this.selectedNodes.size);
+      this.emitSelectionChange({ type: 'selectAll', nodes: Array.from(this.selectedNodes.values()) });
+    } else {
+      console.log('[SelectionService] selectAllByIds: all already selected');
+    }
+  }
+
   /** 范围选择 */
   private selectRange(startNode: RowNode, endNode: RowNode): void {
     if (!startNode || !endNode) return;
