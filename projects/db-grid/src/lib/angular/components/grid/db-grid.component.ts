@@ -2107,8 +2107,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
     console.log('[DBGrid] selectAll - DOM ids:', ids.length);
 
-    // 用 IDs 逐个选中（服务端模式核心逻辑）
-    this.selectionService.clearSelection();
+    // 关键修复：行 checkbox 触发 selectAll 时 selectedCount > 0，跳过 clearSelection
+    // 否则 clearSelection 会把之前选中的行清掉，导致每次只选中 1 行
+    const currentCount = this.selectionService.getSelectionCount();
+    if (currentCount === 0) {
+      this.selectionService.clearSelection();
+    }
     ids.forEach(id => {
       this.selectionService.selectNode({ id } as any);
     });
@@ -2153,7 +2157,6 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     // 服务端模式：用 serverSideService 获取总行数
     if (this.enableServerSide && this.serverSideService?.isEnabled()) {
       totalCheckable = this.serverSideService.getRowCount();
-      console.log('[DBGrid] updateSelectAllCheckboxState - server mode, totalCheckable from getRowCount:', totalCheckable);
     } else {
       // 客户端模式：从 DOM 获取可见行数
       const rowsContainer = this.rowsContainer?.nativeElement;
@@ -2169,7 +2172,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     }
 
     const selectedCount = this.selectionService.getSelectionCount();
-    const state: 'all' | 'some' | 'none' = selectedCount === 0 ? 'none' : selectedCount >= totalCheckable ? 'all' : 'some';
+    const state: 'all' | 'some' | 'none' = totalCheckable === 0 ? 'none' : selectedCount >= totalCheckable ? 'all' : 'some';
     console.log('[DBGrid] updateSelectAllCheckboxState', { totalCheckable, selectedCount, state });
     this.headerRenderer.updateSelectAllState(state);
   }
