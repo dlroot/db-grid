@@ -24,6 +24,8 @@ export class SelectionService {
   private rangeSelection = false;
 
   private selectedNodes: Map<string, RowNode> = new Map();
+  /** 服务端全选标志：为 true 时新渲染的行自动选中 */
+  private isAllSelected = false;
   private lastSelectedNode: RowNode | null = null;
   private rangeStartNode: RowNode | null = null;
 
@@ -93,6 +95,7 @@ export class SelectionService {
 
   /** 清除所有选择 */
   clearSelection(): void {
+    this.isAllSelected = false;
     if (this.selectedNodes.size > 0) {
       const nodes = Array.from(this.selectedNodes.values());
       nodes.forEach(node => {
@@ -112,6 +115,7 @@ export class SelectionService {
       return;
     }
 
+    this.isAllSelected = true;
     this.clearSelection();
     nodes.forEach(node => {
       console.log('[SelectionService] Selecting node:', node.id, 'rowIndex:', node.rowIndex);
@@ -211,6 +215,16 @@ export class SelectionService {
   /** 获取选择数量 */
   getSelectionCount(): number {
     return this.selectedNodes.size;
+  }
+
+  /** 返回是否处于"全选"状态（服务端模式：新行渲染时自动选中） */
+  isAllSelectedForRender(): boolean {
+    return this.isAllSelected;
+  }
+
+  /** 复位全选标志（用于 deselectedAll 等场景） */
+  resetAllSelected(): void {
+    this.isAllSelected = false;
   }
 
   /** 是否有选中项 */
