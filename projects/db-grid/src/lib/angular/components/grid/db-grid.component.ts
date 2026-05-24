@@ -1326,40 +1326,30 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   }
 
   forEachNode(callback: (node: any) => void): void {
-    // 服务端模式：使用 serverSideService
     if (this.enableServerSide && this.serverSideService.isEnabled()) {
-      // 直接遍历 allRows 稀疏数组，跳过空洞
-      const allRows = (this.serverSideService as any).allRows as any[];
-      const maxIndex = allRows ? allRows.length : 0;
-      for (let i = 0; i < maxIndex; i++) {
-        const data = allRows[i];
-        if (!data) continue;
-        const rowId = data.id !== undefined ? String(data.id) : `row-${i}`;
-        const isSelected = this.selectionService.isSelected({ id: rowId } as any);
-        callback({
-          id: rowId,
-          data,
-          rowIndex: i,
-          selected: isSelected,
-          isSelected: () => this.selectionService.isSelected({ id: rowId } as any),
-          setSelected: (value: boolean, clearSelection?: boolean) => {
-            if (clearSelection) this.selectionService.clearSelection();
-            if (value) {
-              this.selectionService.selectNode({ id: rowId, data } as any);
-            } else {
-              this.selectionService.deselectNode({ id: rowId, data } as any);
-            }
-          },
-        });
+      const rowCount = this.serverSideService.getRowCount();
+      for (let i = 0; i < rowCount; i++) {
+        const data = this.serverSideService.getRow(i);
+        if (data) {
+          const rowId = data.id !== undefined ? String(data.id) : `row-${i}`;
+          const isSelected = this.selectionService.isSelected({ id: rowId } as any);
+          callback({
+            id: rowId,
+            data,
+            rowIndex: i,
+            selected: isSelected,
+            isSelected: () => this.selectionService.isSelected({ id: rowId } as any),
+          } as any);
+        }
       }
     } else {
-      // 客户端模式
       for (let i = 0; i < this.dataService.getRowCount(); i++) {
         const node = this.dataService.getRowNode(`row-${i}`);
         if (node) callback(node);
       }
     }
   }
+
 
   // --- 滚动 ---
   ensureIndexVisible(index: number, align: string = 'auto'): void {
@@ -2103,9 +2093,9 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   selectAll(): void {
     console.log('[DBGrid] selectAll() called');
-    const ids: string[] = [];
 
-    // 方式1：从 DOM 获取所有已渲染行的 rowId
+    // 服务端模式：从 DOM 获取所有渲染行的 rowId，逐个 selectNode
+    const ids: string[] = [];
     const rowsContainer = this.rowsContainer?.nativeElement;
     if (rowsContainer) {
       const rowElements = rowsContainer.querySelectorAll('.db-grid-row');
@@ -2115,18 +2105,15 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       });
     }
 
-    // 方式2：如果 DOM 没拿到，fallback 到 forEachNode
-    if (ids.length === 0) {
-      this.forEachNode((n: any) => { if (n.id) ids.push(n.id); });
-    }
+    console.log('[DBGrid] selectAll - DOM ids:', ids.length);
 
-    console.log('[DBGrid] selectAll - total ids:', ids.length);
+    // 用 IDs 逐个选中（服务端模式核心逻辑）
+    this.selectionService.clearSelection();
     ids.forEach(id => {
       this.selectionService.selectNode({ id } as any);
     });
 
-    // 强制更新样式和视图
-    // 等待 DOM 更新后再同步样式
+    // 强制更新样式
     setTimeout(() => {
       this.updateSelectionStyles();
       this.updateSelectAllCheckboxState();
@@ -2134,6 +2121,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     }, 0);
     console.log('[DBGrid] selectAll - forced update complete');
   }
+
 
   deselectAll(): void {
     console.log('[DBGrid] deselectAll() called');
@@ -2159,18 +2147,18 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     // 服务端模式：用 serverSideService 获取总行数
     if (this.enableServerSide && this.serverSideService?.isEnabled()) {
       totalCheckable = this.serverSideService.getRowCount();
+      console.log('[DBGrid] updateSelectAllCheckboxState - server mode, totalCheckable from getRowCount:', totalCheckable);
     } else {
       // 客户端模式：从 DOM 获取可见行数
       const rowsContainer = this.rowsContainer?.nativeElement;
       if (rowsContainer) {
         const rowElements = rowsContainer.querySelectorAll('.db-grid-row');
         rowElements.forEach((row: HTMLElement) => {
-          const rowId = row.dataset['rowId'];
-          if (rowId) totalCheckable++;
+          if (row.dataset['rowId']) totalCheckable++;
         });
       }
       if (totalCheckable === 0) {
-        this.forEachNode(n => { if (n.checkable !== false) totalCheckable++; });
+        this.forEachNode(n => { if ((n as any).checkable !== false) totalCheckable++; });
       }
     }
 
@@ -2179,6 +2167,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     console.log('[DBGrid] updateSelectAllCheckboxState', { totalCheckable, selectedCount, state });
     this.headerRenderer.updateSelectAllState(state);
   }
+
 
   selectNode(node: any, clearSelection = false): void {
     if (clearSelection) this.selectionService.clearSelection();
