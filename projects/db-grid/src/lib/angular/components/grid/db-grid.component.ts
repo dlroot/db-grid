@@ -686,7 +686,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         const rowsContainer = this.rowsContainer?.nativeElement;
         if (rowsContainer) {
           const rowEl = rowsContainer.querySelectorAll('.db-grid-row')[index];
-          return rowEl?.dataset?.['rowId'] || null;
+          return (rowEl as HTMLElement)?.dataset?.['rowId'] || null;
         }
         return null;
       },
@@ -2126,7 +2126,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     if (rowsContainer) {
       const rowElements = rowsContainer.querySelectorAll('.db-grid-row');
       rowElements.forEach((row: HTMLElement) => {
-        const rowId = row.dataset['rowId'];
+        const rowId = (row as HTMLElement).dataset['rowId'];
         if (rowId) ids.push(rowId);
       });
     }
@@ -2184,7 +2184,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     if (rowsContainer) {
       const rowElements = rowsContainer.querySelectorAll('.db-grid-row');
       rowElements.forEach((row: HTMLElement) => {
-        if (row.dataset['rowId']) totalCheckable++;
+        if ((row as HTMLElement).dataset['rowId']) totalCheckable++;
       });
     }
 
@@ -2223,7 +2223,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       const rows = container.querySelectorAll<HTMLElement>('.db-grid-row');
       console.log('[DBGrid] updateRowElements - found rows:', rows.length);
       rows.forEach(rowEl => {
-        const rowId = rowEl.dataset['rowId'];
+        const rowId = (rowEl as HTMLElement).dataset['rowId'];
         if (!rowId) return;
         // 全选状态下，所有行都视为已选中（服务端模式：新加载行自动选中）
         const isAllSelected = this.selectionService.isAllSelectedForRender?.() ?? false;
