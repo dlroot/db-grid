@@ -2699,6 +2699,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.renderDetailCharts(viewport);
 
     console.log('[DBGrid] renderRows done, calling updateSelectionStyles + updateSelectAllCheckboxState');
+    // 全选状态下，新渲染的行需要更新选中样式
     this.updateSelectionStyles();
     this.updateSelectAllCheckboxState();
     this.cdr.detectChanges();
