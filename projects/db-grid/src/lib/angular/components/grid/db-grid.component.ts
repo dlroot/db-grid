@@ -2127,11 +2127,11 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
     // 强制更新样式和视图
     // 等待 DOM 更新后再同步样式
-    setTimeout(0, () => {
+    setTimeout(() => {
       this.updateSelectionStyles();
       this.updateSelectAllCheckboxState();
       this.cdr.detectChanges();
-    });
+    }, 0);
     console.log('[DBGrid] selectAll - forced update complete');
   }
 
