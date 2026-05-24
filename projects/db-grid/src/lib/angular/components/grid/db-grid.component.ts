@@ -2156,21 +2156,26 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   updateSelectAllCheckboxState(): void {
     let totalCheckable = 0;
 
-    // 从 DOM 获取可见行数（和 updateSelectionStyles 一致的方式）
-    const rowsContainer = this.rowsContainer?.nativeElement;
-    if (rowsContainer) {
-      const rowElements = rowsContainer.querySelectorAll('.db-grid-row');
-      rowElements.forEach((row: HTMLElement) => {
-        const rowId = row.dataset['rowId'];
-        if (rowId) totalCheckable++;
-      });
-    }
-    if (totalCheckable === 0) {
-      this.forEachNode(n => { if (n.checkable !== false) totalCheckable++; });
+    // 服务端模式：用 serverSideService 获取总行数
+    if (this.enableServerSide && this.serverSideService?.isEnabled()) {
+      totalCheckable = this.serverSideService.getRowCount();
+    } else {
+      // 客户端模式：从 DOM 获取可见行数
+      const rowsContainer = this.rowsContainer?.nativeElement;
+      if (rowsContainer) {
+        const rowElements = rowsContainer.querySelectorAll('.db-grid-row');
+        rowElements.forEach((row: HTMLElement) => {
+          const rowId = row.dataset['rowId'];
+          if (rowId) totalCheckable++;
+        });
+      }
+      if (totalCheckable === 0) {
+        this.forEachNode(n => { if (n.checkable !== false) totalCheckable++; });
+      }
     }
 
     const selectedCount = this.selectionService.getSelectionCount();
-    const state: 'all' | 'some' | 'none' = totalCheckable === 0 ? 'none' : selectedCount >= totalCheckable ? 'all' : 'some';
+    const state: 'all' | 'some' | 'none' = selectedCount === 0 ? 'none' : selectedCount >= totalCheckable ? 'all' : 'some';
     console.log('[DBGrid] updateSelectAllCheckboxState', { totalCheckable, selectedCount, state });
     this.headerRenderer.updateSelectAllState(state);
   }
