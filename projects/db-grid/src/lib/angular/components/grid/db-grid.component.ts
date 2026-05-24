@@ -2103,13 +2103,27 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   selectAll(): void {
     console.log('[DBGrid] selectAll() called');
-    const nodes: any[] = [];
+    const ids: string[] = [];
 
-    // 统一使用 forEachNode（已兼容服务端模式）
-    this.forEachNode(n => nodes.push(n));
+    // 方式1：从 DOM 获取所有已渲染行的 rowId
+    const rowsContainer = this.rowsContainer?.nativeElement;
+    if (rowsContainer) {
+      const rowElements = rowsContainer.querySelectorAll('.db-grid-row');
+      rowElements.forEach((row: HTMLElement) => {
+        const rowId = row.dataset['rowId'];
+        if (rowId) ids.push(rowId);
+      });
+    }
 
-    console.log('[DBGrid] selectAll - total nodes:', nodes.length);
-    this.selectionService.selectAll(nodes);
+    // 方式2：如果 DOM 没拿到，fallback 到 forEachNode
+    if (ids.length === 0) {
+      this.forEachNode((n: any) => { if (n.id) ids.push(n.id); });
+    }
+
+    console.log('[DBGrid] selectAll - total ids:', ids.length);
+    ids.forEach(id => {
+      this.selectionService.selectNode({ id } as any);
+    });
 
     // 强制更新样式和视图
     this.updateSelectionStyles();
@@ -2139,8 +2153,18 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   updateSelectAllCheckboxState(): void {
     let totalCheckable = 0;
 
-    // 统一使用 forEachNode（已兼容服务端模式）
-    this.forEachNode(n => { if (n.checkable !== false) totalCheckable++; });
+    // 从 DOM 获取可见行数（和 updateSelectionStyles 一致的方式）
+    const rowsContainer = this.rowsContainer?.nativeElement;
+    if (rowsContainer) {
+      const rowElements = rowsContainer.querySelectorAll('.db-grid-row');
+      rowElements.forEach((row: HTMLElement) => {
+        const rowId = row.dataset['rowId'];
+        if (rowId) totalCheckable++;
+      });
+    }
+    if (totalCheckable === 0) {
+      this.forEachNode(n => { if (n.checkable !== false) totalCheckable++; });
+    }
 
     const selectedCount = this.selectionService.getSelectionCount();
     const state: 'all' | 'some' | 'none' = totalCheckable === 0 ? 'none' : selectedCount >= totalCheckable ? 'all' : 'some';
