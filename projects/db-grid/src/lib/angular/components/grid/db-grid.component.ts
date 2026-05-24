@@ -430,6 +430,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   private dataService: DataService;
   private columnService: ColumnService;
   private selectionService: SelectionService;
+  // 防止行 checkbox change 触发重复 selectAll 的 guard
+  private isSelectingAll = false;
   private treeService: TreeService;
   private groupService: GroupService;
   private excelExportService: ExcelExportService;
@@ -2114,7 +2116,10 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       this.selectionService.clearSelection();
     }
     ids.forEach(id => {
-      this.selectionService.selectNode({ id } as any);
+      const node: any = { id };
+      if (!this.selectionService.isSelected(node)) {
+        this.selectionService.selectNode(node);
+      }
     });
 
     // 强制更新样式
@@ -2135,19 +2140,24 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   /** 全选/取消全选切换 */
   private toggleSelectAll(checked: boolean): void {
-    // 关键修复：checked === undefined 表示是行 checkbox 触发，忽略
-    // 因为 onSelectAllToggle 也会被各行 checkbox 的 change 事件调用
-    if (checked === undefined) {
-      console.log('[DBGrid] toggleSelectAll ignored - row checkbox event');
+    // Guard：防止行 checkbox 触发重复 selectAll
+    if (this.isSelectingAll) {
+      console.log('[DBGrid] toggleSelectAll ignored - isSelectingAll guard');
       return;
     }
+    this.isSelectingAll = true;
     console.log('[DBGrid] toggleSelectAll called, checked:', checked);
-    if (checked) {
-      this.selectAll();
-    } else {
-      this.deselectAll();
+    try {
+      if (checked) {
+        this.selectAll();
+      } else {
+        this.deselectAll();
+      }
+      this.updateSelectAllCheckboxState();
+    } finally {
+      // 延迟重置，确保在所有 change 事件处理完之后再清标志
+      setTimeout(() => { this.isSelectingAll = false; }, 100);
     }
-    this.updateSelectAllCheckboxState();
   }
 
   /** 更新全选 checkbox 状态 */
