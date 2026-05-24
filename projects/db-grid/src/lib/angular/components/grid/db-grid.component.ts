@@ -2131,6 +2131,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   /** 全选/取消全选切换 */
   private toggleSelectAll(checked: boolean): void {
+    // 关键修复：checked === undefined 表示是行 checkbox 触发，忽略
+    // 因为 onSelectAllToggle 也会被各行 checkbox 的 change 事件调用
+    if (checked === undefined) {
+      console.log('[DBGrid] toggleSelectAll ignored - row checkbox event');
+      return;
+    }
     console.log('[DBGrid] toggleSelectAll called, checked:', checked);
     if (checked) {
       this.selectAll();
