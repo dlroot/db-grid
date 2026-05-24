@@ -673,7 +673,31 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
     this.rowCount.set(this.dataService.getRowCount());
     this.createGridApi();
-  }
+  
+    // 设置 selectionService 的回调，用于 isAllSelected 模式获取所有行ID
+    this.selectionService.setGetAllRowIdsCallback(
+      (index: number) => {
+        // 优先从 serverSideService 获取数据
+        if (this.enableServerSide && this.serverSideService?.isEnabled()) {
+          const row = this.serverSideService.getRow(index);
+          return row ? (row.id !== undefined ? String(row.id) : `row-${index}`) : null;
+        }
+        // 降级：从 DOM 获取
+        const rowsContainer = this.rowsContainer?.nativeElement;
+        if (rowsContainer) {
+          const rowEl = rowsContainer.querySelectorAll('.db-grid-row')[index];
+          return rowEl?.dataset?.['rowId'] || null;
+        }
+        return null;
+      },
+      () => {
+        if (this.enableServerSide && this.serverSideService?.isEnabled()) {
+          return this.serverSideService.getRowCount();
+        }
+        return this.rowCount?.() ?? 0;
+      }
+    );
+}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['rowData'] && !changes['rowData'].firstChange) {
