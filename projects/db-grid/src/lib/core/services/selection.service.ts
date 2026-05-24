@@ -26,6 +26,10 @@ export class SelectionService {
   private selectedNodes: Map<string, RowNode> = new Map();
   /** 服务端全选标志：为 true 时新渲染的行自动选中 */
   private isAllSelected = false;
+  /** 获取所有行ID的回调（用于 isAllSelected 模式） 
+  private getAllRowIds: ((index: number) => string | null) | null = null;
+  private getRowCount: (() => number) | null = null;
+
   private lastSelectedNode: RowNode | null = null;
   private rangeStartNode: RowNode | null = null;
 
