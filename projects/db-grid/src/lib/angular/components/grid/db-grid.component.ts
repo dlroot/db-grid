@@ -2265,8 +2265,16 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   /** 键盘事件处理 */
   onKeyDown(event: KeyboardEvent): void {
-    // 撤销/重做快捷键
-    if (event.ctrlKey || event.metaKey) {
+    // 如果正在编辑单元格，不处理快捷键
+    if (this.isCellEditing()) {
+      return;
+    }
+
+    const ctrlKey = event.ctrlKey || event.metaKey;
+    const shiftKey = event.shiftKey;
+
+    // ========== 撤销/重做快捷键 ==========
+    if (ctrlKey) {
       if (event.key === 'z' || event.key === 'Z') {
         if (event.shiftKey) {
           // Ctrl+Shift+Z = Redo
@@ -2296,6 +2304,55 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       }
     }
 
+    // ========== 范围选择快捷键 ==========
+    // Ctrl + A: 全选
+    if (ctrlKey && event.key === 'a') {
+      event.preventDefault();
+      event.stopPropagation();
+      if (this.rangeSelectionService.isRangeSelectionEnabled() || this.rangeSelectionService.isCellSelectionEnabled()) {
+        const totalRows = this.rowCount();
+        const columns = this.columnService.getVisibleColumns();
+        this.rangeSelectionService.selectAll(totalRows, columns);
+        this.updateRangeStyles();
+        this.syncRangeColumnOrder();
+      }
+      return;
+    }
+
+    // Ctrl + C: 复制
+    if (ctrlKey && event.key === 'c') {
+      event.preventDefault();
+      event.stopPropagation();
+      this.copyToClipboard();
+      return;
+    }
+
+    // Ctrl + V: 粘贴
+    if (ctrlKey && event.key === 'v') {
+      event.preventDefault();
+      event.stopPropagation();
+      this.pasteFromClipboard();
+      return;
+    }
+
+    // ========== Shift + 方向键：扩展选择区域 ==========
+    if (shiftKey && (event.key === 'ArrowUp' || event.key === 'ArrowLeft' || event.key === 'ArrowRight' || event.key === 'ArrowDown')) {
+      if (this.rangeSelectionService.isRangeSelectionEnabled() || this.rangeSelectionService.isCellSelectionEnabled()) {
+        const handled = this.rangeSelectionService.handleShiftArrowKey(
+          event,
+          this.rowCount(),
+          this.columnService.getVisibleColumns()
+        );
+        if (handled) {
+          this.updateRangeStyles();
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
+      }
+    }
+
+    // ========== 方向键导航 ==========
     if (!this.keyboardNavigationService) return;
     const result = this.keyboardNavigationService.handleKeyDown(event);
     if (result.consumed) {

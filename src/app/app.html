@@ -55,6 +55,9 @@
     <button [class.active]="currentDemo() === 'pdf'" (click)="switchDemo('pdf')">
       📄 PDF导出
     </button>
+    <button [class.active]="currentDemo() === 'range'" (click)="switchDemo('range')">
+      📋 区域选择
+    </button>
     <button [class.active]="currentDemo() === 'charts'" (click)="switchDemo('charts')">
       📈 图表
     </button>
@@ -487,6 +490,53 @@
         [rowSelection]="'multiple'"
         (gridReady)="onGridReady($event)"
         (selectionChanged)="onSelectionChanged()"
+      />
+    </div>
+  }
+
+  <!-- 区域选择演示 -->
+  @if (currentDemo() === 'range') {
+    <div class="demo-panel">
+      <div class="demo-header">
+        <h2>📋 区域选择</h2>
+        <p class="demo-desc">支持鼠标拖拽、键盘快捷键选择单元格区域，类似 Excel 操作体验</p>
+        <div class="demo-actions">
+          <button class="btn" (click)="selectAllRange()">📊 全选</button>
+          <button class="btn" (click)="copyRange()">📋 复制</button>
+          <button class="btn btn-danger" (click)="clearRange()">🗑️ 清除选择</button>
+        </div>
+        <div class="range-hints">
+          <h3>使用说明：</h3>
+          <ul>
+            <li><strong>鼠标拖拽</strong> - 按住左键拖拽选择区域</li>
+            <li><strong>Shift+Click</strong> - 从上一选中位置扩展到点击位置</li>
+            <li><strong>Ctrl+Click</strong> - 添加/移除单个单元格到选择</li>
+            <li><strong>Ctrl+A</strong> - 全选所有单元格</li>
+            <li><strong>Shift+方向键</strong> - 扩展选择区域</li>
+            <li><strong>Ctrl+C</strong> - 复制选中内容</li>
+            <li><strong>Ctrl+V</strong> - 粘贴内容</li>
+          </ul>
+        </div>
+        <div class="range-status">
+          <span class="status-label">选择状态：</span>
+          <span class="status-value">{{ selectedRangeInfo() }}</span>
+          @if (copiedData()) {
+            <span class="copy-success">{{ copiedData() }}</span>
+          }
+        </div>
+      </div>
+      <db-grid
+        #myGrid
+        [columnDefs]="rangeColumnDefs"
+        [rowData]="rangeRowData"
+        [gridOptions]="rangeOptions"
+        [rowHeight]="40"
+        [headerHeight]="40"
+        [theme]="currentTheme()"
+        [enableRangeSelection]="true"
+        [enableCellSelection]="true"
+        (gridReady)="onGridReady($event)"
+        (rangeSelectionChanged)="onRangeChanged($event)"
       />
     </div>
   }

@@ -5,9 +5,11 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "build:demo": "ng build --configuration production",
     "watch": "ng build --watch --configuration development",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "deploy": "npx angular-cli-ghpages --dir=dist/db-grid/browser --no-silent"
   },
   "private": true,
   "packageManager": "npm@10.9.8",

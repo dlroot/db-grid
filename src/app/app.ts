@@ -965,8 +965,59 @@ export class AppComponent implements OnInit {
       });
     }
   }
-  setI18n(locale: string): void {
-    this.currentI18n.set(locale);
+  // ========== 区域选择演示 ==========
+  rangeColumnDefs = [
+    { field: "id", headerName: "ID", width: 80, sortable: true, filter: "number" },
+    { field: "name", headerName: "姓名", width: 150, sortable: true, filter: "text", editable: true },
+    { field: "age", headerName: "年龄", width: 100, sortable: true, filter: "number", editable: true, cellEditor: "number" },
+    { field: "email", headerName: "邮箱", width: 220, sortable: true, filter: "text" },
+    { field: "department", headerName: "部门", width: 150, sortable: true, filter: "set" },
+    { field: "position", headerName: "职位", width: 150, sortable: true, filter: "set" },
+    { field: "salary", headerName: "薪资", width: 120, sortable: true, filter: "number", editable: true, cellEditor: "number" },
+    { field: "status", headerName: "状态", width: 100, sortable: true, filter: "set" },
+  ];
+  rangeRowData = this.generateEmployeeData(100);
+  rangeOptions = { 
+    enableRangeSelection: true, 
+    enableCellSelection: true,
+    rowSelection: "multiple" 
+  };
+  selectedRangeInfo = signal<string>("未选择");
+  copiedData = signal<string>("");
+
+  onRangeChanged(event: any): void {
+    const ranges = this.gridApi?.getSelectedRanges?.() || [];
+    if (ranges.length > 0) {
+      const range = ranges[0];
+      const startRow = Math.min(range.start.rowIndex, range.end.rowIndex);
+      const endRow = Math.max(range.start.rowIndex, range.end.rowIndex);
+      const colCount = 8; // 8 columns
+      const cellCount = (endRow - startRow + 1) * colCount;
+      this.selectedRangeInfo.set(`已选择 ${cellCount} 个单元格 (${startRow+1}行 - ${endRow+1}行)`);
+    } else {
+      this.selectedRangeInfo.set("未选择");
+    }
+  }
+
+  copyRange(): void {
+    if (this.gridApi) {
+      this.gridApi.copyToClipboard();
+      this.copiedData.set("已复制到剪贴板");
+      setTimeout(() => this.copiedData.set(""), 2000);
+    }
+  }
+
+  clearRange(): void {
+    if (this.gridApi) {
+      this.gridApi.clearRangeSelection?.();
+      this.selectedRangeInfo.set("未选择");
+    }
+  }
+
+  selectAllRange(): void {
+    if (this.gridApi) {
+      this.gridApi.selectAllCells?.();
+    }
   }
 
   // ========== 图表演示 ==========
