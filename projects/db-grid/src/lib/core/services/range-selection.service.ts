@@ -300,8 +300,13 @@ export class RangeSelectionService {
     }
   }
 
-  /** 全选 */
-  selectAllCells(totalRows: number, columns: ColDef[]): void {
+  /** 全选所有单元格（公开 API） */
+  selectAll(totalRows: number, columns: ColDef[]): void {
+    this.selectAllCells(totalRows, columns);
+  }
+
+  /** 全选所有单元格（内部实现） */
+  private selectAllCells(totalRows: number, columns: ColDef[]): void {
     const visibleCols = columns.filter(c => !c.hide);
     if (visibleCols.length === 0 || totalRows === 0) return;
     this.ranges = [{
