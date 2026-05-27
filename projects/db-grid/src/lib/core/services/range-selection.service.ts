@@ -12,14 +12,10 @@ export class RangeSelectionService {
   private ranges: CellRange[] = [];
   private activeRange: CellRange | null = null;
   private startCell: CellPosition | null = null;
-  private focusedCell: CellPosition | null = null;
   private clipboardData: string = '';
-  private columnOrder: string[] = [];
 
   private onRangeChanged: ((ranges: CellRange[]) => void) | null = null;
   private onCellFocused: ((pos: CellPosition) => void) | null = null;
-  private onRangeSelectionStarted: (() => void) | null = null;
-  private onRangeSelectionFinished: (() => void) | null = null;
 
   /** 初始化 */
   initialize(config: { enableRangeSelection?: boolean; enableCellSelection?: boolean } = {}): void {
@@ -100,102 +96,7 @@ export class RangeSelectionService {
     this.ranges = [];
     this.activeRange = null;
     this.startCell = null;
-    this.focusedCell = null;
     this.emitRangeChanged();
-  }
-
-  /** 获取焦点单元格 */
-  getFocusedCell(): CellPosition | null { return this.focusedCell; }
-
-  /** 设置焦点单元格 */
-  setFocusedCell(rowIndex: number, colId: string): void {
-    this.focusedCell = { rowIndex, colId };
-    if (this.onCellFocused) {
-      this.onCellFocused(this.focusedCell);
-    }
-  }
-
-  /** 处理键盘导航 (Shift + 方向键) */
-  handleShiftArrowKey(event: KeyboardEvent, totalRows: number, columns: ColDef[]): boolean {
-    if (!this.enabled && !this.cellSelection) return false;
-    if (!event.shiftKey) return false;
-
-    const visibleCols = columns.filter(c => !c.hide);
-    if (!this.focusedCell || visibleCols.length === 0) return false;
-
-    const currentColIdx = visibleCols.findIndex(c => (c.field || c.colId) === this.focusedCell!.colId);
-    if (currentColIdx < 0) return false;
-
-    let newRow = this.focusedCell.rowIndex;
-    let newColIdx = currentColIdx;
-
-    switch (event.key) {
-      case 'ArrowUp':
-        newRow = Math.max(0, newRow - 1);
-        break;
-      case 'ArrowDown':
-        newRow = Math.min(totalRows - 1, newRow + 1);
-        break;
-      case 'ArrowLeft':
-        newColIdx = Math.max(0, newColIdx - 1);
-        break;
-      case 'ArrowRight':
-        newColIdx = Math.min(visibleCols.length - 1, newColIdx + 1);
-        break;
-      default:
-        return false;
-    }
-
-    event.preventDefault();
-    const newColId = visibleCols[newColIdx].field || visibleCols[newColIdx].colId || '';
-    
-    // 扩展选择范围
-    if (!this.startCell) {
-      this.startCell = { ...this.focusedCell };
-    }
-
-    this.activeRange = {
-      start: { ...this.startCell },
-      end: { rowIndex: newRow, colId: newColId }
-    };
-
-    // 更新 ranges 数组
-    if (this.ranges.length === 0) {
-      this.ranges.push(this.activeRange);
-    } else {
-      this.ranges[this.ranges.length - 1] = this.activeRange;
-    }
-
-    this.setFocusedCell(newRow, newColId);
-    this.emitRangeChanged();
-    return true;
-  }
-
-  /** 全选所有单元格 */
-  selectAll(totalRows: number, columns: ColDef[]): void {
-    const visibleCols = columns.filter(c => !c.hide);
-    if (visibleCols.length === 0 || totalRows === 0) return;
-
-    const startColId = visibleCols[0].field || visibleCols[0].colId || '';
-    const endColId = visibleCols[visibleCols.length - 1].field || visibleCols[visibleCols.length - 1].colId || '';
-
-    this.ranges = [{
-      start: { rowIndex: 0, colId: startColId },
-      end: { rowIndex: totalRows - 1, colId: endColId }
-    }];
-    this.activeRange = this.ranges[0];
-    this.startCell = { ...this.ranges[0].start };
-    this.emitRangeChanged();
-  }
-
-  /** 获取列索引 */
-  getColumnIndex(colId: string): number {
-    return this._columnOrder.indexOf(colId);
-  }
-
-  /** 根据索引获取列ID */
-  getColumnId(index: number): string {
-    return this._columnOrder[index] || '';
   }
 
   /** 判断单元格是否在某个范围内 */
@@ -300,7 +201,7 @@ export class RangeSelectionService {
     }
   }
 
-  /** 全选所有单元格（公开 API） */
+  /** 全选所有单元格（供 DbGridComponent 调用） */
   selectAll(totalRows: number, columns: ColDef[]): void {
     this.selectAllCells(totalRows, columns);
   }
