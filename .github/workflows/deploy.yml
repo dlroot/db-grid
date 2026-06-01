@@ -30,11 +30,11 @@ jobs:
 
     - name: Deploy to GitHub Pages
       if: github.ref == 'refs/heads/master'
-      uses: JamesIves/github-pages-deploy-action@v4
-      with:
-        branch: gh-pages
-        folder: dist/db-grid/browser
-        clean: true
-        token: ${{ secrets.ACCESS_TOKEN }}
-        git-config-name: github-actions[bot]
-        git-config-email: github-actions[bot]@users.noreply.github.com
+      run: |
+        cd dist/db-grid/browser
+        git init
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git add -A
+        git commit -m "Deploy from ${{ github.sha }}"
+        git push --force https://x-access-token:${{ secrets.ACCESS_TOKEN }}@github.com/dlroot/db-grid.git master:gh-pages
