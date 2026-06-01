@@ -34,3 +34,6 @@ jobs:
         folder: dist/db-grid/browser
         clean: true
         token: ${{ secrets.GITHUB_TOKEN }}
+        git-config-name: github-actions[bot]
+        git-config-email: github-actions[bot]@users.noreply.github.com
+        commit-message: Deploy from ${{ github.sha }}
