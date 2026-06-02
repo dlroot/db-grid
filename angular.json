@@ -54,9 +54,7 @@
             ],
             "styles": [
               "src/styles.scss"
-            ],
-            "baseHref": "/db-grid/",
-            "deployUrl": "/db-grid/"
+            ]
           },
           "configurations": {
             "production": {
