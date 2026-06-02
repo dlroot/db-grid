@@ -19,12 +19,26 @@ body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'S
 /* Tab 切换按钮 */
 .demo-tabs {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap; /* 不换行，允许横向滚动 */
   gap: 8px;
   padding: 16px 24px;
   background: white;
   border-bottom: 1px solid #e8ecf0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  overflow-x: auto; /* 横向滚动 */
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch; /* iOS 平滑滚动 */
+  scrollbar-width: thin; /* Firefox 滚动条宽度 */
+  &::-webkit-scrollbar {
+    height: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+  }
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
   button {
     padding: 10px 18px;
     border: none;
@@ -38,6 +52,8 @@ body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'S
     display: flex;
     align-items: center;
     gap: 6px;
+    white-space: nowrap; /* 防止按钮文字换行 */
+    flex-shrink: 0; /* 防止按钮被压缩 */
     &:hover { background: #e8ecf0; transform: translateY(-1px); }
     &.active {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -50,6 +66,7 @@ body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'S
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-shrink: 0;
     label { font-size: 14px; color: #666; font-weight: 500; }
     select {
       padding: 8px 12px;
