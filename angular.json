@@ -72,7 +72,9 @@
                   "maximumError": "16kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "baseHref": "/db-grid/",
+              "deployUrl": "/db-grid/"
             },
             "development": {
               "optimization": false,
