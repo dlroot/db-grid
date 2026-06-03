@@ -101,7 +101,7 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div #gridContainer class="db-grid-container" [class]="themeClass()" (keydown)="onKeyDown($event)"
-         tabindex="0" style="outline: none;">
+         tabindex="0" style="outline: none; user-select: none; -webkit-user-select: none;">
       <div #headerContainer class="db-grid-header-container"></div>
       <div #bodyContainer class="db-grid-body-container" (scroll)="onScroll($event)">
         <div #virtualScroll class="db-grid-virtual-scroll">
@@ -189,6 +189,7 @@ import {
       background: var(--db-grid-bg, #fff);
       font-family: var(--db-grid-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
       font-size: var(--db-grid-font-size, 14px);
+      user-select: none; -webkit-user-select: none; -ms-user-select: none;
     }
     .db-grid-header-container { flex-shrink: 0; overflow-x: hidden; overflow-y: hidden; box-sizing: border-box; width: 100%; }
     .db-grid-body-container { flex: 1; overflow-y: auto; overflow-x: auto; position: relative; box-sizing: border-box; width: 100%; }
