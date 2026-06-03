@@ -278,10 +278,30 @@ import {
     }
     .db-grid-row {
       .db-grid-cell-in-range {
-        border-color: var(--db-grid-range-selection-border-color, #2196f3);
-        border-right-width: 1px;
+        border-color: transparent;
       }
     }
+
+    /* ========== Range Border Highlight ========== */
+    .db-grid-cell-range-border-top {
+      border-top: 2px solid var(--db-grid-range-selection-border-color, #2196f3) !important;
+    }
+    .db-grid-cell-range-border-right {
+      border-right: 2px solid var(--db-grid-range-selection-border-color, #2196f3) !important;
+    }
+    .db-grid-cell-range-border-bottom {
+      border-bottom: 2px solid var(--db-grid-range-selection-border-color, #2196f3) !important;
+    }
+    .db-grid-cell-range-border-left {
+      border-left: 2px solid var(--db-grid-range-selection-border-color, #2196f3) !important;
+    }
+
+    /* ========== Column Header Selection Style ========== */
+    .db-grid-header-cell-col-selected {
+      background: var(--db-grid-range-selection-background, rgba(33, 150, 243, 0.15)) !important;
+      border-bottom: 2px solid var(--db-grid-range-selection-border-color, #2196f3) !important;
+    }
+
     /* 范围右下角填充柄 */
     .db-grid-cell-range-corner {
       position: relative;
@@ -1887,15 +1907,17 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     try {
       const enableRange = this.gridOptions.enableRangeSelection === true;
       const enableCell = this.gridOptions.enableCellSelection === true;
-      console.log('[DBGrid] initRangeSelection', { enableRange, enableCell, hasBodyContainer: !!this.bodyContainer?.nativeElement });
-      if (!enableRange && !enableCell) {
+      const enableCol = this.gridOptions.enableColSelection === true;
+      console.log('[DBGrid] initRangeSelection', { enableRange, enableCell, enableCol, hasBodyContainer: !!this.bodyContainer?.nativeElement });
+      if (!enableRange && !enableCell && !enableCol) {
         console.log('[DBGrid] range selection not enabled');
         return;
       }
 
       this.rangeSelectionService.initialize({
-        enableRangeSelection: enableRange,
+        enableRangeSelection: enableRange || enableCol,
         enableCellSelection: enableCell,
+        enableColSelection: enableCol,
       });
 
       // 同步可见列顺序
@@ -1985,9 +2007,26 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
               cellEl.classList.remove('db-grid-cell-range-start');
               cellEl.classList.remove('db-grid-cell-range-end');
               cellEl.classList.remove('db-grid-cell-range-corner');
+              cellEl.classList.remove('db-grid-cell-range-border-top');
+              cellEl.classList.remove('db-grid-cell-range-border-right');
+              cellEl.classList.remove('db-grid-cell-range-border-bottom');
+              cellEl.classList.remove('db-grid-cell-range-border-left');
             } else {
               const inRange = this.rangeSelectionService.isCellInRange(rowIndex, colId);
               cellEl.classList.toggle('db-grid-cell-in-range', inRange);
+              // 边界高亮：计算单元格在选中区域中的边界位置
+              if (inRange) {
+                const edge = this.rangeSelectionService.getCellMergedEdge(rowIndex, colId);
+                cellEl.classList.toggle('db-grid-cell-range-border-top', edge.top);
+                cellEl.classList.toggle('db-grid-cell-range-border-right', edge.right);
+                cellEl.classList.toggle('db-grid-cell-range-border-bottom', edge.bottom);
+                cellEl.classList.toggle('db-grid-cell-range-border-left', edge.left);
+              } else {
+                cellEl.classList.remove('db-grid-cell-range-border-top');
+                cellEl.classList.remove('db-grid-cell-range-border-right');
+                cellEl.classList.remove('db-grid-cell-range-border-bottom');
+                cellEl.classList.remove('db-grid-cell-range-border-left');
+              }
               // 角标记（范围右下角单元格）
               if (inRange) {
                 const activeRange = this.rangeSelectionService.getActiveRange();
@@ -2010,6 +2049,9 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       if (pinnedLeftContainer) {
         updateCells(pinnedLeftContainer);
       }
+
+      // 同步更新列头选中样式
+      this.updateColumnHeaderSelectionStyles();
     } catch (err) {
       console.error('[DBGrid] updateRangeStyles error:', err);
     }
@@ -2349,6 +2391,40 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
           event.stopPropagation();
           return;
         }
+      }
+    }
+
+    // ========== Ctrl + Space：选中当前列 ==========
+    if (ctrlKey && event.key === ' ') {
+      if (this.rangeSelectionService.isColSelectionEnabled()) {
+        event.preventDefault();
+        event.stopPropagation();
+        const focusedCell = this.rangeSelectionService.getFocusedCell()
+          ?? this.keyboardNavigationService?.getFocusedCell();
+        if (focusedCell) {
+          this.rangeSelectionService.selectColumn(focusedCell.colId, this.rowCount(), undefined);
+          this.updateRangeStyles();
+        }
+        return;
+      }
+    }
+
+    // ========== Shift + Space：选中当前行 ==========
+    if (shiftKey && event.key === ' ') {
+      if (this.rangeSelectionService.isRangeSelectionEnabled() || this.rangeSelectionService.isCellSelectionEnabled()) {
+        event.preventDefault();
+        event.stopPropagation();
+        const focusedCell = this.rangeSelectionService.getFocusedCell()
+          ?? this.keyboardNavigationService?.getFocusedCell();
+        if (focusedCell) {
+          const colId = this.columnService.getVisibleColumns().map(c => c.field || c.colId || '');
+          if (colId.length > 0) {
+            this.rangeSelectionService.startRangeSelection(focusedCell.rowIndex, colId[0]);
+            this.rangeSelectionService.extendRange(focusedCell.rowIndex, colId[colId.length - 1]);
+            this.updateRangeStyles();
+          }
+        }
+        return;
       }
     }
 
@@ -2979,6 +3055,19 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   private onHeaderClick(detail: { colDef: any; colId: string; column: any; shiftKey?: boolean }): void {
     const colDef = detail.colDef;
+    const colId = detail.colId;
+
+    // 列选择：如果启用了列选择，点击列头选中整列
+    if (this.rangeSelectionService.isColSelectionEnabled()) {
+      const totalRows = this.rowCount();
+      this.rangeSelectionService.selectColumn(colId, totalRows, detail as any);
+      this.updateRangeStyles();
+      // 列选中后也更新列头高亮
+      this.updateColumnHeaderSelectionStyles();
+      return; // 列选择模式下，点击列头不再触发排序
+    }
+
+    // 排序逻辑
     if (!colDef.sortable) return;
     const multiSort = detail.shiftKey ?? false;
     // 使用 dataService.toggleSort 处理多列排序
@@ -2992,6 +3081,41 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.refreshHeader(); // 刷新表头以更新排序图标 (▲/▼/⇅)
     this.refreshView();
     this.sortChanged.emit({ type: 'sortChanged', colDef, column: colDef, columns: this.columnDefs, source: 'ui', api: this.gridApi } as any);
+  }
+
+  /** 更新列头选中状态样式 */
+  private updateColumnHeaderSelectionStyles(): void {
+    const headerContainer = this.headerContainer?.nativeElement;
+    if (!headerContainer) return;
+
+    const ranges = this.rangeSelectionService.getRanges();
+    const hasColumnSelection = ranges.some(r => r.type === 'column');
+
+    // 清除所有列头选中样式
+    headerContainer.querySelectorAll<HTMLElement>('.db-grid-header-cell').forEach(cell => {
+      cell.classList.remove('db-grid-header-cell-col-selected');
+    });
+
+    if (!hasColumnSelection) return;
+
+    // 为选中列的列头添加样式
+    const colIds = this.columnService.getVisibleColumns().map(c => c.field || c.colId || '');
+    ranges.forEach(range => {
+      if (range.type !== 'column') return;
+      const startIdx = colIds.indexOf(range.start.colId);
+      const endIdx = colIds.indexOf(range.end.colId);
+      if (startIdx < 0 || endIdx < 0) return;
+      const minIdx = Math.min(startIdx, endIdx);
+      const maxIdx = Math.max(startIdx, endIdx);
+      for (let i = minIdx; i <= maxIdx; i++) {
+        const headerCell = headerContainer.querySelector<HTMLElement>(
+          `.db-grid-header-cell[data-col-id="${colIds[i]}"]`
+        );
+        if (headerCell) {
+          headerCell.classList.add('db-grid-header-cell-col-selected');
+        }
+      }
+    });
   }
 
   private setupRowEvents(rowElement: HTMLElement, rowIndex: number, data: any, rowNode: any): void {

@@ -2,13 +2,14 @@ import { Injectable } from '@angular/core';
 import { ColDef } from '../models';
 
 /**
- * 范围选择服务 — 支持单元格区域选择、复制、填充
- * AG Grid 对应功能：Range Selection, Cell Selection, Clipboard
+ * 范围选择服务 — 支持单元格区域选择、复制、填充、列选择
+ * AG Grid 对应功能：Range Selection, Cell Selection, Clipboard, Column Selection
  */
 @Injectable()
 export class RangeSelectionService {
   private enabled = false;
   private cellSelection = false;
+  private colSelection = false;
   private ranges: CellRange[] = [];
   private activeRange: CellRange | null = null;
   private startCell: CellPosition | null = null;
@@ -22,9 +23,10 @@ export class RangeSelectionService {
   private onRangeSelectionFinished: (() => void) | null = null;
 
   /** 初始化 */
-  initialize(config: { enableRangeSelection?: boolean; enableCellSelection?: boolean } = {}): void {
+  initialize(config: { enableRangeSelection?: boolean; enableCellSelection?: boolean; enableColSelection?: boolean } = {}): void {
     this.enabled = config.enableRangeSelection ?? false;
     this.cellSelection = config.enableCellSelection ?? false;
+    this.colSelection = config.enableColSelection ?? false;
     this.ranges = [];
     this.activeRange = null;
     this.startCell = null;
@@ -35,6 +37,9 @@ export class RangeSelectionService {
 
   /** 是否启用单元格选择 */
   isCellSelectionEnabled(): boolean { return this.cellSelection; }
+
+  /** 是否启用列选择 */
+  isColSelectionEnabled(): boolean { return this.colSelection; }
 
   /** 启用范围选择 */
   enableRangeSelection(): void { this.enabled = true; }
@@ -47,6 +52,12 @@ export class RangeSelectionService {
 
   /** 禁用单元格选择 */
   disableCellSelection(): void { this.cellSelection = false; }
+
+  /** 启用列选择 */
+  enableColSelection(): void { this.colSelection = true; }
+
+  /** 禁用列选择 */
+  disableColSelection(): void { this.colSelection = false; }
 
   /** 开始范围选择（鼠标按下） */
   startRangeSelection(row: number, col: string, event?: MouseEvent): void {
@@ -202,6 +213,137 @@ export class RangeSelectionService {
   isCellInRange(rowIndex: number, colId: string): boolean {
     return this.ranges.some(range => this.isCellInSingleRange(rowIndex, colId, range));
   }
+
+  /**
+   * 获取单元格在某范围中的边界类型
+   * 返回该单元格相对于指定 range 的边界位置（top/right/bottom/left）
+   * 用于给选中区域的外边框添加高亮样式
+   */
+  getCellRangeEdge(rowIndex: number, colId: string, range: CellRange): RangeEdge {
+    const minRow = Math.min(range.start.rowIndex, range.end.rowIndex);
+    const maxRow = Math.max(range.start.rowIndex, range.end.rowIndex);
+
+    // 行范围判断
+    if (rowIndex < minRow || rowIndex > maxRow) {
+      return { top: false, right: false, bottom: false, left: false };
+    }
+
+    // 列范围判断
+    const startIdx = this._columnOrder.indexOf(range.start.colId);
+    const endIdx = this._columnOrder.indexOf(range.end.colId);
+    const colIdx = this._columnOrder.indexOf(colId);
+
+    if (startIdx < 0 || endIdx < 0 || colIdx < 0) {
+      return { top: false, right: false, bottom: false, left: false };
+    }
+
+    const minCol = Math.min(startIdx, endIdx);
+    const maxCol = Math.max(startIdx, endIdx);
+
+    if (colIdx < minCol || colIdx > maxCol) {
+      return { top: false, right: false, bottom: false, left: false };
+    }
+
+    // 单元格在范围内，计算边界
+    return {
+      top: rowIndex === minRow,
+      right: colIdx === maxCol,
+      bottom: rowIndex === maxRow,
+      left: colIdx === minCol,
+    };
+  }
+
+  /**
+   * 获取单元格在所有范围中的合并边界
+   * 如果单元格在多个范围中都处于某一侧边界，则该边界为 true
+   */
+  getCellMergedEdge(rowIndex: number, colId: string): RangeEdge {
+    const merged: RangeEdge = { top: false, right: false, bottom: false, left: false };
+    for (const range of this.ranges) {
+      const edge = this.getCellRangeEdge(rowIndex, colId, range);
+      merged.top = merged.top || edge.top;
+      merged.right = merged.right || edge.right;
+      merged.bottom = merged.bottom || edge.bottom;
+      merged.left = merged.left || edge.left;
+    }
+    return merged;
+  }
+
+  /**
+   * 选择整列
+   * @param colId 列ID
+   * @param totalRows 总行数
+   * @param event 鼠标事件（用于判断 Ctrl/Shift）
+   */
+  selectColumn(colId: string, totalRows: number, event?: MouseEvent): void {
+    if (!this.colSelection && !this.enabled) return;
+    if (totalRows <= 0) return;
+
+    const ctrlKey = (event?.ctrlKey || event?.metaKey) ?? false;
+    const shiftKey = event?.shiftKey ?? false;
+
+    if (shiftKey && this._lastSelectedColId) {
+      // Shift 点击：选择从上次选中列到当前列的范围
+      const startIdx = this._columnOrder.indexOf(this._lastSelectedColId);
+      const endIdx = this._columnOrder.indexOf(colId);
+      if (startIdx >= 0 && endIdx >= 0) {
+        const minIdx = Math.min(startIdx, endIdx);
+        const maxIdx = Math.max(startIdx, endIdx);
+        const startColId = this._columnOrder[minIdx];
+        const endColId = this._columnOrder[maxIdx];
+        this.ranges = [{
+          start: { rowIndex: 0, colId: startColId },
+          end: { rowIndex: totalRows - 1, colId: endColId },
+          type: 'column'
+        }];
+        this.activeRange = this.ranges[0];
+        this.startCell = { rowIndex: 0, colId };
+      }
+    } else if (ctrlKey) {
+      // Ctrl 点击：追加列选择
+      const newRange: CellRange = {
+        start: { rowIndex: 0, colId },
+        end: { rowIndex: totalRows - 1, colId },
+        type: 'column'
+      };
+      // 检查该列是否已在选中范围中，如果是则取消
+      const existingIdx = this.ranges.findIndex(r =>
+        this.isColumnInRange(colId, r)
+      );
+      if (existingIdx >= 0) {
+        this.ranges.splice(existingIdx, 1);
+        this.activeRange = this.ranges[this.ranges.length - 1] || null;
+      } else {
+        this.ranges.push(newRange);
+        this.activeRange = newRange;
+      }
+      this._lastSelectedColId = colId;
+    } else {
+      // 普通点击：选择单列
+      this.ranges = [{
+        start: { rowIndex: 0, colId },
+        end: { rowIndex: totalRows - 1, colId },
+        type: 'column'
+      }];
+      this.activeRange = this.ranges[0];
+      this.startCell = { rowIndex: 0, colId };
+      this._lastSelectedColId = colId;
+    }
+    this.emitRangeChanged();
+  }
+
+  /** 判断某列是否在选择范围内 */
+  private isColumnInRange(colId: string, range: CellRange): boolean {
+    const startIdx = this._columnOrder.indexOf(range.start.colId);
+    const endIdx = this._columnOrder.indexOf(range.end.colId);
+    const colIdx = this._columnOrder.indexOf(colId);
+    if (startIdx < 0 || endIdx < 0 || colIdx < 0) return false;
+    const minCol = Math.min(startIdx, endIdx);
+    const maxCol = Math.max(startIdx, endIdx);
+    return colIdx >= minCol && colIdx <= maxCol;
+  }
+
+  private _lastSelectedColId: string | null = null;
 
   /** 获取范围内的所有单元格位置 */
   getCellsInRange(range: CellRange): CellPosition[] {
@@ -366,4 +508,14 @@ export interface CellPosition {
 export interface CellRange {
   start: CellPosition;
   end: CellPosition;
+  /** 范围类型: 'cell' 表示普通单元格区域选择, 'column' 表示整列选择 */
+  type?: 'cell' | 'column';
+}
+
+/** 单元格在范围中的边界信息 */
+export interface RangeEdge {
+  top: boolean;
+  right: boolean;
+  bottom: boolean;
+  left: boolean;
 }

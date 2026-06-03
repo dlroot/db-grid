@@ -148,6 +148,12 @@
       .db-grid-filter-icon-active {
         color: var(--db-grid-dark-primary);
       }
+
+      // 列选中状态
+      &.db-grid-header-cell-col-selected {
+        background: rgba(124, 77, 255, 0.15) !important;
+        border-bottom: 2px solid var(--db-grid-dark-primary) !important;
+      }
     }
 
     // 固定左侧列阴影
@@ -230,6 +236,26 @@
       background: var(--db-grid-dark-surface-elevated);
       outline: 2px solid var(--db-grid-dark-primary);
       outline-offset: -2px;
+    }
+
+    // 区域选中内单元格
+    &.db-grid-cell-in-range {
+      background: rgba(124, 77, 255, 0.12) !important;
+      border-color: transparent;
+    }
+
+    // 区域边界高亮
+    &.db-grid-cell-range-border-top {
+      border-top: 2px solid var(--db-grid-dark-primary) !important;
+    }
+    &.db-grid-cell-range-border-right {
+      border-right: 2px solid var(--db-grid-dark-primary) !important;
+    }
+    &.db-grid-cell-range-border-bottom {
+      border-bottom: 2px solid var(--db-grid-dark-primary) !important;
+    }
+    &.db-grid-cell-range-border-left {
+      border-left: 2px solid var(--db-grid-dark-primary) !important;
     }
 
     // 单元格文字颜色变体

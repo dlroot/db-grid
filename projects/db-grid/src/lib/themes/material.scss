@@ -105,6 +105,12 @@
       .db-grid-filter-icon-active {
         color: var(--db-grid-material-primary);
       }
+
+      // 列选中状态
+      &.db-grid-header-cell-col-selected {
+        background: var(--db-grid-material-range-selection-bg) !important;
+        border-bottom: 2px solid var(--db-grid-material-range-selection-border) !important;
+      }
     }
   }
 
@@ -165,6 +171,26 @@
       outline: 2px solid var(--db-grid-material-primary);
       outline-offset: -2px;
       box-shadow: inset 0 0 0 1px var(--db-grid-material-primary);
+    }
+
+    // 区域选中内单元格
+    &.db-grid-cell-in-range {
+      background: var(--db-grid-material-range-selection-bg) !important;
+      border-color: transparent;
+    }
+
+    // 区域边界高亮
+    &.db-grid-cell-range-border-top {
+      border-top: 2px solid var(--db-grid-material-range-selection-border) !important;
+    }
+    &.db-grid-cell-range-border-right {
+      border-right: 2px solid var(--db-grid-material-range-selection-border) !important;
+    }
+    &.db-grid-cell-range-border-bottom {
+      border-bottom: 2px solid var(--db-grid-material-range-selection-border) !important;
+    }
+    &.db-grid-cell-range-border-left {
+      border-left: 2px solid var(--db-grid-material-range-selection-border) !important;
     }
   }
 
