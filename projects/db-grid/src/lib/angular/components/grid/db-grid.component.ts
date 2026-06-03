@@ -276,6 +276,7 @@ import {
     /* ========== Range Selection Styles ========== */
     .db-grid-cell-in-range {
       background: var(--db-grid-range-selection-background, rgba(33, 150, 243, 0.15)) !important;
+      transition: background 0.15s ease;
     }
     .db-grid-row {
       .db-grid-cell-in-range {
@@ -286,6 +287,7 @@ import {
     /* ========== Range Border Highlight ========== */
     .db-grid-cell-range-border-top {
       border-top: 2px solid var(--db-grid-range-selection-border-color, #2196f3) !important;
+    transition: border-color 0.15s ease;
     }
     .db-grid-cell-range-border-right {
       border-right: 2px solid var(--db-grid-range-selection-border-color, #2196f3) !important;
@@ -297,6 +299,28 @@ import {
       border-left: 2px solid var(--db-grid-range-selection-border-color, #2196f3) !important;
     }
 
+
+    /* ========== Copy/Paste Animation ========== */
+    @keyframes copy-flash {
+      0% { background: rgba(33,150,243,0.4); }
+      100% { background: var(--db-grid-range-selection-background, rgba(33,150,243,0.15)); }
+    }
+    @keyframes paste-pulse {
+      0% { background: rgba(76,175,80,0.4); }
+      50% { background: rgba(76,175,80,0.2); }
+      100% { background: var(--db-grid-range-selection-background, rgba(33,150,243,0.15)); }
+    }
+
+
+    /* 复制动画类 */
+    .db-grid-cell-anim-copy {
+      animation: copy-flash 0.4s ease-out forwards;
+    }
+    
+    /* 粘贴动画类 */
+    .db-grid-cell-anim-paste {
+      animation: paste-pulse 0.4s ease-out forwards;
+    }
     /* ========== Column Header Selection Style ========== */
     .db-grid-header-cell-col-selected {
       background: var(--db-grid-range-selection-background, rgba(33, 150, 243, 0.15)) !important;
@@ -2062,6 +2086,10 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     const rowData = data || this.getRowData();
     const cols = columns || this.columnDefs;
     this.rangeSelectionService.copyToClipboard(rowData, cols);
+    // 复制成功动画
+    if (this.rangeSelectionService.getRanges().length > 0) {
+      this.triggerRangeAnimation('copy');
+    }
   }
 
   cutToClipboard(data?: any[], columns?: any[]): string {
@@ -2071,7 +2099,48 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   }
 
   async pasteFromClipboard(): Promise<string[][]> {
-    return await this.rangeSelectionService.pasteFromClipboard();
+    const result = await this.rangeSelectionService.pasteFromClipboard();
+    // 粘贴成功动画
+    if (result.length > 0 && this.rangeSelectionService.getRanges().length > 0) {
+      this.triggerRangeAnimation('paste');
+    }
+    return result;
+  }
+
+  /** 触发选中区域动画 */
+  private triggerRangeAnimation(type: 'copy' | 'paste'): void {
+    try {
+      const rowsContainer = this.rowsContainer?.nativeElement;
+      const pinnedLeftContainer = this.pinnedLeftContainer?.nativeElement;
+      if (!rowsContainer) return;
+
+      const animate = (container: HTMLElement) => {
+        const rows = container.querySelectorAll<HTMLElement>('.db-grid-row');
+        rows.forEach(rowEl => {
+          const rowIndex = parseInt(rowEl.dataset['rowIndex'] || '0', 10);
+          const cells = rowEl.querySelectorAll<HTMLElement>('.db-grid-cell');
+          cells.forEach(cellEl => {
+            const colId = cellEl.dataset['colId'] || '';
+            if (this.rangeSelectionService.isCellInRange(rowIndex, colId)) {
+              // 添加动画类
+              const animClass = type === 'copy' ? 'db-grid-cell-anim-copy' : 'db-grid-cell-anim-paste';
+              cellEl.classList.add(animClass);
+              // 动画结束后移除
+              setTimeout(() => {
+                cellEl.classList.remove(animClass);
+              }, 400);
+            }
+          });
+        });
+      };
+
+      animate(rowsContainer);
+      if (pinnedLeftContainer) {
+        animate(pinnedLeftContainer);
+      }
+    } catch (err) {
+      console.error('[DBGrid] triggerRangeAnimation error:', err);
+    }
   }
 
   toggleSidebar(panelId?: string): void {
