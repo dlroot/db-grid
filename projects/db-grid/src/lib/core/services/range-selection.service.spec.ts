@@ -1,12 +1,15 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { RangeSelectionService, CellRange, CellPosition } from './range-selection.service';
+import { ClipboardService } from './clipboard.service';
 import { ColDef } from '../models';
 
 describe('RangeSelectionService', () => {
   let service: RangeSelectionService;
+  let clipboardService: ClipboardService;
 
   beforeEach(() => {
-    service = new RangeSelectionService();
+    clipboardService = new ClipboardService();
+    service = new RangeSelectionService(clipboardService);
   });
 
   describe('initialize', () => {
@@ -283,7 +286,8 @@ describe('RangeSelectionService', () => {
     it('should parse clipboard text', () => {
       const text = 'Alice\t30\nBob\t25';
       const parsed = service.parseClipboardText(text);
-      expect(parsed).toEqual([['Alice', '30'], ['Bob', '25']]);
+      // 数值会被解析为数字类型
+      expect(parsed).toEqual([['Alice', 30], ['Bob', 25]]);
     });
 
     it('should handle empty clipboard text', () => {

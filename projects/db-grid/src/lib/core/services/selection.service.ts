@@ -29,6 +29,8 @@ export class SelectionService {
   /** 获取所有行ID的回调（用于 isAllSelected 模式） */
   private getAllRowIds: ((index: number) => string | null) | null = null;
   private getRowCount: (() => number) | null = null;
+  /** 根据索引获取节点的回调（用于范围选择） */
+  private getNodeByIndex: ((index: number) => RowNode | null) | null = null;
 
   private lastSelectedNode: RowNode | null = null;
   private rangeStartNode: RowNode | null = null;
@@ -119,8 +121,8 @@ export class SelectionService {
       return;
     }
 
-    this.isAllSelected = true;
     this.clearSelection();
+    this.isAllSelected = true; // 必须在 clearSelection 之后设置
     nodes.forEach(node => {
       console.log('[SelectionService] Selecting node:', node.id, 'rowIndex:', node.rowIndex);
       node.selected = true;
@@ -165,11 +167,18 @@ export class SelectionService {
     const startIndex = Math.min(startNode.rowIndex ?? 0, endNode.rowIndex ?? 0);
     const endIndex = Math.max(startNode.rowIndex ?? 0, endNode.rowIndex ?? 0);
 
-    // 获取范围内的节点并选择
-    const rangeNodes = Array.from(this.selectedNodes.values())
-      .filter(node => node.rowIndex !== null && node.rowIndex >= startIndex && node.rowIndex <= endIndex);
-
-    rangeNodes.forEach(node => this.addSelection(node));
+    // 如果有回调，使用回调获取范围内的节点
+    if (this.getNodeByIndex) {
+      for (let i = startIndex; i <= endIndex; i++) {
+        const node = this.getNodeByIndex(i);
+        if (node && !this.selectedNodes.has(node.id)) {
+          this.addSelection(node);
+        }
+      }
+    } else {
+      // 降级：只选择 endNode
+      this.addSelection(endNode);
+    }
   }
 
   /** 设置范围起点 */
@@ -223,9 +232,10 @@ export class SelectionService {
   }
 
   /** 设置获取所有行ID的回调（由 db-grid.component 设置） */
-  setGetAllRowIdsCallback(getAllRowIds: (index: number) => string | null, getRowCount: () => number): void {
+  setGetAllRowIdsCallback(getAllRowIds: (index: number) => string | null, getRowCount: () => number, getNodeByIndex?: (index: number) => RowNode | null): void {
     this.getAllRowIds = getAllRowIds;
     this.getRowCount = getRowCount;
+    this.getNodeByIndex = getNodeByIndex ?? null;
   }
 
   /** 切换节点选择状态（用于 checkbox 点击） */

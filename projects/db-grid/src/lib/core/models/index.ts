@@ -119,6 +119,20 @@ export interface ColGroupDef {
   pinnedRight?: boolean;
   width?: number;
   openByDefault?: boolean;
+  groupId?: string; // 组的唯一标识
+}
+
+/** 分组表头信息 */
+export interface GroupHeaderInfo {
+  headerName: string;
+  groupId: string;
+  depth: number; // 0 = 顶层, 1 = 第二层, etc.
+  childColIds: string[]; // 直接子列的 colId
+  startIndex: number; // 在扁平化列表中的起始索引
+  endIndex: number; // 结束索引
+  totalWidth: number;
+  pinnedLeft?: boolean;
+  pinnedRight?: boolean;
 }
 
 export type CellStyle = Record<string, string | number>;
@@ -450,6 +464,13 @@ export interface GridApi {
   collapseAll(): void;
   expandAllGroups(): void;
   collapseAllGroups(): void;
+
+  // 剪贴板
+  copyToClipboard(data?: any[], columns?: any[]): Promise<boolean>;
+  cutToClipboard(data?: any[], columns?: any[]): Promise<string>;
+  pasteFromClipboard(): Promise<any[][]>;
+  copySelectedRange(): Promise<boolean>;
+  pasteToGrid(text?: string): Promise<void>;
 }
 
 export interface RowDataTransaction {

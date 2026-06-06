@@ -3,6 +3,7 @@ import { CommonModule } from "@angular/common";
 import { Chart, registerables } from 'chart.js';
 Chart.register(...registerables);
 import { DbGridComponent } from "../../projects/db-grid/src/lib/angular/components/grid/db-grid.component";
+import { ExcelImportService, ImportResult } from "../../projects/db-grid/src/lib/core/services";
 
 @Component({
   selector: "app-root",
@@ -17,6 +18,7 @@ export class AppComponent implements OnInit {
   selectedCount = signal<number>(0);
   apiStatus = signal<string>("未连接");
   quickFilter = signal<string>("");
+  quickFilterText = signal<string>("");
   rowCount = signal<number>(0);
 
   @ViewChild("myGrid") myGrid!: DbGridComponent;
@@ -77,17 +79,21 @@ export class AppComponent implements OnInit {
 
   // Group data
   groupColumnDefs = [
-    { field: "product", headerName: "产品", width: 150, sortable: true, filter: "text" },
-    { field: "category", headerName: "分类", width: 120, sortable: true, filter: "set" },
-    { field: "region", headerName: "地区", width: 120, sortable: true, filter: "set" },
-    { field: "quarter", headerName: "季度", width: 100, sortable: true, filter: "set" },
-    { field: "sales", headerName: "销售额", width: 120, sortable: true, filter: "number" },
-    { field: "profit", headerName: "利润", width: 100, sortable: true, filter: "number" },
-    { field: "quantity", headerName: "数量", width: 100, filter: "number" },
+    { field: 'department', headerName: '部门', width: 150, sortable: true, filter: 'set' },
+    { field: 'name', headerName: '姓名', width: 150, sortable: true, filter: 'text' },
+    { field: 'salary', headerName: '薪资', width: 120, sortable: true, filter: 'number', aggregation: 'avg' },
+    { field: 'age', headerName: '年龄', width: 80, sortable: true, filter: 'number', aggregation: 'avg' },
+    { field: 'status', headerName: '状态', width: 100, sortable: true, filter: 'set' },
   ];
 
-  groupRowData = this.generateSalesData(50);
-  groupConfig = { groupFields: ["category", "region"], autoCreateGroupColumn: true, expandAll: true };
+  groupRowData = this.generateEmployeeData(200);
+  groupConfig = { 
+    groupFields: ['department'], 
+    autoCreateGroupColumn: true, 
+    groupColumnHeader: '部门分组',
+    expandAll: false,
+    enableAggregation: true,
+  };
   groupOptions = this.groupConfig;
 
   // Excel data
@@ -189,7 +195,8 @@ export class AppComponent implements OnInit {
   };
   p0FilterModel = signal<string>("无");
 
-  // ========== 服务端数据演示 ==========
+  // ========== 服务端数据演示 (Phase 2.3) ==========
+  readonly TOTAL_SERVER_ROWS = 100000;
   serverColumnDefs = [
     { field: "id", headerName: "ID", width: 80, sortable: true, filter: "number" },
     { field: "name", headerName: "姓名", width: 150, sortable: true, filter: "text" },
@@ -201,21 +208,60 @@ export class AppComponent implements OnInit {
   ];
   serverSideDatasource = {
     getRows: (params: any) => {
-      // 模拟服务端延迟
+      console.log('[ServerSide] Request:', params.startRow, '-', params.endRow, 'sort:', params.sortModel, 'filter:', params.filterModel);
+      
+      // 模拟 API 延迟 (200-500ms 随机)
+      const delay = 200 + Math.random() * 300;
+      
       setTimeout(() => {
-        const rows = this.generateEmployeeData(params.endRow - params.startRow).map((row, i) => ({
-          ...row,
-          id: params.startRow + i + 1,
-        }));
-        // 模拟总行数 100
-        params.successCallback(rows, 100);
-      }, 300);
+        // 生成请求范围内的数据（模拟从服务器获取）
+        const rowsThisPage: any[] = [];
+        const endId = Math.min(params.endRow, this.TOTAL_SERVER_ROWS) + 1;
+        
+        for (let i = params.startRow + 1; i < endId; i++) {
+          rowsThisPage.push(this.generateServerRow(i));
+        }
+
+        // 模拟服务端排序（实际项目中应在服务端完成）
+        let sortedData = [...rowsThisPage];
+        if (params.sortModel && params.sortModel.length > 0) {
+          const sort = params.sortModel[0];
+          sortedData.sort((a, b) => {
+            const aVal = a[sort.colId];
+            const bVal = b[sort.colId];
+            const cmp = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+            return sort.sort === 'asc' ? cmp : -cmp;
+          });
+        }
+
+        // 模拟服务端筛选（实际项目中应在服务端完成）
+        let filteredData = sortedData;
+        if (params.filterModel && Object.keys(params.filterModel).length > 0) {
+          filteredData = sortedData.filter(row => {
+            return Object.entries(params.filterModel).every(([field, filter]: [string, any]) => {
+              if (!filter || !filter.filter) return true;
+              const val = String(row[field] || '');
+              return val.toLowerCase().includes(String(filter.filter).toLowerCase());
+            });
+          });
+        }
+
+        // 更新已加载范围显示
+        const endRow = Math.min(params.endRow, this.TOTAL_SERVER_ROWS);
+        this.serverLoadedRange.set(`${params.startRow}-${endRow}`);
+        this.serverRowCount.set(this.TOTAL_SERVER_ROWS);
+        
+        console.log('[ServerSide] Returning', filteredData.length, 'rows, total:', this.TOTAL_SERVER_ROWS);
+        params.successCallback(filteredData, this.TOTAL_SERVER_ROWS);
+      }, delay);
     }
   };
-  serverConfig = { pageSize: 50, cacheBlockSize: 50, maxBlocksInCache: 10 };
+  serverConfig = { pageSize: 100, cacheBlockSize: 100, maxBlocksInCache: 10 };
   serverOptions = { rowSelection: "multiple" as const };
   serverLoading = signal<boolean>(false);
-  serverRowCount = signal<number>(-1);
+  serverRowCount = signal<number>(0);
+  serverLoadedRange = signal<string>("0-0");
+  serverApiDelay = signal<number>(0);
 
   // ========== Master-Detail 演示 ==========
   masterColumnDefs = [
@@ -460,8 +506,17 @@ export class AppComponent implements OnInit {
     if (this.currentDemo() === "server" && this.gridApi) {
       const ss = this.gridApi.getServerSideService?.();
       if (ss) {
-        ss.onLoadingChangedEvent((loading: boolean) => this.serverLoading.set(loading));
-        ss.onRowsUpdatedEvent(() => this.serverRowCount.set(ss.getRowCount()));
+        ss.initialize({ pageSize: 100, cacheBlockSize: 100, maxBlocksInCache: 10 });
+        ss.onLoadingChangedEvent((loading: boolean) => {
+          this.serverLoading.set(loading);
+          console.log('[App] Server loading:', loading);
+        });
+        ss.onRowsUpdatedEvent(() => {
+          const count = ss.getRowCount();
+          this.serverRowCount.set(count);
+          console.log('[App] Server rows updated:', count);
+        });
+        ss.setDatasource(this.serverSideDatasource);
       }
     }
     if (this.currentDemo() === "undoredo" && this.gridApi) {
@@ -482,6 +537,40 @@ export class AppComponent implements OnInit {
   onSortChanged(event: any): void { console.log("Sort:", event.colDef?.sort); }
   onSelectionChanged(event: any): void { this.selectedCount.set((this.gridApi?.getSelectedRows() || []).length); }
   onCellClicked(event: any): void { console.log("Cell clicked:", event); }
+  onQuickFilterInput(event: any): void {
+    const value = event.target?.value || '';
+    this.quickFilterText.set(value);
+  }
+
+  // ========== Overlay 演示方法 ===========
+  showLoadingOverlay(): void {
+    if (this.gridApi) {
+      this.gridApi.showLoadingOverlay('正在加载数据...');
+    }
+  }
+
+  showLoadingOverlayWithProgress(): void {
+    if (this.gridApi) {
+      this.gridApi.showLoadingOverlayWithProgress('正在加载...', 0);
+      // 模拟进度递增
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 10;
+        if (progress > 100) {
+          clearInterval(interval);
+          this.gridApi?.hideOverlay();
+          return;
+        }
+        this.gridApi?.showLoadingOverlayWithProgress('正在加载...', progress);
+      }, 300);
+    }
+  }
+
+  hideOverlay(): void {
+    if (this.gridApi) {
+      this.gridApi.hideOverlay();
+    }
+  }
   onNodeExpanded(event: any): void { console.log("Node expanded:", event.node?.id); }
   onNodeCollapsed(event: any): void { console.log("Node collapsed:", event.node?.id); }
   onGroupExpanded(event: any): void { console.log("Group expanded:", event.node?.id); }
@@ -516,29 +605,243 @@ export class AppComponent implements OnInit {
     if (this.currentDemo() === "group") this.gridApi.collapseAllGroups();
   }
 
+  // ========== 分组专用方法 ==========
+  expandAllGroups(): void {
+    if (!this.gridApi) return;
+    this.gridApi.expandAllGroups();
+  }
+
+  collapseAllGroups(): void {
+    if (!this.gridApi) return;
+    this.gridApi.collapseAllGroups();
+  }
+
+  setGroupField(fields: string): void {
+    if (!this.gridApi) return;
+    const fieldArray = fields.split(',').map(f => f.trim());
+    this.groupConfig = { 
+      groupFields: fieldArray, 
+      autoCreateGroupColumn: true, 
+      groupColumnHeader: '分组',
+      expandAll: false,
+      enableAggregation: true,
+    };
+    // 触发变更检测
+    this.gridApi.setGridOption?.('groupConfig', this.groupConfig);
+    // 重新设置数据以应用分组
+    this.gridApi.setRowData?.(this.groupRowData);
+  }
+
   resetGroup(): void {
     if (!this.gridApi) return;
-    // 切换分组字段：category → region → 两个都分 → 不分
-    const current = this.groupConfig?.groupFields || [];
-    let newFields: string[];
-    if (current.length === 0) {
-      newFields = ['category'];
-    } else if (current.length === 1 && current[0] === 'category') {
-      newFields = ['region'];
-    } else if (current.length === 1 && current[0] === 'region') {
-      newFields = ['category', 'region'];
-    } else {
-      newFields = [];
-    }
-    this.groupConfig = { groupFields: newFields, autoCreateGroupColumn: newFields.length > 0, expandAll: true };
-    // 触发组件检测变化
+    this.groupConfig = { groupFields: [], autoCreateGroupColumn: false, groupColumnHeader: '', expandAll: true, enableAggregation: false };
     this.gridApi.setGridOption?.('groupConfig', this.groupConfig);
+    this.gridApi.setRowData?.(this.groupRowData);
   }
 
   selectAll(): void { if (this.gridApi) this.gridApi.selectAll(); }
   clearSelection(): void { if (this.gridApi) this.gridApi.deselectAll(); }
   exportCsv(): void { if (this.gridApi) this.gridApi.downloadExcel({ exportMode: "csv", fileName: "db-grid-export.csv" }); }
+  exportXlsx(): void { if (this.gridApi) this.gridApi.downloadExcel({ exportMode: "xlsx", fileName: "db-grid-export.xlsx" }); }
   exportExcel(): void { if (this.gridApi) this.gridApi.downloadExcel({ exportMode: "xlsx", fileName: "db-grid-export.xlsx" }); }
+
+  // ========== Excel 导入方法 ==========
+  async onExcelImport(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    const service = new ExcelImportService();
+    const result = await service.parseFile(file);
+    if (this.gridApi?.setRowData) {
+      this.gridApi.setRowData(result.rowData);
+    }
+    console.log('导入成功:', result.totalRows, '行');
+    input.value = '';
+  }
+
+  // ========== Excel 导入 Demo ==========
+  importLoading = signal<boolean>(false);
+  importError = signal<string>('');
+  importResult = signal<ImportResult | null>(null);
+  availableSheets = signal<string[]>([]);
+  isDragOver = signal<boolean>(false);
+  importColumnDefs: any[] = [];
+  importRowData: any[] = [];
+  importOptions = { rowSelection: 'multiple' as const, animateRows: true };
+  private importGridApi: any = null;
+
+  onImportGridReady(event: any): void {
+    this.importGridApi = event.api;
+  }
+
+  async handleExcelImport(file: File): Promise<void> {
+    this.importLoading.set(true);
+    this.importError.set('');
+    this.importResult.set(null);
+
+    // 验证文件类型
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (ext !== 'xlsx' && ext !== 'xls') {
+      this.importError.set('只支持 .xlsx 或 .xls 格式的 Excel 文件');
+      this.importLoading.set(false);
+      return;
+    }
+
+    try {
+      const service = new ExcelImportService();
+      const result = await service.parseFile(file);
+
+      this.importResult.set(result);
+      this.importColumnDefs = result.columnDefs;
+      this.importRowData = result.rowData;
+
+      // 存储原始文件，供 Sheet 切换使用
+      (window as any).__lastImportedFile = file;
+
+      // 获取所有 Sheet 名称
+      const buffer = await file.arrayBuffer();
+      const XLSX = (await import('xlsx')).default;
+      const workbook = XLSX.read(buffer, { type: 'array' });
+      this.availableSheets.set(workbook.SheetNames);
+
+      // 如果有多个 sheet 且用户选了非第一个，提示一下
+      if (workbook.SheetNames.length > 1 && result.sheetName !== workbook.SheetNames[0]) {
+        console.log('已选择 Sheet:', result.sheetName);
+      }
+
+      this.importLoading.set(false);
+    } catch (err: any) {
+      console.error('Excel 导入失败:', err);
+      this.importError.set(`导入失败: ${err?.message || '未知错误'}`);
+      this.importLoading.set(false);
+    }
+  }
+
+  async onFileSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    await this.handleExcelImport(file);
+    input.value = '';
+  }
+
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragOver.set(true);
+  }
+
+  onDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragOver.set(false);
+  }
+
+  async onDrop(event: DragEvent): Promise<void> {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragOver.set(false);
+
+    const files = event.dataTransfer?.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    await this.handleExcelImport(file);
+  }
+
+  async onSheetChange(event: Event): Promise<void> {
+    const select = event.target as HTMLSelectElement;
+    const sheetName = select.value;
+    const currentResult = this.importResult();
+    if (!currentResult) return;
+
+    this.importLoading.set(true);
+    try {
+      // 需要重新读取文件以获取不同的 Sheet
+      // 由于是文件选择场景，我们从当前解析结果获取 buffer 不可行
+      // 所以这里提示用户重新选择文件
+      // 或者我们可以存储原始 file 引用
+      // 简化处理：提示用户重新选择
+      const service = new ExcelImportService();
+      const sheetIndex = this.availableSheets().indexOf(sheetName);
+      // 重新解析需要文件，这里用 placeholder 方式
+      // 实际上 handleExcelImport 已经解析过，我们复用其 buffer 思路
+      // 暂时：使用 data URL 方案 or 重新要求用户选择
+      // 最实用方案：存储原始 File 对象在 signal 中
+      // 但 File 对象在 session 间不可持久化，这里直接给出提示
+      console.log('Sheet 切换到:', sheetName);
+
+      // 更好的方案：用 FileReader + XLSX 重新解析
+      // 由于 handleExcelImport 已经解析了第一个 sheet，
+      // 我们在此处重新读取文件 buffer，重新调用 parseFile
+      // 但没有原始文件引用... 改用全局变量
+      const rawFile = (window as any).__lastImportedFile as File | undefined;
+      if (rawFile) {
+        const XLSX = (await import('xlsx')).default;
+        const buffer = await rawFile.arrayBuffer();
+        const workbook = XLSX.read(buffer, { type: 'array' });
+        const worksheet = workbook.Sheets[sheetName];
+        const rawData = XLSX.utils.sheet_to_json<any[]>(worksheet, { header: 1 }) as any[][];
+        const headers = rawData[0] || [];
+        const dataRows = rawData.slice(1);
+        const columnDefs = headers.map((header: any, idx: number) => ({
+          field: this.fieldFromHeader(header, idx),
+          headerName: String(header ?? `列${idx + 1}`),
+          width: 120,
+          sortable: true,
+          filter: true,
+          resizable: true,
+        }));
+        const rowData = dataRows.filter(row => Object.values(row).some(v => v != null && v !== '')).map(row => {
+          const obj: any = {};
+          headers.forEach((header: any, idx: number) => {
+            obj[this.fieldFromHeader(header, idx)] = row[idx];
+          });
+          return obj;
+        });
+        this.importResult.set({
+          rowData,
+          columnDefs,
+          sheetName,
+          totalRows: rowData.length,
+          totalCols: headers.length,
+        });
+        this.importColumnDefs = columnDefs;
+        this.importRowData = rowData;
+        this.importLoading.set(false);
+        return;
+      }
+      // 如果没有原始文件，显示提示
+      this.importError.set('Sheet 切换需要重新选择文件（浏览器安全限制）');
+      setTimeout(() => this.importError.set(''), 3000);
+      this.importLoading.set(false);
+    } catch (err: any) {
+      console.error('Sheet 切换失败:', err);
+      this.importError.set(`Sheet 切换失败: ${err?.message || '未知错误'}`);
+      this.importLoading.set(false);
+    }
+  }
+
+  /** 从 header 生成 field 名（与 ExcelImportService 保持一致） */
+  private fieldFromHeader(header: any, idx: number): string {
+    if (!header) return `col_${Math.random().toString(36).slice(2, 6)}`;
+    const str = String(header).trim();
+    return str
+      .replace(/[\s\-_]+(.)?/g, (_, c) => c ? c.toUpperCase() : '')
+      .replace(/^(.)/, (_, c) => c.toLowerCase())
+      .replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_')
+      || `col_${idx}`;
+  }
+
+  clearImportData(): void {
+    this.importResult.set(null);
+    this.importError.set('');
+    this.availableSheets.set([]);
+    this.importColumnDefs = [];
+    this.importRowData = [];
+    (window as any).__lastImportedFile = undefined;
+    this.importLoading.set(false);
+  }
 
   // ========== 键盘导航方法 ==========
   onCellFocused(event: any): void {
@@ -808,6 +1111,40 @@ export class AppComponent implements OnInit {
     return data;
   }
 
+  // ========== 服务端数据行生成器 (Phase 2.3) ==========
+  /**
+   * 生成单条服务端数据行
+   * @param id 行ID (1-based)
+   */
+  private generateServerRow(id: number): any {
+    const names = ["张伟","王芳","李明","刘洋","陈静","杨帆","赵雷","黄丽","周杰","吴敏","徐强","孙悦","马超","朱华"];
+    const departments = ["技术部","产品部","市场部","人力资源部","财务部","研发部","运营部","客服部"];
+    const positions = ["工程师","经理","主管","专员","总监","助理","顾问","分析师"];
+    const statuses = ["在职","出差","休假","离职"];
+    
+    // 使用确定性算法根据 id 生成数据（避免一次性生成10万条）
+    const nameIdx = id % names.length;
+    const deptIdx = Math.floor((id * 7) % departments.length);
+    const posIdx = Math.floor((id * 13) % positions.length);
+    const statusIdx = Math.floor((id * 3) % statuses.length);
+    
+    const year = 2020 + (id % 5);
+    const month = (id % 12) + 1;
+    const day = (id % 28) + 1;
+    
+    return {
+      id: id,
+      name: `${names[nameIdx]}${Math.floor(id / names.length) + 1}`,
+      age: 22 + (id % 30),
+      email: `user${id}@example.com`,
+      department: departments[deptIdx],
+      position: positions[posIdx],
+      salary: Math.floor(8000 + ((id * 7919) % 30000)),
+      startDate: `${year}-${String(month).padStart(2,"0")}-${String(day).padStart(2,"0")}`,
+      status: statuses[statusIdx],
+    };
+  }
+
   // ========== 行虚拟化演示 ==========
   rowVirtualColumnDefs = [
     { field: "id", headerName: "ID", width: 80, filter: "number" },
@@ -985,6 +1322,36 @@ export class AppComponent implements OnInit {
   selectedRangeInfo = signal<string>("未选择");
   copiedData = signal<string>("");
 
+  // ========== Column Group Demo ==========
+  colGroupColumnDefs = [
+    {
+      headerName: '个人信息',
+      children: [
+        { field: 'name', headerName: '姓名', width: 120, sortable: true, filter: 'text' },
+        { field: 'age', headerName: '年龄', width: 80, sortable: true, filter: 'number' },
+        { field: 'gender', headerName: '性别', width: 80, sortable: true, filter: 'set' },
+      ]
+    },
+    {
+      headerName: '联系方式',
+      children: [
+        { field: 'email', headerName: '邮箱', width: 200, sortable: true, filter: 'text' },
+        { field: 'phone', headerName: '电话', width: 130, sortable: true, filter: 'text' },
+      ]
+    },
+    {
+      headerName: '工作信息',
+      children: [
+        { field: 'department', headerName: '部门', width: 120, sortable: true, filter: 'set' },
+        { field: 'position', headerName: '职位', width: 120, sortable: true, filter: 'set' },
+        { field: 'salary', headerName: '薪资', width: 100, sortable: true, filter: 'number' },
+      ]
+    },
+  ];
+
+  colGroupRowData = this.generateEmployeeData(50);
+  colGroupOptions = { rowSelection: 'single', sortable: true, filter: true };
+
   onRangeChanged(event: any): void {
     const ranges = this.gridApi?.getSelectedRanges?.() || [];
     if (ranges.length > 0) {
@@ -1020,9 +1387,74 @@ export class AppComponent implements OnInit {
     }
   }
 
+  fillDown(): void {
+    if (this.gridApi) {
+      this.gridApi.fillHandle('down', 3);
+      // 刷新视图以显示填充后的数据
+      this.gridApi?.refreshCells?.();
+    }
+  }
+
   // ========== 图表演示 ==========
-  chartsType = signal<'bar' | 'line' | 'pie' | 'doughnut'>('bar');
+  chartsType = signal<'bar' | 'line' | 'pie' | 'doughnut' | 'area'>('bar');
   private chartInstance: any = null;
+  chartPanelVisible = signal<boolean>(false);
+
+  chartsColumnDefs = [
+    { field: 'month', headerName: '月份', width: 100 },
+    { field: 'sales', headerName: '销售额', width: 120, cellDataType: 'number' },
+    { field: 'profit', headerName: '利润', width: 120, cellDataType: 'number' },
+    { field: 'cost', headerName: '成本', width: 120, cellDataType: 'number' },
+  ];
+  chartsRowData = [
+    { month: '1月', sales: 12000, profit: 3000, cost: 9000 },
+    { month: '2月', sales: 15000, profit: 4200, cost: 10800 },
+    { month: '3月', sales: 18000, profit: 5500, cost: 12500 },
+    { month: '4月', sales: 14000, profit: 3600, cost: 10400 },
+    { month: '5月', sales: 22000, profit: 7000, cost: 15000 },
+    { month: '6月', sales: 19000, profit: 5800, cost: 13200 },
+    { month: '7月', sales: 25000, profit: 8200, cost: 16800 },
+    { month: '8月', sales: 21000, profit: 6500, cost: 14500 },
+    { month: '9月', sales: 17000, profit: 4500, cost: 12500 },
+    { month: '10月', sales: 23000, profit: 7500, cost: 15500 },
+    { month: '11月', sales: 26000, profit: 9000, cost: 17000 },
+    { month: '12月', sales: 28000, profit: 9500, cost: 18500 },
+  ];
+  chartsOptions = { enableRangeSelection: true, enableCharts: true };
+
+  /** 通过 gridApi 显示图表面板 */
+  showChart(): void { 
+    if (this.gridApi) {
+      this.gridApi.chart?.showChartPanel();
+      this.chartPanelVisible.set(true);
+    }
+  }
+  /** 通过 gridApi 隐藏图表面板 */
+  hideChart(): void { 
+    if (this.gridApi) {
+      this.gridApi.chart?.hideChartPanel();
+      this.chartPanelVisible.set(false);
+    }
+  }
+
+  /** 获取图表类型按钮配置 */
+  getChartTypeButtons() {
+    return [
+      { type: 'bar' as const, label: '柱状图', icon: '📊' },
+      { type: 'line' as const, label: '折线图', icon: '📈' },
+      { type: 'area' as const, label: '面积图', icon: '📉' },
+      { type: 'pie' as const, label: '饼图', icon: '🥧' },
+      { type: 'doughnut' as const, label: '环形图', icon: '🍩' },
+    ];
+  }
+
+  /** 图表数据变更回调（编辑表格数据时更新图表） */
+  onChartDataChange(row: any, field: string, event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    row[field] = Number(value) || 0;
+    // 延迟重新渲染图表
+    setTimeout(() => this.renderChart(), 100);
+  }
 
   renderChart(): void {
     const canvas = document.getElementById('mainChart') as HTMLCanvasElement;
@@ -1038,21 +1470,27 @@ export class AppComponent implements OnInit {
     if (!ctx) return;
 
     this.chartInstance = new Chart(ctx, {
-      type: this.chartsType(),
+      type: this.chartsType() === 'area' ? 'line' : this.chartsType() as any,
       data: {
-        labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+        labels: this.chartsRowData.map(d => d.month),
         datasets: [{
           label: '销售额',
-          data: [12000, 15000, 18000, 22000],
-          backgroundColor: ['#5470c6', '#91cc75', '#fac858', '#ee6666'],
+          data: this.chartsRowData.map(d => d.sales),
+          backgroundColor: this.chartsType() === 'area' 
+            ? 'rgba(84,112,198,0.2)' 
+            : ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc', '#5470c6', '#91cc75', '#fac858'],
           borderColor: '#5470c6',
           borderWidth: 1,
+          fill: this.chartsType() === 'area',
         }, {
           label: '利润',
-          data: [3000, 4000, 5500, 7000],
-          backgroundColor: ['#73c0de', '#3ba272', '#fc8452', '#9a60b4'],
+          data: this.chartsRowData.map(d => d.profit),
+          backgroundColor: this.chartsType() === 'area'
+            ? 'rgba(115,192,222,0.2)'
+            : ['#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc', '#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452'],
           borderColor: '#73c0de',
           borderWidth: 1,
+          fill: this.chartsType() === 'area',
         }]
       },
       options: {

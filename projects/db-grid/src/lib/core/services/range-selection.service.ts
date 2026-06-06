@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
 import { ColDef } from '../models';
+import { ClipboardService } from './clipboard.service';
+import { FillHandleService, FillDirection, FillMode } from './fill-handle.service';
 
 /**
  * 范围选择服务 — 支持单元格区域选择、复制、填充、列选择
@@ -21,6 +23,11 @@ export class RangeSelectionService {
   private onCellFocused: ((pos: CellPosition) => void) | null = null;
   private onRangeSelectionStarted: (() => void) | null = null;
   private onRangeSelectionFinished: (() => void) | null = null;
+
+  constructor(private clipboardService: ClipboardService) {}
+
+  /** 填充手柄服务实例 */
+  private fillHandleService = new FillHandleService();
 
   /** 初始化 */
   initialize(config: { enableRangeSelection?: boolean; enableCellSelection?: boolean; enableColSelection?: boolean } = {}): void {
@@ -383,46 +390,38 @@ export class RangeSelectionService {
   }
 
   /** 复制选中范围到剪贴板 */
-  copyToClipboard(data: any[], columns: ColDef[]): void {
-    if (this.ranges.length === 0) return;
-    const allValues: string[] = [];
+  async copyToClipboard(data: any[], columns: ColDef[]): Promise<boolean> {
+    if (this.ranges.length === 0) return false;
+    const allValues: any[][] = [];
     for (const range of this.ranges) {
       const values = this.getRangeValues(range, data, columns);
-      for (const row of values) {
-        allValues.push(row.map(v => String(v ?? '')).join('\t'));
-      }
+      allValues.push(...values);
     }
-    this.clipboardData = allValues.join('\n');
-
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(this.clipboardData).catch(() => {
-        this.fallbackCopy(this.clipboardData);
-      });
-    } else {
-      this.fallbackCopy(this.clipboardData);
-    }
+    this.clipboardData = this.clipboardService.formatRangeAsText(allValues);
+    return this.clipboardService.copyToClipboard(this.clipboardData);
   }
 
   /** 剪切到剪贴板 */
-  cutToClipboard(data: any[], columns: ColDef[]): string {
-    this.copyToClipboard(data, columns);
+  async cutToClipboard(data: any[], columns: ColDef[]): Promise<string> {
+    await this.copyToClipboard(data, columns);
     return this.clipboardData;
   }
 
   /** 从剪贴板粘贴 */
-  async pasteFromClipboard(): Promise<string[][]> {
+  async pasteFromClipboard(): Promise<any[][]> {
+    let text: string;
     try {
-      const text = await navigator.clipboard.readText();
-      return this.parseClipboardText(text);
+      text = await this.clipboardService.readFromClipboard();
     } catch {
-      return this.parseClipboardText(this.clipboardData);
+      text = this.clipboardData;
     }
+    if (!text) return [];
+    return this.clipboardService.parseTextToRange(text);
   }
 
   /** 解析剪贴板文本为二维数组 */
-  parseClipboardText(text: string): string[][] {
-    if (!text) return [];
-    return text.split('\n').map(line => line.split('\t'));
+  parseClipboardText(text: string): any[][] {
+    return this.clipboardService.parseTextToRange(text);
   }
 
   /** 范围变更事件注册 */
@@ -478,23 +477,146 @@ export class RangeSelectionService {
     }
   }
 
-  private fallbackCopy(text: string): void {
-    const textarea = document.createElement('textarea');
-    textarea.value = text;
-    textarea.style.position = 'fixed';
-    textarea.style.opacity = '0';
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textarea);
-  }
-
   destroy(): void {
     this.ranges = [];
     this.activeRange = null;
     this.startCell = null;
     this.onRangeChanged = null;
     this.onCellFocused = null;
+  }
+
+  // ============ 填充手柄 (Fill Handle) ============
+
+  /**
+   * 从当前范围角点沿 direction 方向填充
+   * @param direction 填充方向
+   * @param rowData 行数据
+   * @param columns 列定义
+   * @param targetCount 目标填充行数
+   * @param mode 填充模式（可选，不传则自动推断）
+   */
+  fillHandle(
+    direction: FillDirection,
+    rowData: any[],
+    columns: ColDef[],
+    targetCount: number = 1,
+    mode?: FillMode
+  ): void {
+    const range = this.getActiveRange();
+    if (!range || !rowData || rowData.length === 0) return;
+
+    // 获取源范围的值
+    const sourceValues = this.getRangeValues(range, rowData, columns);
+    if (!sourceValues || sourceValues.length === 0) return;
+
+    // 推断填充模式
+    if (!mode) {
+      const sample = sourceValues.flat().filter(v => v != null);
+      mode = this.fillHandleService.inferMode(sample);
+    }
+
+    // 生成填充值
+    const filled = this.fillHandleService.fill(sourceValues, direction, targetCount, mode);
+
+    // 应用到 rowData
+    this.applyFilledValues(range, direction, filled, rowData, columns);
+  }
+
+  /**
+   * 应用填充值到 rowData
+   */
+  private applyFilledValues(
+    range: CellRange,
+    direction: FillDirection,
+    values: any[][],
+    rowData: any[],
+    columns: ColDef[]
+  ): void {
+    if (!values || values.length === 0) return;
+
+    const [startRow, endRow] = [range.start.rowIndex, range.end.rowIndex].sort((a, b) => a - b);
+    const startColIdx = this.getColumnIndex(range.start.colId);
+    const endColIdx = this.getColumnIndex(range.end.colId);
+    const [minCol, maxCol] = [Math.min(startColIdx, endColIdx), Math.max(startColIdx, endColIdx)];
+
+    values.forEach((row, rowOffset) => {
+      let targetRow: number;
+      let targetColStart: number;
+
+      switch (direction) {
+        case 'down':
+          targetRow = endRow + 1 + rowOffset;
+          targetColStart = minCol;
+          break;
+        case 'up':
+          targetRow = startRow - 1 - rowOffset;
+          targetColStart = minCol;
+          break;
+        case 'right':
+          targetRow = startRow + rowOffset;
+          targetColStart = maxCol + 1 + rowOffset;
+          break;
+        case 'left':
+          targetRow = startRow + rowOffset;
+          targetColStart = minCol - 1 - rowOffset;
+          break;
+        default:
+          return;
+      }
+
+      if (targetRow < 0 || targetRow >= rowData.length) return;
+
+      row.forEach((val, colOffset) => {
+        let targetColIdx: number;
+        if (direction === 'down' || direction === 'up') {
+          targetColIdx = targetColStart + colOffset;
+        } else {
+          targetColIdx = targetColStart;
+        }
+
+        if (targetColIdx < 0 || targetColIdx >= columns.length) return;
+
+        const col = columns[targetColIdx];
+        if (col && col.field) {
+          rowData[targetRow][col.field] = val;
+        }
+      });
+    });
+
+    // 触发范围变更事件
+    this.emitRangeChanged();
+  }
+
+  /**
+   * 根据方向扩展选择范围（拖拽填充后更新选择区域）
+   */
+  extendRangeAfterFill(
+    range: CellRange,
+    direction: FillDirection,
+    fillCount: number
+  ): CellRange {
+    const newRange: CellRange = {
+      start: { ...range.start },
+      end: { ...range.end }
+    };
+
+    switch (direction) {
+      case 'down':
+        newRange.end.rowIndex = range.end.rowIndex + fillCount;
+        break;
+      case 'up':
+        newRange.start.rowIndex = Math.max(0, range.start.rowIndex - fillCount);
+        break;
+      case 'right':
+        newRange.end.colId = this.getColumnId(this.getColumnIndex(range.end.colId) + fillCount);
+        break;
+      case 'left':
+        const newStartColIdx = Math.max(0, this.getColumnIndex(range.start.colId) - fillCount);
+        newRange.start.colId = this.getColumnId(newStartColIdx);
+        break;
+    }
+
+    return newRange;
   }
 }
 

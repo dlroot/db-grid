@@ -4,7 +4,7 @@
  */
 
 import { Injectable } from '@angular/core';
-import { ColDef, ColGroupDef } from '../../models';
+import { ColDef, ColGroupDef, GroupHeaderInfo } from '../../models';
 import { ColumnService } from '../../services/column.service';
 import { I18nService } from '../../services/i18n.service';
 
@@ -64,21 +64,9 @@ export class HeaderRendererService {
 
     if (hasGroups) {
       // ========== 分组表头：多行渲染 ==========
-      const depth = this.columnService.getGroupDepth();
-      headerElement.style.height = `${depth * this.headerHeight}px`;
-
-      const rows: HTMLElement[][] = [];
-      for (let i = 0; i < depth; i++) {
-        rows.push([]);
-      }
-
-      this.buildGroupCells(columnTree, rows, 0, depth);
-
-      rows.forEach((cells, rowIndex) => {
-        const row = this.createHeaderRow();
-        cells.forEach(cell => row.appendChild(cell));
-        headerElement.appendChild(row);
-      });
+      const groupHeaders = this.columnService.getGroupHeaders();
+      const allColumns = this.columnService.getAllColumns();
+      this.renderGroupHeaders(headerElement, groupHeaders, allColumns);
     } else {
       // ========== 扁平表头：单行渲染 ==========
       headerElement.style.height = `${this.headerHeight}px`;
@@ -979,6 +967,105 @@ export class HeaderRendererService {
     this.ghostEl = null;
     this.dragIndicatorEl?.remove();
     this.dragIndicatorEl = null;
+  }
+
+  /** 渲染分组表头 */
+  renderGroupHeaders(container: HTMLElement, groupHeaders: GroupHeaderInfo[], columns: ColDef[]): void {
+    // 按 depth 分组
+    const groupsByDepth = new Map<number, GroupHeaderInfo[]>();
+    groupHeaders.forEach(gh => {
+      if (!groupsByDepth.has(gh.depth)) {
+        groupsByDepth.set(gh.depth, []);
+      }
+      groupsByDepth.get(gh.depth)!.push(gh);
+    });
+
+    // 按 depth 从小到大渲染行
+    const depths = Array.from(groupsByDepth.keys()).sort((a, b) => a - b);
+    depths.forEach(depth => {
+      const row = this.createHeaderRow();
+      const groups = groupsByDepth.get(depth)!;
+      groups.forEach(gh => {
+        const groupHeader = this.createGroupHeaderElement(gh, columns);
+        row.appendChild(groupHeader);
+      });
+      container.appendChild(row);
+    });
+
+    // 渲染实际的列头行（子列）
+    const columnHeaderRow = this.createHeaderRow();
+    columns.forEach(col => {
+      if (!col.hide) {
+        const colHeader = this.createColumnHeader(col);
+        columnHeaderRow.appendChild(colHeader);
+      }
+    });
+    container.appendChild(columnHeaderRow);
+  }
+
+  /** 创建分组表头元素（根据 GroupHeaderInfo） */
+  private createGroupHeaderElement(gh: GroupHeaderInfo, columns: ColDef[]): HTMLElement {
+    const header = document.createElement('div');
+    header.className = 'db-grid-header-cell db-grid-header-group';
+    header.setAttribute('role', 'columnheader');
+    header.setAttribute('aria-label', gh.headerName);
+    header.setAttribute('aria-colspan', String(gh.childColIds.length));
+
+    // 标题
+    const label = document.createElement('span');
+    label.className = 'db-grid-header-label db-grid-header-group-label';
+    label.textContent = gh.headerName;
+    label.style.fontWeight = '600';
+    label.style.flex = '1';
+    header.appendChild(label);
+
+    // 宽度
+    header.style.width = `${gh.totalWidth}px`;
+    header.style.minWidth = `${gh.totalWidth}px`;
+    header.style.maxWidth = `${gh.totalWidth}px`;
+
+    // 固定列
+    if (gh.pinnedLeft) {
+      header.classList.add('db-grid-header-pinned-left');
+      header.style.position = 'sticky';
+      header.style.left = '0';
+      header.style.zIndex = '1';
+    } else if (gh.pinnedRight) {
+      header.classList.add('db-grid-header-pinned-right');
+      header.style.position = 'sticky';
+      header.style.right = '0';
+      header.style.zIndex = '1';
+    }
+
+    // 高度（根据 depth 和总深度计算）
+    const totalDepth = this.columnService.getGroupDepth();
+    const rowSpan = totalDepth - gh.depth;
+    header.style.height = `${rowSpan * this.headerHeight}px`;
+
+    header.style.cssText += `
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 12px;
+      box-sizing: border-box;
+      user-select: none;
+      position: relative;
+      border-bottom: 1px solid var(--db-grid-border-color, #ddd);
+    `;
+
+    // 分隔线
+    const separator = document.createElement('div');
+    separator.style.cssText = `
+      position: absolute;
+      right: 0;
+      top: 10%;
+      height: 80%;
+      width: 1px;
+      background: var(--db-grid-border-color, #ddd);
+    `;
+    header.appendChild(separator);
+
+    return header;
   }
 
   /** 销毁 */

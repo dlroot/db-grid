@@ -61,6 +61,11 @@ export class RowRendererService {
   private getRowClass(rowNode: RowNode): string {
     const classes = ['db-grid-row'];
 
+    // 分组行
+    if (rowNode.group) {
+      classes.push('db-grid-group-row');
+    }
+
     // 选中状态
     if (rowNode.isSelected?.() ?? rowNode.selected) {
       classes.push('db-grid-row-selected');

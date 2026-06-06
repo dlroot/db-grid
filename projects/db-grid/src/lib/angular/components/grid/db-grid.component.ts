@@ -45,7 +45,7 @@ import {
   GridApi,
   DetailChartConfig,
 } from '../../../core/models';
-import { PdfExportService } from '../../../core/services';
+import { PdfExportService, ExcelImportService, ImportResult } from '../../../core/services';
 
 import {
   DataService,
@@ -80,13 +80,16 @@ import {
   ServerSideService,
   PivotService,
   I18nService,
+  ClipboardService,
   Locale,
   IServerSideDatasource,
   ServerSideConfig,
+  OverlayService,
 } from '../../../core/services';
 
 import { DbCellEditorComponent } from '../cell-editor/db-cell-editor.component';
 import { DbFilterPopupComponent } from '../filter-popup/db-filter-popup.component';
+import { DbChartPanelComponent } from '../chart-panel/db-chart-panel.component';
 
 import {
   CellRendererService,
@@ -97,11 +100,19 @@ import {
 @Component({
   selector: 'db-grid',
   standalone: true,
-  imports: [CommonModule, DbCellEditorComponent, DbFilterPopupComponent],
+  imports: [CommonModule, DbCellEditorComponent, DbFilterPopupComponent, DbChartPanelComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div #gridContainer class="db-grid-container" [class]="themeClass()" (keydown)="onKeyDown($event)"
          tabindex="0" style="outline: none; user-select: none; -webkit-user-select: none;">
+      @if (showQuickFilter) {
+        <div class="db-grid-quick-filter">
+          <input type="text" class="db-grid-quick-filter-input"
+                 [placeholder]="'搜索...'"
+                 [value]="quickFilterText()"
+                 (input)="onQuickFilterInput($event)" />
+        </div>
+      }
       <div #headerContainer class="db-grid-header-container"></div>
       <div #bodyContainer class="db-grid-body-container" (scroll)="onScroll($event)">
         <div #virtualScroll class="db-grid-virtual-scroll">
@@ -112,16 +123,43 @@ import {
         </div>
       </div>
       <div #footerContainer class="db-grid-footer-container"></div>
-      @if (loading) {
-        <div class="db-grid-overlay">
-          <div class="db-grid-overlay-content">
-            <span class="db-grid-spinner">⟳</span>
-            <span>{{ loadingMessage || (i18nService.t('grid.loading')) }}</span>
-          </div>
+      <!-- Loading Overlay (向后兼容 @Input loading + OverlayService) -->
+      @if (shouldShowLoadingOverlay()) {
+        <div class="db-grid-overlay db-grid-overlay-fadein" [class]="overlayService.overlayConfig()?.class || ''">
+          @if (false && overlayComponent) {
+            <!-- 自定义 loading overlay 组件 (TODO: 需要 import NgComponentOutlet) -->
+          } @else {
+            <div class="db-grid-overlay-content">
+              <span class="db-grid-spinner">⟳</span>
+              <span>{{ overlayLoadingMessage() }}</span>
+              @if (overlayProgress() !== undefined && overlayProgress() !== null) {
+                <span class="db-grid-overlay-progress">{{ overlayProgress() }}%</span>
+              }
+            </div>
+            @if (overlayProgress() !== undefined && overlayProgress() !== null) {
+              <div class="db-grid-overlay-progress-bar">
+                <div class="db-grid-overlay-progress-fill" [style.width.%]="overlayProgress()"></div>
+              </div>
+            }
+          }
         </div>
       }
-      @if (!loading && rowCount() === 0) {
-        <div class="db-grid-no-rows">{{ noRowsMessage || (i18nService.t('grid.noRows')) }}</div>
+      <!-- No Rows Overlay (向后兼容 @Input noRowsMessage + OverlayService) -->
+      @if (!shouldShowLoadingOverlay() && shouldShowNoRowsOverlay()) {
+        <div class="db-grid-no-rows db-grid-overlay-fadein" [class]="overlayService.overlayConfig()?.class || ''">
+          @if (false && overlayNoRowsComponent) {
+            <!-- 自定义无数据 overlay 组件 (TODO: 需要 import NgComponentOutlet) -->
+          } @else {
+            <div class="db-grid-no-rows-icon">📭</div>
+            <div class="db-grid-no-rows-text">{{ overlayNoRowsMessage() }}</div>
+          }
+        </div>
+      }
+      <!-- Custom Overlay (OverlayService type='custom') -->
+      @if (overlayService.overlayConfig()?.type === 'custom') {
+        <div class="db-grid-overlay db-grid-overlay-fadein" [class]="overlayService.overlayConfig()?.class || ''">
+          <div class="db-grid-overlay-custom-content" [innerHTML]="overlayService.overlayConfig()?.template || ''"></div>
+        </div>
       }
 
       <!-- 筛选器弹出层 -->
@@ -176,6 +214,21 @@ import {
           }
         </div>
       }
+      <!-- 图表面板 -->
+      @if (chartPanelVisible()) {
+        <db-chart-panel
+          (onClose)="hideChartPanel()"
+          (onTypeChange)="onChartTypeChange($event)"
+          (onExport)="onChartExport($event)" />
+      }
+
+      <!-- Excel 导入拖拽区域 -->
+      @if (enableExcelImport) {
+        <input #fileInput type="file" accept=".xlsx,.xls" style="display:none" (change)="onFileSelected($event)" />
+        <div #dragOverlay class="db-grid-drag-import-overlay">
+          <span class="db-grid-drag-import-text">📥 释放导入 Excel 文件</span>
+        </div>
+      }
     </div>
   `,
   styles: [`
@@ -200,20 +253,59 @@ import {
     .db-grid-footer-container { flex-shrink: 0; border-top: 1px solid var(--db-grid-border-color, #ddd); }
     .db-grid-overlay {
       position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(255, 255, 255, 0.8);
-      display: flex; align-items: center; justify-content: center; z-index: 10;
+      background: rgba(255, 255, 255, 0.85);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10;
     }
-    .db-grid-overlay-content { display: flex; align-items: center; gap: 8px; }
+    .db-grid-overlay-fadein {
+      animation: db-grid-overlay-fadein 0.3s ease-out;
+    }
+    @keyframes db-grid-overlay-fadein {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .db-grid-overlay-content { display: flex; align-items: center; gap: 8px; font-size: 14px; }
     .db-grid-spinner { font-size: 20px; animation: spin 1s linear infinite; }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .db-grid-overlay-progress { font-size: 12px; color: var(--db-grid-text-secondary, #666); margin-left: 4px; }
+    .db-grid-overlay-progress-bar {
+      width: 200px; height: 4px; background: var(--db-grid-border-color, #e0e0e0);
+      border-radius: 2px; margin-top: 12px; overflow: hidden;
+    }
+    .db-grid-overlay-progress-fill {
+      height: 100%; background: var(--db-grid-accent, #2196f3); border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+    .db-grid-overlay-custom-content { padding: 20px; }
     .db-grid-no-rows {
       position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
       color: var(--db-grid-text-secondary, #999); text-align: center; padding: 20px;
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
     }
+    .db-grid-no-rows-icon { font-size: 32px; opacity: 0.6; }
+    .db-grid-no-rows-text { font-size: 14px; }
     .db-filter-popup-wrapper {
       position: absolute;
       z-index: 100;
       box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+
+    /* ========== Quick Filter ========== */
+    .db-grid-quick-filter {
+      padding: 4px 8px;
+      border-bottom: 1px solid var(--db-grid-border-color, #ddd);
+      background: var(--db-grid-header-bg, #f5f5f5);
+    }
+    .db-grid-quick-filter-input {
+      width: 100%;
+      max-width: 300px;
+      padding: 4px 8px;
+      border: 1px solid var(--db-grid-border-color, #ddd);
+      border-radius: 3px;
+      font-size: 13px;
+      outline: none;
+    }
+    .db-grid-quick-filter-input:focus {
+      border-color: var(--db-grid-accent, #2196f3);
     }
 
     /* ========== Grid Menu ========== */
@@ -321,10 +413,73 @@ import {
     .db-grid-cell-anim-paste {
       animation: paste-pulse 0.4s ease-out forwards;
     }
+
+    /* ========== 分组行样式 ========== */
+    .db-grid-group-row {
+      background: var(--db-grid-group-row-bg, #f5f7fa) !important;
+      font-weight: 600;
+      border-bottom: 1px solid var(--db-grid-border-color, #ddd);
+    }
+    .db-grid-group-row:hover {
+      background: var(--db-grid-group-row-hover-bg, #e8edf3) !important;
+    }
+    .db-grid-group-row .db-grid-group-cell {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding-left: 8px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .db-grid-group-row .group-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      font-size: 10px;
+      transition: transform 0.2s ease;
+      color: var(--db-grid-accent, #2196f3);
+    }
+    .db-grid-group-row .group-key {
+      font-weight: 600;
+      color: var(--db-grid-text, #333);
+    }
+    .db-grid-group-row .group-aggregations {
+      font-weight: 400;
+      font-size: 12px;
+      color: var(--db-grid-text-secondary, #666);
+      margin-left: 8px;
+    }
+    .db-grid-group-row .group-count {
+      font-weight: 400;
+      font-size: 11px;
+      color: var(--db-grid-text-secondary, #999);
+      margin-left: 4px;
+    }
     /* ========== Column Header Selection Style ========== */
     .db-grid-header-cell-col-selected {
       background: var(--db-grid-range-selection-background, rgba(33, 150, 243, 0.15)) !important;
       border-bottom: 2px solid var(--db-grid-range-selection-border-color, #2196f3) !important;
+    }
+
+    /* ========== Excel Import Drag Overlay ========== */
+    .db-grid-drag-import-overlay {
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(33, 150, 243, 0.1);
+      border: 3px dashed #2196f3;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 50; pointer-events: none; opacity: 0;
+      transition: opacity 0.2s;
+      border-radius: 4px;
+    }
+    .db-grid-drag-import-overlay.drag-over {
+      opacity: 1;
+    }
+    .db-grid-drag-import-text {
+      font-size: 18px; color: #2196f3; font-weight: 600;
+      background: white; padding: 12px 24px; border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
     }
 
     /* 范围右下角填充柄 */
@@ -362,10 +517,22 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   @Input() loading: boolean = false;
   @Input() loadingMessage: string = '';
   @Input() noRowsMessage: string = '';
+
+  // ============ Overlay Inputs ============
+  /** 自定义 loading overlay 组件（Angular 组件引用） */
+  @Input() overlayComponent: any = null;
+  /** 自定义无数据 overlay 组件（Angular 组件引用） */
+  @Input() overlayNoRowsComponent: any = null;
   @Input() masterDetail = false;
   @Input() animateRows: boolean = false;
   @Input() suppressVirtualScroll: boolean = false;
   @Input() getRowId: ((data: any) => string) | undefined;
+
+  // ============ Quick Filter Inputs ============
+  /** 快速筛选文本（可外部传入） */
+  quickFilterText = input<string>('');
+  /** 是否显示内置快速筛选输入框 */
+  showQuickFilter = input<boolean>(false);
 
   // ============ Tree Data Inputs ============
   /** 启用树形数据模式 */
@@ -400,6 +567,10 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   @Input() serverSideConfig: ServerSideConfig | null = null;
   /** 服务端数据源 */
   @Input() serverSideDatasource: IServerSideDatasource | null = null;
+
+  // ============ 图表 Inputs ============
+  /** 启用集成图表功能 */
+  @Input() enableCharts: boolean = false;
 
   // ============ Menu Inputs ============
   /** 启用列头菜单按钮（三横线图标） */
@@ -436,6 +607,9 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   @Input() editOnClick: boolean = false;
   @Input() singleClickEdit: boolean = false;
 
+  // ============ 填充手柄 Inputs ============
+  @Input() enableFillHandle: boolean = false;
+
   // ============ 列固定 Inputs ============
   @Input() pinnedLeftColumns: string[] = [];
   @Input() pinnedRightColumns: string[] = [];
@@ -454,6 +628,10 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   @Input() enableCellSpan: boolean = false;
   @Input() cellSpanConfig: { autoMerge?: boolean; mergeColumns?: string[] } | null = null;
 
+  // ============ Excel 导入 Inputs ============
+  /** 启用 xlsx 拖拽导入功能 */
+  @Input() enableExcelImport: boolean = false;
+
   // ============ ViewChild ============
   @ViewChild('gridContainer') gridContainer!: ElementRef<HTMLDivElement>;
   @ViewChild('headerContainer') headerContainer!: ElementRef<HTMLDivElement>;
@@ -462,6 +640,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   @ViewChild('rowsContainer') rowsContainer!: ElementRef<HTMLDivElement>;
   @ViewChild('pinnedLeftContainer') pinnedLeftContainer!: ElementRef<HTMLDivElement>;
   @ViewChild('footerContainer') footerContainer!: ElementRef<HTMLDivElement>;
+  @ViewChild('dragOverlay') dragOverlay!: ElementRef<HTMLDivElement>;
+  @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
   // ============ Signals ============
   rowCount = signal(0);
@@ -470,6 +650,40 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   });
   pinnedLeftColumnIds = signal<string[]>([]);
   themeClass = computed(() => `db-grid-theme-${this.theme()}`);
+
+  // ============ Overlay computed signals ============
+  /** 是否显示 loading overlay（向后兼容 @Input loading + OverlayService） */
+  shouldShowLoadingOverlay = computed(() => {
+    const overlay = this.overlayService.overlayConfig();
+    if (overlay?.type === 'loading') return true;
+    if (overlay?.type === 'custom') return false; // custom overlay 单独渲染
+    return this.loading; // 向后兼容
+  });
+  /** 是否显示 noRows overlay */
+  shouldShowNoRowsOverlay = computed(() => {
+    const overlay = this.overlayService.overlayConfig();
+    if (overlay?.type === 'noRows') return true;
+    if (overlay?.type === 'loading' || overlay?.type === 'custom') return false;
+    return this.rowCount() === 0; // 向后兼容
+  });
+  /** loading overlay 消息 */
+  overlayLoadingMessage = computed(() => {
+    const overlay = this.overlayService.overlayConfig();
+    if (overlay?.type === 'loading' && overlay.message) return overlay.message;
+    return this.loadingMessage || this.i18nService.t('grid.loading');
+  });
+  /** noRows overlay 消息 */
+  overlayNoRowsMessage = computed(() => {
+    const overlay = this.overlayService.overlayConfig();
+    if (overlay?.type === 'noRows' && overlay.message) return overlay.message;
+    return this.noRowsMessage || this.i18nService.t('grid.noRows');
+  });
+  /** loading overlay 进度 */
+  overlayProgress = computed(() => {
+    const overlay = this.overlayService.overlayConfig();
+    if (overlay?.type === 'loading') return overlay.progress;
+    return undefined;
+  });
 
   // ============ Services ============
   private dataService: DataService;
@@ -480,6 +694,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   private treeService: TreeService;
   private groupService: GroupService;
   private excelExportService: ExcelExportService;
+  private excelImportService: ExcelImportService;
   private pdfExportService: PdfExportService;
   private cellSpanService: CellSpanService;
   private chartsService: ChartsService;
@@ -509,6 +724,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   private serverSideService: ServerSideService;
   private pivotService: PivotService;
   private i18nService: I18nService;
+  private clipboardService: ClipboardService;
+  overlayService: OverlayService;
   private _dataTypesApplied = false;
 
   // ============ State ============
@@ -532,6 +749,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   gridMenuItems = signal<ColumnMenuItemType[]>([]);
   private gridMenuColId = '';
   private _pendingRefresh = false; // 标记是否需要在视图就绪后重试刷新
+
+  // ============ Chart Panel State ============
+  chartPanelVisible = signal<boolean>(false);
+  private currentChartId: string | null = null;
+  private currentChartRangeData: any[][] | null = null;
+  private currentChartType: 'bar' | 'line' | 'pie' | 'doughnut' | 'area' = 'bar';
 
   // ============ Filter Popup State ============
   activeFilterPopup: { colDef: ColDef; position: { x: number; y: number } } | null = null;
@@ -557,6 +780,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.aggregationService = new AggregationService();
     this.groupService = new GroupService(this.aggregationService);
     this.excelExportService = new ExcelExportService();
+    this.excelImportService = new ExcelImportService();
     this.pdfExportService = new PdfExportService();
     this.cellSpanService = new CellSpanService();
     this.chartsService = new ChartsService();
@@ -582,7 +806,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.cellDataTypeService = new CellDataTypeService();
     this.keyboardNavigationService = new KeyboardNavigationService();
     this.accessibilityService = new AccessibilityService();
-    this.rangeSelectionService = new RangeSelectionService();
+    this.clipboardService = new ClipboardService();
+    this.rangeSelectionService = new RangeSelectionService(this.clipboardService);
     this.sidebarService = new SideBarService();
     this.statusBarService = new StatusBarService();
     this.masterDetailService = new MasterDetailService();
@@ -590,6 +815,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.serverSideService = new ServerSideService();
     this.pivotService = new PivotService();
     this.i18nService = new I18nService();
+    this.overlayService = new OverlayService();
     this.i18nService.setLocale(this.locale);
   }
 
@@ -603,6 +829,16 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.dataService.setScrollConfig({ rowHeight: this.rowHeight, viewportHeight: 400, bufferSize: 5 });
     // 注入筛选服务（支持列筛选 + 快速筛选）
     this.dataService.setFilterService(this.filterService);
+
+    // 订阅快速筛选输入（防抖 200ms）
+    this.quickFilterSubject.pipe(
+      debounceTime(200),
+      takeUntil(this.destroy$)
+    ).subscribe((value: string) => {
+      this.filterService.setQuickFilter(value);
+      this.refreshView();
+      this.filterChanged.emit({ type: 'filterChanged', api: this.gridApi });
+    });
 
     // 自动推断列数据类型（Cell Data Types）
     if (this.rowData && this.rowData.length > 0) {
@@ -713,6 +949,17 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
           console.log('[DBGrid] serverSide onRowsUpdatedEvent - refresh completed', { ssRowCount });
         });
       });
+      // 注册加载状态回调，显示/隐藏 loading overlay
+      this.serverSideService.onLoadingChangedEvent((loading: boolean) => {
+        console.log('[DBGrid] serverSide loading changed:', loading);
+        this.ngZone.run(() => {
+          if (loading) {
+            this.overlayService.showLoading();
+          } else {
+            this.overlayService.hide();
+          }
+        });
+      });
       // 注意：setDatasource 移至 ngAfterViewInit，确保视图先初始化
     }
 
@@ -758,6 +1005,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       this.i18nService?.setLocale(this.locale);
       this.refreshHeader();
       this.renderRows();
+    }
+    // 快速筛选文本变更
+    if (changes['quickFilterText'] && !changes['quickFilterText'].firstChange) {
+      this.filterService.setQuickFilter(this.quickFilterText());
+      this.refreshView();
+      this.filterChanged.emit({ type: 'filterChanged', api: this.gridApi });
     }
     // 编辑配置变更
     if (changes['enableCellEdit'] && !changes['enableCellEdit'].firstChange) {
@@ -936,6 +1189,21 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     // ========== 初始化 Range Selection Service ==========
     this.initRangeSelection();
 
+    // ========== 初始化 Excel 导入拖拽事件 ==========
+    if (this.enableExcelImport && this.gridContainer?.nativeElement) {
+      this.ngZone.runOutsideAngular(() => {
+        fromEvent(this.gridContainer.nativeElement, 'dragover')
+          .pipe(takeUntil(this.destroy$))
+          .subscribe((e: any) => this.onDragOver(e));
+        fromEvent(this.gridContainer.nativeElement, 'dragleave')
+          .pipe(takeUntil(this.destroy$))
+          .subscribe((e: any) => this.onDragLeave(e));
+        fromEvent(this.gridContainer.nativeElement, 'drop')
+          .pipe(takeUntil(this.destroy$))
+          .subscribe((e: any) => this.onDrop(e));
+      });
+    }
+
     this.ngZone.run(() => {
       this.gridReady.emit({ type: 'gridReady', api: this.gridApi, columnApi: null });
     });
@@ -1085,6 +1353,13 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       destroyChart: (containerId: string) => this.chartsService.destroyChart(containerId),
       downloadExcel: (options?: any) => this.downloadExcel(options),
       importCsv: (csvText: string, options?: any) => this.importCsv(csvText, options),
+      importExcelFile: (file: File) => this.importExcelFile(file),
+      importExcelUrl: async (url: string) => {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        const file = new File([blob], 'import.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        return this.importExcelFile(file);
+      },
 
       // ========== PDF 导出 ==========
       exportToPdf: (options?: any) => this.exportToPdf(options),
@@ -1125,7 +1400,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       copyToClipboard: (data?: any[], columns?: any[]) => this.copyToClipboard(data, columns),
       cutToClipboard: (data?: any[], columns?: any[]) => this.cutToClipboard(data, columns),
       pasteFromClipboard: () => this.pasteFromClipboard(),
+      copySelectedRange: () => this.copySelectedRange(),
+      pasteToGrid: (text?: string) => this.pasteToGrid(text),
       getRangeSelectionService: () => this.rangeSelectionService,
+
+      // ========== 填充手柄 ==========
+      fillHandle: (direction: 'down' | 'up' | 'left' | 'right', count?: number) => this.fillHandle(direction, count),
 
       // ========== 侧边栏 ==========
       showSidebar: (panelId?: string) => this.sidebarService.show(panelId),
@@ -1163,10 +1443,52 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       // ========== 刷新 ==========
       refreshView: () => this.refreshView(),
 
+      // ========== Overlay ===========
+      showLoadingOverlay: (message?: string) => this.showLoadingOverlay(message),
+      showLoadingOverlayWithProgress: (message?: string, progress?: number) => this.showLoadingOverlayWithProgress(message, progress),
+      hideOverlay: () => this.hideOverlay(),
+      showNoRowsOverlay: (message?: string) => this.showNoRowsOverlay(message),
+      showCustomOverlay: (template: string, cssClass?: string) => this.showCustomOverlay(template, cssClass),
+      getOverlayService: () => this.overlayService,
+
+      // ========== 图表 ===========
+      chart: {
+        showChartPanel: () => this.showChartPanel(),
+        hideChartPanel: () => this.hideChartPanel(),
+        setChartType: (type: string) => this.setChartType(type as any),
+        getChartImageUrl: (format: 'png'|'svg') => this.getChartImageUrl(format),
+      },
+
     };
   }
 
   // ============ 实现 ============
+
+  // --- Overlay ---
+  showLoadingOverlay(message?: string): void {
+    this.overlayService.showLoading(message);
+    this.cdr.detectChanges();
+  }
+
+  showLoadingOverlayWithProgress(message?: string, progress?: number): void {
+    this.overlayService.showLoadingWithProgress(message, progress);
+    this.cdr.detectChanges();
+  }
+
+  hideOverlay(): void {
+    this.overlayService.hide();
+    this.cdr.detectChanges();
+  }
+
+  showNoRowsOverlay(message?: string): void {
+    this.overlayService.showNoRows(message);
+    this.cdr.detectChanges();
+  }
+
+  showCustomOverlay(template: string, cssClass?: string): void {
+    this.overlayService.showCustom(template, cssClass);
+    this.cdr.detectChanges();
+  }
 
   // --- 数据 ---
   setRowData(rowData: any[]): void {
@@ -1287,20 +1609,48 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     const direction = sortDirection || (colDef.sort === 'asc' ? 'desc' : 'asc');
     colDef.sort = direction;
     this.dataService.sort(this.columnDefs);
+    // 服务端模式：同时更新 serverSideService
+    if (this.enableServerSide && this.serverSideService?.isEnabled()) {
+      const sortModel = this.dataService.getSortModel();
+      this.serverSideService.setSortModel(sortModel);
+    }
     this.refreshView();
     this.sortChanged.emit({ type: 'sortChanged', colDef, column: colDef, columns: this.columnDefs, source: 'api', api: this.gridApi });
   }
 
   setSort(field: string, direction: 'asc' | 'desc' | null): void {
     const colDef = this.columnDefs.find(c => c.field === field);
-    if (colDef) { colDef.sort = direction; this.dataService.sort(this.columnDefs); this.refreshHeader(); this.refreshView(); }
+    if (colDef) { 
+      colDef.sort = direction; 
+      this.dataService.sort(this.columnDefs); 
+      // 服务端模式
+      if (this.enableServerSide && this.serverSideService?.isEnabled()) {
+        const sortModel = this.dataService.getSortModel();
+        this.serverSideService.setSortModel(sortModel);
+      }
+      this.refreshHeader(); 
+      this.refreshView(); 
+    }
   }
 
-  clearSort(): void { this.columnDefs.forEach(c => c.sort = undefined); this.dataService.sort(this.columnDefs); this.refreshHeader(); this.refreshView(); }
+  clearSort(): void { 
+    this.columnDefs.forEach(c => c.sort = undefined); 
+    this.dataService.sort(this.columnDefs); 
+    // 服务端模式
+    if (this.enableServerSide && this.serverSideService?.isEnabled()) {
+      this.serverSideService.setSortModel([]);
+    }
+    this.refreshHeader(); 
+    this.refreshView(); 
+  }
 
   // --- 筛选 ---
   setFilterModel(model: Record<string, any>): void {
     this.filterService.setFilterModel(model);
+    // 服务端模式：同时更新 serverSideService
+    if (this.enableServerSide && this.serverSideService?.isEnabled()) {
+      this.serverSideService.setFilterModel(model);
+    }
     this.refreshView();
     this.filterChanged.emit({ type: 'filterChanged', api: this.gridApi });
   }
@@ -1545,6 +1895,49 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     return this.excelExportService.importCsv(csvText, options);
   }
 
+  // ========== Excel 导入 API ==========
+  onDragOver(event: DragEvent): void {
+    if (!this.enableExcelImport) return;
+    event.preventDefault();
+    this.dragOverlay?.nativeElement?.classList.add('drag-over');
+  }
+
+  onDragLeave(event: DragEvent): void {
+    this.dragOverlay?.nativeElement?.classList.remove('drag-over');
+  }
+
+  onDrop(event: DragEvent): void {
+    event.preventDefault();
+    this.dragOverlay?.nativeElement?.classList.remove('drag-over');
+    if (!this.enableExcelImport) return;
+    const file = event.dataTransfer?.files[0];
+    if (file) this.importExcelFile(file);
+  }
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (file) this.importExcelFile(file);
+    input.value = '';
+  }
+
+  async importExcelFile(file: File): Promise<ImportResult | null> {
+    if (!file.name.match(/\.(xlsx|xls)$/i)) {
+      alert('请选择 .xlsx 或 .xls 文件');
+      return null;
+    }
+    try {
+      const result = await this.excelImportService.parseFile(file);
+      this.setRowData(result.rowData);
+      console.log(`[DBGrid] 导入成功：${result.totalRows} 行 × ${result.totalCols} 列`);
+      return result;
+    } catch (err) {
+      console.error('[DBGrid] Excel 导入失败:', err);
+      alert('Excel 导入失败：' + (err as Error).message);
+      return null;
+    }
+  }
+
   exportDataAsPdf(options?: any): void {
     const colDefs = this.columnService.getVisibleColumns();
     const rows = this.getDisplayedRows();
@@ -1719,6 +2112,18 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       { id: 'clearSelection', label: `${this.i18nService.t('menu.clearSelection')}`, icon: '✕', action: 'clearSelection' }
     );
 
+    // 图表子菜单（当选中范围且启用图表功能时）
+    if (this.enableCharts && this.rangeSelectionService.getRanges().length > 0) {
+      items.push(
+        { id: 'sep-chart', type: 'separator' },
+        { id: 'chartBar', label: '📊 柱状图', icon: '📊', action: 'chartBar' },
+        { id: 'chartLine', label: '📈 折线图', icon: '📈', action: 'chartLine' },
+        { id: 'chartArea', label: '📉 面积图', icon: '📉', action: 'chartArea' },
+        { id: 'chartPie', label: '🥧 饼图', icon: '🥧', action: 'chartPie' },
+        { id: 'chartDoughnut', label: '🍩 环形图', icon: '🍩', action: 'chartDoughnut' }
+      );
+    }
+
     this.gridMenuColId = context.colDef?.field || '';
     this.gridMenuPosition.set({ x, y });
     this.gridMenuItems.set(items);
@@ -1801,6 +2206,26 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         break;
       case 'clearSelection':
         this.deselectAll();
+        break;
+      case 'chartBar':
+        this.setChartType('bar');
+        this.showChartPanel();
+        break;
+      case 'chartLine':
+        this.setChartType('line');
+        this.showChartPanel();
+        break;
+      case 'chartArea':
+        this.setChartType('area');
+        this.showChartPanel();
+        break;
+      case 'chartPie':
+        this.setChartType('pie');
+        this.showChartPanel();
+        break;
+      case 'chartDoughnut':
+        this.setChartType('doughnut');
+        this.showChartPanel();
         break;
     }
   }
@@ -2082,29 +2507,204 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     }
   }
 
-  copyToClipboard(data?: any[], columns?: any[]): void {
+  async copyToClipboard(data?: any[], columns?: any[]): Promise<boolean> {
     const rowData = data || this.getRowData();
     const cols = columns || this.columnDefs;
-    this.rangeSelectionService.copyToClipboard(rowData, cols);
+    const success = await this.rangeSelectionService.copyToClipboard(rowData, cols);
     // 复制成功动画
-    if (this.rangeSelectionService.getRanges().length > 0) {
+    if (success && this.rangeSelectionService.getRanges().length > 0) {
       this.triggerRangeAnimation('copy');
     }
+    return success;
   }
 
-  cutToClipboard(data?: any[], columns?: any[]): string {
+  async cutToClipboard(data?: any[], columns?: any[]): Promise<string> {
     const rowData = data || this.getRowData();
     const cols = columns || this.columnDefs;
-    return this.rangeSelectionService.cutToClipboard(rowData, cols);
+    return await this.rangeSelectionService.cutToClipboard(rowData, cols);
   }
 
-  async pasteFromClipboard(): Promise<string[][]> {
-    const result = await this.rangeSelectionService.pasteFromClipboard();
-    // 粘贴成功动画
-    if (result.length > 0 && this.rangeSelectionService.getRanges().length > 0) {
-      this.triggerRangeAnimation('paste');
+  async pasteFromClipboard(): Promise<any[][]> {
+    const parsedData = await this.rangeSelectionService.pasteFromClipboard();
+    if (parsedData.length === 0) return parsedData;
+
+    // 确定粘贴起始位置：优先使用选中范围的起始位置，否则使用焦点单元格
+    const focusedCell = this.rangeSelectionService.getFocusedCell()
+      ?? this.keyboardNavigationService?.getFocusedCell();
+    if (!focusedCell) return parsedData;
+
+    const startRowIndex = focusedCell.rowIndex;
+    const startColId = focusedCell.colId;
+    const visibleColumns = this.columnService.getVisibleColumns();
+    const startColIdx = visibleColumns.findIndex(c => (c.field ?? c.colId) === startColId);
+    if (startColIdx < 0) return parsedData;
+
+    // 获取当前行数据
+    const allRowData = this.getRowData();
+    const totalRows = allRowData.length;
+    const totalCols = visibleColumns.length;
+
+    // 逐行逐列写入数据
+    const undoEdits: Array<{ rowIndex: number; colId: string; oldValue: any; newValue: any; rowData: any }> = [];
+    for (let r = 0; r < parsedData.length; r++) {
+      const targetRowIndex = startRowIndex + r;
+      if (targetRowIndex >= totalRows) break;
+      const targetRow = allRowData[targetRowIndex];
+      if (!targetRow) continue;
+
+      for (let c = 0; c < parsedData[r].length; c++) {
+        const targetColIdx = startColIdx + c;
+        if (targetColIdx >= totalCols) break;
+        const colDef = visibleColumns[targetColIdx];
+        const field = colDef.field ?? colDef.colId;
+        if (!field) continue;
+
+        // 检查列是否可编辑（如果有 editable 属性）
+        if (colDef.editable === false) continue;
+
+        const oldValue = targetRow[field];
+        const newValue = parsedData[r][c];
+
+        // 记录撤销操作
+        if (this.undoRedoService.isEnabled()) {
+          undoEdits.push({
+            rowIndex: targetRowIndex,
+            colId: field,
+            oldValue,
+            newValue,
+            rowData: { ...targetRow },
+          });
+        }
+
+        // 写入值
+        targetRow[field] = newValue;
+
+        // 触发单元格值变更事件
+        if (this.cellEditService.isEnabled()) {
+          this.cellEditService.emitCellValueChanged({
+            rowIndex: targetRowIndex,
+            colDef,
+            oldValue,
+            newValue,
+          });
+        }
+      }
     }
-    return result;
+
+    // 批量记录撤销操作
+    if (undoEdits.length > 0 && this.undoRedoService.isEnabled()) {
+      for (const edit of undoEdits) {
+        this.undoRedoService.recordEdit(edit);
+      }
+    }
+
+    // 刷新视图
+    this.setRowData(allRowData);
+
+    // 选中粘贴区域
+    if (parsedData.length > 0 && parsedData[0].length > 0) {
+      const endRowIndex = Math.min(startRowIndex + parsedData.length - 1, totalRows - 1);
+      const endColIdx = Math.min(startColIdx + parsedData[0].length - 1, totalCols - 1);
+      const endColId = visibleColumns[endColIdx]?.field ?? visibleColumns[endColIdx]?.colId ?? '';
+      this.rangeSelectionService.clearRanges();
+      this.rangeSelectionService.startRangeSelection(startRowIndex, startColId);
+      this.rangeSelectionService.extendRange(endRowIndex, endColId);
+      this.updateRangeStyles();
+    }
+
+    // 粘贴成功动画
+    this.triggerRangeAnimation('paste');
+
+    return parsedData;
+  }
+
+  /** API: 复制选中范围到剪贴板（简化版 API） */
+  async copySelectedRange(): Promise<boolean> {
+    return this.copyToClipboard();
+  }
+
+  /** API: 填充手柄 - 沿指定方向填充单元格 */
+  fillHandle(direction: 'down' | 'up' | 'left' | 'right', count: number = 1): void {
+    if (!this.enableFillHandle && !this.gridOptions.enableRangeSelection) {
+      console.warn('[DBGrid] fillHandle requires enableFillHandle or enableRangeSelection');
+      return;
+    }
+
+    const range = this.rangeSelectionService.getActiveRange();
+    if (!range) {
+      console.warn('[DBGrid] fillHandle: no active range selected');
+      return;
+    }
+
+    const rowData = this.getRowData();
+    const columns = this.columnService.getVisibleColumns();
+
+    // 调用 RangeSelectionService 的 fillHandle 方法
+    this.rangeSelectionService.fillHandle(direction, rowData, columns, count);
+
+    // 刷新视图
+    this.refreshCells();
+
+    // 扩展选择范围以包含填充区域
+    const newRange = this.rangeSelectionService.extendRangeAfterFill(range, direction, count);
+    this.rangeSelectionService['activeRange'] = newRange;
+    this.rangeSelectionService['ranges'] = [newRange];
+  }
+
+  /** API: 粘贴到 grid（支持传入自定义文本） */
+  async pasteToGrid(text?: string): Promise<void> {
+    if (text !== undefined) {
+      // 使用提供的文本直接解析并粘贴
+      const parsedData = this.clipboardService.parseTextToRange(text);
+      if (parsedData.length === 0) return;
+
+      const focusedCell = this.rangeSelectionService.getFocusedCell()
+        ?? this.keyboardNavigationService?.getFocusedCell();
+      if (!focusedCell) return;
+
+      const startRowIndex = focusedCell.rowIndex;
+      const startColId = focusedCell.colId;
+      const visibleColumns = this.columnService.getVisibleColumns();
+      const startColIdx = visibleColumns.findIndex(c => (c.field ?? c.colId) === startColId);
+      if (startColIdx < 0) return;
+
+      const allRowData = this.getRowData();
+      const totalRows = allRowData.length;
+      const totalCols = visibleColumns.length;
+
+      for (let r = 0; r < parsedData.length; r++) {
+        const targetRowIndex = startRowIndex + r;
+        if (targetRowIndex >= totalRows) break;
+        const targetRow = allRowData[targetRowIndex];
+        if (!targetRow) continue;
+
+        for (let c = 0; c < parsedData[r].length; c++) {
+          const targetColIdx = startColIdx + c;
+          if (targetColIdx >= totalCols) break;
+          const colDef = visibleColumns[targetColIdx];
+          const field = colDef.field ?? colDef.colId;
+          if (!field || colDef.editable === false) continue;
+          targetRow[field] = parsedData[r][c];
+        }
+      }
+
+      this.setRowData(allRowData);
+
+      // 选中粘贴区域
+      if (parsedData.length > 0 && parsedData[0].length > 0) {
+        const endRowIndex = Math.min(startRowIndex + parsedData.length - 1, totalRows - 1);
+        const endColIdx = Math.min(startColIdx + parsedData[0].length - 1, totalCols - 1);
+        const endColId = visibleColumns[endColIdx]?.field ?? visibleColumns[endColIdx]?.colId ?? '';
+        this.rangeSelectionService.clearRanges();
+        this.rangeSelectionService.startRangeSelection(startRowIndex, startColId);
+        this.rangeSelectionService.extendRange(endRowIndex, endColId);
+        this.updateRangeStyles();
+      }
+
+      this.triggerRangeAnimation('paste');
+    } else {
+      await this.pasteFromClipboard();
+    }
   }
 
   /** 触发选中区域动画 */
@@ -3284,6 +3884,14 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     });
   }
 
+  /** 快速筛选输入回调（带防抖） */
+  private quickFilterSubject = new Subject<string>();
+  
+  onQuickFilterInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.quickFilterSubject.next(value);
+  }
+
   /** 打开单元格编辑器 */
   // 当前编辑上下文（用于 undo/redo）
   private editingRowIndex: number | null = null;
@@ -3407,5 +4015,167 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     event.preventDefault();
     event.stopPropagation();
     this.openFilterPopup(colDef, event);
+  }
+
+  // ========== 图表功能 API ==========
+
+  /** 显示图表面板（基于当前选中范围） */
+  showChartPanel(): void {
+    if (!this.enableCharts) return;
+
+    // 获取选中范围数据
+    const ranges = this.rangeSelectionService.getRanges();
+    if (ranges.length === 0) {
+      alert('请先选择数据范围');
+      return;
+    }
+
+    const rowData = this.getRowData();
+    const cols = this.columnService.getVisibleColumns();
+    const activeRange = ranges[0];
+    const rangeData = this.rangeSelectionService.getRangeValues(activeRange, rowData, cols as any);
+
+    if (!rangeData || rangeData.length === 0) {
+      alert('选中范围内没有数据');
+      return;
+    }
+
+    // 保存当前数据
+    this.currentChartRangeData = rangeData;
+
+    // 销毁旧图表
+    if (this.currentChartId) {
+      this.chartsService.destroyChart(this.currentChartId);
+      this.currentChartId = null;
+    }
+
+    // 显示面板
+    this.chartPanelVisible.set(true);
+    this.cdr.detectChanges();
+
+    // 延迟创建图表（等待面板 DOM 渲染完成）
+    setTimeout(() => {
+      this.createChartInRange(rangeData, cols as any);
+    }, 50);
+  }
+
+  /** 隐藏图表面板 */
+  hideChartPanel(): void {
+    this.chartPanelVisible.set(false);
+    if (this.currentChartId) {
+      this.chartsService.destroyChart(this.currentChartId);
+      this.currentChartId = null;
+    }
+    this.currentChartRangeData = null;
+  }
+
+  /** 切换图表类型 */
+  setChartType(type: 'bar' | 'line' | 'pie' | 'doughnut' | 'area'): void {
+    this.currentChartType = type;
+    if (!this.chartPanelVisible()) return;
+
+    if (this.currentChartId && this.currentChartRangeData) {
+      // 如果已有图表，更新类型
+      const chartType = type === 'area' ? 'line' : type;
+      this.chartsService.updateChartType(this.currentChartId, chartType);
+      
+      // 对于面积图，设置 fill
+      if (type === 'area') {
+        const chart = this.chartsService.getNativeChart(this.currentChartId);
+        if (chart && chart.data?.datasets) {
+          chart.data.datasets.forEach((ds: any) => {
+            ds.fill = true;
+            ds.backgroundColor = this.hexToRgbaArray(ds.borderColor || '#5470c6', 0.2);
+          });
+          chart.update();
+        }
+      }
+    } else if (this.currentChartRangeData) {
+      // 重新创建图表
+      this.createChartInRange(this.currentChartRangeData, this.columnService.getVisibleColumns() as any);
+    }
+  }
+
+  /** 获取图表导出图片 URL */
+  getChartImageUrl(format: 'png' | 'svg' = 'png'): string {
+    if (!this.currentChartId) return '';
+    return this.chartsService.exportChartAsImage(this.currentChartId, format);
+  }
+
+  /** 图表类型变更回调（来自 ChartPanelComponent） */
+  onChartTypeChange(type: 'bar' | 'line' | 'pie' | 'doughnut' | 'area'): void {
+    this.currentChartType = type;
+    this.setChartType(type);
+  }
+
+  /** 图表导出回调 */
+  onChartExport(format: 'png' | 'svg'): void {
+    const url = this.getChartImageUrl(format);
+    if (!url) return;
+    // 下载图片
+    const link = document.createElement('a');
+    link.download = `db-grid-chart-${Date.now()}.png`;
+    link.href = url;
+    link.click();
+  }
+
+  /** 将十六进制颜色转为 rgba */
+  private hexToRgba(hex: string, alpha: number): string {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+
+  /** 将颜色（或颜色数组）转为 rgba 数组 */
+  private hexToRgbaArray(color: string | string[], alpha: number): any[] {
+    if (Array.isArray(color)) {
+      return color.map(c => this.hexToRgba(c, alpha));
+    }
+    return [this.hexToRgba(color, alpha)];
+  }
+
+  /** 创建或重新创建图表 */
+  private createChartInRange(rangeData: any[][], cols: ColDef[]): void {
+    // 查找面板中的 canvas 容器
+    const gridContainer = this.gridContainer?.nativeElement;
+    if (!gridContainer) return;
+
+    const panel = gridContainer.querySelector('db-chart-panel');
+    if (!panel) return;
+
+    const canvasContainer = panel.querySelector('.db-chart-canvas-container') as HTMLElement;
+    if (!canvasContainer) return;
+
+    // 销毁旧图表
+    if (this.currentChartId) {
+      this.chartsService.destroyChart(this.currentChartId);
+      this.currentChartId = null;
+    }
+
+    // 创建新图表
+    const chartType = this.currentChartType === 'area' ? 'line' : this.currentChartType;
+    this.chartsService.createChartFromRange(
+      rangeData,
+      cols,
+      chartType as any,
+      canvasContainer
+    ).then(instance => {
+      this.currentChartId = instance.id;
+      
+      // 对于面积图，设置 fill
+      if (this.currentChartType === 'area' && instance.nativeChart) {
+        const chart = instance.nativeChart;
+        if (chart.data?.datasets) {
+          chart.data.datasets.forEach((ds: any) => {
+            ds.fill = true;
+            ds.backgroundColor = this.hexToRgbaArray(ds.borderColor || '#5470c6', 0.2);
+          });
+          chart.update();
+        }
+      }
+    }).catch(err => {
+      console.error('[DBGrid] createChartFromRange error:', err);
+    });
   }
 }

@@ -79,14 +79,21 @@ describe('ServerSideService', () => {
 
     it('should clear cache when setting new datasource', () => {
       const datasource: IServerSideDatasource = {
-        getRows: vi.fn(),
+        getRows: vi.fn().mockImplementation((params) => {
+          // Simulate immediate response
+          params.successCallback([{ id: 1 }, { id: 2 }, { id: 3 }], 3);
+        }),
       };
       service.initialize();
       service.setDatasource(datasource);
-      // Simulate loaded data
+      // Manually set data then set new datasource
       service['allRows'] = [1, 2, 3];
-      service.setDatasource(datasource);
-      expect(service.getRows()).toEqual([]);
+      const newDatasource: IServerSideDatasource = {
+        getRows: vi.fn(),
+      };
+      service.setDatasource(newDatasource);
+      // After setting new datasource, allRows should be cleared (and new request made)
+      expect(service['allRows']).toEqual([]);
     });
   });
 

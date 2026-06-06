@@ -19,8 +19,11 @@
     <button [class.active]="currentDemo() === 'excel'" (click)="switchDemo('excel')">
       📥 Excel导出
     </button>
+    <button [class.active]="currentDemo() === 'excel-import'" (click)="switchDemo('excel-import')">
+      📥 Excel 导入
+    </button>
     <button [class.active]="currentDemo() === 'server'" (click)="switchDemo('server')">
-      🖥️ 服务端数据
+      🌐 服务端模式
     </button>
     <button [class.active]="currentDemo() === 'master'" (click)="switchDemo('master')">
       📋 主从表
@@ -42,6 +45,9 @@
     </button>
     <button [class.active]="currentDemo() === 'pivot'" (click)="switchDemo('pivot')">
       📊 数据透视
+    </button>
+    <button [class.active]="currentDemo() === 'colgroup'" (click)="switchDemo('colgroup')">
+      📑 列组表头
     </button>
     <button [class.active]="currentDemo() === 'colvirtual'" (click)="switchDemo('colvirtual')">
       🏗️ 列虚拟化
@@ -78,6 +84,12 @@
       <div class="demo-header">
         <h2>基础表格</h2>
         <p class="demo-desc">展示数据表格的核心功能：排序、筛选、多选、分页等</p>
+        <div class="demo-actions">
+          <input type="text" placeholder="全局搜索..." [value]="quickFilterText()" (input)="onQuickFilterInput($event)" class="external-search-input" />
+          <button class="btn" (click)="showLoadingOverlay()">⏳ 显示 Loading Overlay</button>
+          <button class="btn" (click)="showLoadingOverlayWithProgress()">📊 显示进度 Overlay</button>
+          <button class="btn" (click)="hideOverlay()">✖ 隐藏 Overlay</button>
+        </div>
       </div>
       <db-grid
         #myGrid
@@ -91,6 +103,8 @@
         [enableFilter]="true"
         [pagination]="true"
         [paginationPageSize]="20"
+        [showQuickFilter]="true"
+        [quickFilterText]="quickFilterText()"
         (gridReady)="onGridReady($event)"
         (selectionChanged)="onSelectionChanged()"
         (cellClicked)="onCellClicked($event)"
@@ -128,10 +142,12 @@
     <div class="demo-panel">
       <div class="demo-header">
         <h2>行分组</h2>
-        <p class="demo-desc">按字段值自动分组，支持展开/折叠组</p>
+        <p class="demo-desc">按字段值自动分组，支持展开/折叠组、多级分组、聚合统计</p>
         <div class="demo-actions">
-          <button class="btn" (click)="expandAll()">➕ 展开全部</button>
-          <button class="btn" (click)="collapseAll()">➖ 折叠全部</button>
+          <button class="btn" (click)="expandAllGroups()">➕ 展开全部</button>
+          <button class="btn" (click)="collapseAllGroups()">➖ 折叠全部</button>
+          <button class="btn" (click)="setGroupField('department')">按部门分组</button>
+          <button class="btn" (click)="setGroupField('department,status')">按部门+状态分组</button>
           <button class="btn btn-danger" (click)="resetGroup()">🔄 重置分组</button>
         </div>
       </div>
@@ -148,6 +164,121 @@
         [pagination]="true"
         [paginationPageSize]="20"
         (gridReady)="onGridReady($event)"
+        (groupExpanded)="onGroupExpanded($event)"
+        (groupCollapsed)="onGroupCollapsed($event)"
+      />
+    </div>
+  }
+
+  <!-- Excel导入演示 -->
+  @if (currentDemo() === 'excel-import') {
+    <div class="demo-panel">
+      <div class="demo-header">
+        <h2>📥 Excel 导入</h2>
+        <p class="demo-desc">将 Excel 文件（.xlsx / .xls）拖拽上传或点击选择，自动解析并填充到表格</p>
+        <div class="demo-actions">
+          <button class="btn" (click)="clearImportData()">🗑️ 清除数据</button>
+          <button class="btn" (click)="switchDemo('excel')">📊 切换到导出演示</button>
+        </div>
+      </div>
+
+      <!-- 拖拽上传区 -->
+      <div
+        class="drop-zone"
+        [class.drag-over]="isDragOver()"
+        (dragover)="onDragOver($event)"
+        (dragleave)="onDragLeave($event)"
+        (drop)="onDrop($event)"
+      >
+        <div class="drop-zone-content">
+          @if (importLoading()) {
+            <div class="import-loading">
+              <div class="spinner"></div>
+              <p>正在解析 Excel 文件...</p>
+            </div>
+          } @else {
+            <div class="drop-icon">📁</div>
+            <p class="drop-title">拖拽 Excel 文件到这里</p>
+            <p class="drop-hint">支持 .xlsx 和 .xls 格式</p>
+            <div class="drop-divider">
+              <span>或者</span>
+            </div>
+            <label class="btn-import-file">
+              📂 选择文件
+              <input type="file" accept=".xlsx,.xls" style="display:none" (change)="onFileSelected($event)">
+            </label>
+          }
+        </div>
+      </div>
+
+      <!-- 导入结果统计 -->
+      @if (importResult()) {
+        <div class="import-stats">
+          <div class="stat-card">
+            <span class="stat-icon">📊</span>
+            <div class="stat-info">
+              <span class="stat-value">{{ importResult()!.totalRows }}</span>
+              <span class="stat-label">行数据</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon">📑</span>
+            <div class="stat-info">
+              <span class="stat-value">{{ importResult()!.totalCols }}</span>
+              <span class="stat-label">列数</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon">📄</span>
+            <div class="stat-info">
+              <span class="stat-value">{{ importResult()!.sheetName }}</span>
+              <span class="stat-label">Sheet</span>
+            </div>
+          </div>
+          @if (availableSheets().length > 1) {
+            <div class="stat-card sheet-select">
+              <span class="stat-icon">📑</span>
+              <div class="stat-info">
+                <span class="stat-label">切换 Sheet：</span>
+                <select class="sheet-dropdown" (change)="onSheetChange($event)">
+                  @for (sheet of availableSheets(); track sheet) {
+                    <option [value]="sheet" [selected]="sheet === importResult()!.sheetName">{{ sheet }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- 导入预览信息 -->
+        <div class="import-preview-info">
+          <span>✅ 导入成功！数据已填充到下方表格</span>
+          <span class="preview-hint">共 <strong>{{ importResult()!.totalRows }}</strong> 行 × <strong>{{ importResult()!.totalCols }}</strong> 列</span>
+        </div>
+      }
+
+      <!-- 导入错误提示 -->
+      @if (importError()) {
+        <div class="import-error">
+          <span>❌ {{ importError() }}</span>
+        </div>
+      }
+
+      <!-- 导入数据表格 -->
+      <db-grid
+        #importGrid
+        [columnDefs]="importColumnDefs"
+        [rowData]="importRowData"
+        [gridOptions]="importOptions"
+        [rowHeight]="40"
+        [headerHeight]="40"
+        [theme]="currentTheme()"
+        [pagination]="true"
+        [paginationPageSize]="20"
+        [enableSorting]="true"
+        [enableFilter]="true"
+        [rowSelection]="'multiple'"
+        (gridReady)="onImportGridReady($event)"
       />
     </div>
   }
@@ -161,6 +292,10 @@
         <div class="demo-actions">
           <button class="btn-export" (click)="exportCsv()">📥 导出 CSV</button>
           <button class="btn-export" (click)="exportXlsx()">📊 导出 XLSX</button>
+          <label class="btn-import">
+            📤 导入 XLSX
+            <input type="file" accept=".xlsx,.xls" style="display:none" (change)="onExcelImport($event)">
+          </label>
         </div>
       </div>
       <db-grid
@@ -171,18 +306,32 @@
         [rowHeight]="40"
         [headerHeight]="40"
         [theme]="currentTheme()"
+        [enableExcelImport]="true"
         [rowSelection]="'multiple'"
         (gridReady)="onGridReady($event)"
       />
     </div>
   }
 
-  <!-- 服务端数据演示 -->
+  <!-- 服务端模式演示 (Phase 2.3) -->
   @if (currentDemo() === 'server') {
     <div class="demo-panel">
       <div class="demo-header">
-        <h2>服务端数据</h2>
-        <p class="demo-desc">模拟服务端分页、排序、筛选，处理大数据量</p>
+        <h2>🌐 服务端模式</h2>
+        <p class="demo-desc">模拟 10 万条数据服务端加载，支持分页、排序、筛选（API 延迟 200-500ms）</p>
+        <div class="demo-actions">
+          <div class="server-status">
+            <span class="status-badge" [class.loading]="serverLoading()">
+              {{ serverLoading() ? '⏳ 加载中...' : '✅ 就绪' }}
+            </span>
+            <span class="data-range">
+              📊 已加载: {{ serverLoadedRange() }} / {{ 100000 }}
+            </span>
+            <span class="cache-info">
+              💾 缓存块: {{ serverRowCount() }}
+            </span>
+          </div>
+        </div>
       </div>
       <db-grid
         #myGrid
@@ -195,6 +344,7 @@
         [theme]="currentTheme()"
         [enableServerSide]="true"
         [pagination]="true"
+        [paginationPageSize]="100"
         (gridReady)="onGridReady($event)"
       />
     </div>
@@ -386,6 +536,29 @@
     </div>
   }
 
+  <!-- 列组表头演示 -->
+  @if (currentDemo() === 'colgroup') {
+    <div class="demo-panel">
+      <div class="demo-header">
+        <h2>列组表头</h2>
+        <p class="demo-desc">支持多级列组，将相关列归类到一个分组标题下</p>
+        <div class="demo-actions">
+          <span class="btn" style="cursor:default">分组: 个人信息 / 联系方式 / 工作信息</span>
+        </div>
+      </div>
+      <db-grid
+        #myGrid
+        [columnDefs]="colGroupColumnDefs"
+        [rowData]="colGroupRowData"
+        [gridOptions]="colGroupOptions"
+        [rowHeight]="40"
+        [headerHeight]="40"
+        [theme]="currentTheme()"
+        (gridReady)="onGridReady($event)"
+      />
+    </div>
+  }
+
   <!-- 列虚拟化演示 -->
   @if (currentDemo() === 'colvirtual') {
     <div class="demo-panel">
@@ -504,6 +677,7 @@
           <button class="btn" (click)="selectAllRange()">📊 全选</button>
           <button class="btn" (click)="copyRange()">📋 复制</button>
           <button class="btn btn-danger" (click)="clearRange()">🗑️ 清除选择</button>
+          <button class="btn" (click)="fillDown()">⬇️ 向下填充</button>
         </div>
         <div class="range-hints">
           <h3>使用说明：</h3>
@@ -515,6 +689,7 @@
             <li><strong>Shift+方向键</strong> - 扩展选择区域</li>
             <li><strong>Ctrl+C</strong> - 复制选中内容</li>
             <li><strong>Ctrl+V</strong> - 粘贴内容</li>
+            <li><strong>填充柄</strong> - 选中区域右下角拖拽，Excel风格填充</li>
           </ul>
         </div>
         <div class="range-status">
@@ -545,18 +720,71 @@
   @if (currentDemo() === 'charts') {
     <div class="demo-panel">
       <div class="demo-header">
-        <h2>图表 Charts</h2>
-        <p class="demo-desc">基于 Chart.js 的嵌入式图表，支持柱状图、折线图、饼图、环形图</p>
+        <h2>📈 集成图表</h2>
+        <p class="demo-desc">
+          1. 拖拽选择数据范围 → 右键 → 选择图表类型<br>
+          2. 或使用下方按钮显示/隐藏图表面板<br>
+          3. 在面板中切换图表类型，支持：柱状图、折线图、面积图、饼图、环形图
+        </p>
         <div class="demo-actions">
-          <button class="btn" [class.btn-active]="chartsType() === 'bar'" (click)="chartsType.set('bar')">📊 柱状图</button>
-          <button class="btn" [class.btn-active]="chartsType() === 'line'" (click)="chartsType.set('line')">📈 折线图</button>
-          <button class="btn" [class.btn-active]="chartsType() === 'pie'" (click)="chartsType.set('pie')">🥧 饼图</button>
-          <button class="btn" [class.btn-active]="chartsType() === 'doughnut'" (click)="chartsType.set('doughnut')">🍩 环形图</button>
-          <button class="btn" (click)="renderChart()">🔄 渲染图表</button>
+          <button class="btn" (click)="showChart()">📈 显示图表面板</button>
+          <button class="btn" (click)="hideChart()">✖ 隐藏图表面板</button>
+          <span class="chart-hint">💡 先选择数据范围，再点击"显示图表面板"</span>
         </div>
       </div>
-      <div class="chart-container">
-        <canvas id="mainChart"></canvas>
+      <div style="position: relative; height: 500px;">
+        <db-grid
+          #myGrid
+          [columnDefs]="chartsColumnDefs"
+          [rowData]="chartsRowData"
+          [gridOptions]="chartsOptions"
+          [rowHeight]="40"
+          [headerHeight]="40"
+          [theme]="currentTheme()"
+          [enableRangeSelection]="true"
+          [enableCharts]="true"
+          (gridReady)="onGridReady($event)"
+        />
+      </div>
+      <!-- 独立图表演示（不使用图表面板） -->
+      <div class="standalone-chart" style="margin-top: 20px; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+        <h3>📊 独立图表（编辑数据查看联动）</h3>
+        <p class="demo-desc">修改下方数据，图表会自动更新</p>
+        <div style="display: flex; gap: 20px;">
+          <div style="flex: 1;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <th style="border: 1px solid #ddd; padding: 8px;">月份</th>
+                <th style="border: 1px solid #ddd; padding: 8px;">销售额</th>
+                <th style="border: 1px solid #ddd; padding: 8px;">利润</th>
+              </tr>
+              @for (row of chartsRowData; track row.month) {
+                <tr>
+                  <td style="border: 1px solid #ddd; padding: 8px;">{{ row.month }}</td>
+                  <td style="border: 1px solid #ddd; padding: 8px;">
+                    <input type="number" [value]="row.sales" (input)="onChartDataChange(row, 'sales', $event)" style="width: 100px;">
+                  </td>
+                  <td style="border: 1px solid #ddd; padding: 8px;">
+                    <input type="number" [value]="row.profit" (input)="onChartDataChange(row, 'profit', $event)" style="width: 100px;">
+                  </td>
+                </tr>
+              }
+            </table>
+          </div>
+          <div style="flex: 1;">
+            <canvas id="mainChart" style="width: 100%; height: 300px;"></canvas>
+          </div>
+        </div>
+        <div class="demo-actions" style="margin-top: 10px;">
+          @for (btn of getChartTypeButtons(); track btn.type) {
+            <button 
+              class="btn" 
+              [class.active]="chartsType() === btn.type"
+              (click)="chartsType.set(btn.type); renderChart();">
+              {{ btn.icon }} {{ btn.label }}
+            </button>
+          }
+        </div>
       </div>
     </div>
   }

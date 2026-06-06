@@ -4,7 +4,7 @@
  */
 
 import { Injectable } from '@angular/core';
-import { ColDef, ColGroupDef } from '../models';
+import { ColDef, ColGroupDef, GroupHeaderInfo } from '../models';
 
 export interface ColumnState {
   colId: string;
@@ -75,7 +75,7 @@ export class ColumnService {
   }
 
   /** 扁平化列定义（处理 ColGroupDef） */
-  private flattenColumnDefs(colDefs: (ColDef | ColGroupDef)[], parent?: ColGroupDef): ColDef[] {
+  flattenColumnDefs(colDefs: (ColDef | ColGroupDef)[], parent?: ColGroupDef): ColDef[] {
     const result: ColDef[] = [];
 
     for (const colDef of colDefs) {
@@ -91,6 +91,62 @@ export class ColumnService {
     }
 
     return result;
+  }
+
+  /** 获取分组表头信息 */
+  getGroupHeaders(): GroupHeaderInfo[] {
+    const groupHeaders: GroupHeaderInfo[] = [];
+    let groupIndex = 0;
+    const allColumns = this.getAllColumns();
+
+    const traverse = (colDefs: (ColDef | ColGroupDef)[], depth: number): void => {
+      for (const colDef of colDefs) {
+        if ('children' in colDef) {
+          const group = colDef as ColGroupDef;
+          const groupId = `group-${groupIndex++}`;
+          const childColIds = this.getChildColIds(group);
+          const startIdx = Math.min(...childColIds.map(id => allColumns.findIndex((_, i) => this.getColId(allColumns[i], i) === id)));
+          const endIdx = Math.max(...childColIds.map(id => allColumns.findIndex((_, i) => this.getColId(allColumns[i], i) === id)));
+          const totalWidth = childColIds.reduce((sum, id) => sum + (this.columnStates.get(id)?.width || this.defaultColWidth), 0);
+
+          groupHeaders.push({
+            headerName: group.headerName || '',
+            groupId,
+            depth,
+            childColIds,
+            startIndex: startIdx,
+            endIndex: endIdx,
+            totalWidth,
+            pinnedLeft: group.pinnedLeft,
+            pinnedRight: group.pinnedRight,
+          });
+
+          traverse(group.children || [], depth + 1);
+        }
+      }
+    };
+
+    traverse(this.columnDefs, 0);
+    return groupHeaders;
+  }
+
+  /** 获取 ColGroupDef 所有子孙 ColDef 的 colId */
+  private getChildColIds(group: ColGroupDef): string[] {
+    const colIds: string[] = [];
+    const allColumns = this.getAllColumns();
+    const traverse = (colDefs: (ColDef | ColGroupDef)[]): void => {
+      for (const colDef of colDefs) {
+        if ('children' in colDef) {
+          traverse((colDef as ColGroupDef).children || []);
+        } else {
+          const col = colDef as ColDef;
+          const idx = allColumns.indexOf(col);
+          colIds.push(this.getColId(col, idx >= 0 ? idx : colIds.length));
+        }
+      }
+    };
+    traverse(group.children || []);
+    return colIds;
   }
 
   /** 获取列ID */

@@ -194,6 +194,7 @@ export class ContextMenuService {
   }
 
   destroy(): void {
+    this.hide();
     this.state$.complete();
     this.onMenuItemClicked$.complete();
   }

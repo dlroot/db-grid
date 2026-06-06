@@ -4,6 +4,7 @@
  */
 
 import { Injectable } from '@angular/core';
+import { ColDef } from '../models';
 
 // Chart.js 动态导入类型
 export interface ChartConfig {
@@ -17,6 +18,7 @@ export interface ChartInstance {
   id: string;
   type: string;
   destroy: () => void;
+  nativeChart?: any; // Chart.js 原生实例
 }
 
 const PALETTE = [
@@ -48,6 +50,7 @@ const SPARKLINE_DEFAULTS: any = {
 export class ChartsService {
   private charts: Map<string, ChartInstance> = new Map();
   private elementCharts: Map<HTMLElement, ChartInstance> = new Map();
+  private nativeCharts: Map<string, any> = new Map(); // 存储 Chart.js 原生实例
   private chartIdCounter = 0;
 
   async createChart(containerId: string, config: ChartConfig): Promise<ChartInstance> {
@@ -80,10 +83,12 @@ export class ChartsService {
     const instance: ChartInstance = {
       id: containerId,
       type: config.type,
-      destroy: () => chart.destroy()
+      destroy: () => { chart.destroy(); this.nativeCharts.delete(containerId); },
+      nativeChart: chart,
     };
 
     this.charts.set(containerId, instance);
+    this.nativeCharts.set(containerId, chart);
     return instance;
   }
 
@@ -121,10 +126,12 @@ export class ChartsService {
     const instance: ChartInstance = {
       id,
       type: config.type,
-      destroy: () => chart.destroy()
+      destroy: () => { chart.destroy(); this.nativeCharts.delete(id); },
+      nativeChart: chart,
     };
 
     this.elementCharts.set(element, instance);
+    this.nativeCharts.set(id, chart);
     return instance;
   }
 
@@ -167,10 +174,12 @@ export class ChartsService {
     const instance: ChartInstance = {
       id,
       type: 'sparkline',
-      destroy: () => chart.destroy()
+      destroy: () => { chart.destroy(); this.nativeCharts.delete(id); },
+      nativeChart: chart,
     };
 
     this.elementCharts.set(element, instance);
+    this.nativeCharts.set(id, chart);
     return instance;
   }
 
@@ -268,10 +277,12 @@ export class ChartsService {
     const instance: ChartInstance = {
       id,
       type: config.type,
-      destroy: () => chart.destroy()
+      destroy: () => { chart.destroy(); this.nativeCharts.delete(id); },
+      nativeChart: chart,
     };
 
     this.elementCharts.set(element, instance);
+    this.nativeCharts.set(id, chart);
     return instance;
   }
 
@@ -309,8 +320,11 @@ export class ChartsService {
 
   /** 销毁通过 containerId 管理的图表 */
   destroyChart(containerId: string): void {
-    this.charts.get(containerId)?.destroy();
-    this.charts.delete(containerId);
+    const instance = this.charts.get(containerId);
+    if (instance) {
+      instance.destroy();
+      this.charts.delete(containerId);
+    }
   }
 
   /** 销毁通过 element 关联的图表 */
@@ -325,12 +339,185 @@ export class ChartsService {
   destroyAll(): void {
     this.charts.forEach(c => c.destroy());
     this.charts.clear();
-    // WeakMap entries are auto-collected, but we still need to destroy the charts
     this.elementCharts.forEach(c => c.destroy());
+    this.elementCharts.clear();
+    this.nativeCharts.clear();
+  }
+
+  /**
+   * 根据选中范围数据创建图表
+   * @param rangeData - 二维数组（来自 rangeSelectionService.getRangeValues()）
+   * @param columns - 列定义
+   * @param chartType - 图表类型
+   * @param container - DOM 容器
+   */
+  async createChartFromRange(
+    rangeData: any[][],
+    columns: ColDef[],
+    chartType: 'bar' | 'line' | 'pie' | 'doughnut',
+    container: HTMLElement
+  ): Promise<ChartInstance> {
+    const { Chart, registerables } = await import('chart.js');
+    Chart.register(...registerables);
+
+    if (!rangeData || rangeData.length === 0) {
+      throw new Error('No range data provided for chart creation');
+    }
+
+    // 判断列数
+    const colCount = rangeData[0]?.length || 0;
+    let labels: string[];
+    let datasets: any[];
+
+    if (colCount === 1) {
+      // 只有一列：用行号作为 labels，该列作为数据
+      labels = rangeData.map((_, i) => `${i + 1}`);
+      const values = rangeData.map(row => this.toNumber(row[0]));
+      datasets = [{
+        label: columns[0]?.headerName || columns[0]?.field || 'Data',
+        data: values,
+        backgroundColor: PALETTE,
+        borderColor: PALETTE,
+        borderWidth: 1,
+      }];
+    } else {
+      // 第一列 → labels，其他列 → datasets
+      labels = rangeData.map(row => String(row[0] ?? ''));
+      datasets = [];
+      for (let c = 1; c < colCount; c++) {
+        const col = columns[c];
+        const values = rangeData.map(row => this.toNumber(row[c]));
+        const color = PALETTE[(c - 1) % PALETTE.length];
+        datasets.push({
+          label: col?.headerName || col?.field || `Series ${c}`,
+          data: values,
+          backgroundColor: (chartType === 'pie' || chartType === 'doughnut')
+            ? values.map((_, i) => PALETTE[i % PALETTE.length])
+            : color,
+          borderColor: color,
+          borderWidth: 1,
+        });
+      }
+    }
+
+    // 创建 canvas
+    container.innerHTML = '';
+    const canvas = document.createElement('canvas');
+    container.appendChild(canvas);
+
+    const isPie = chartType === 'pie' || chartType === 'doughnut';
+    const chart = new Chart(canvas, {
+      type: chartType,
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          title: {
+            display: true,
+            text: 'DB Grid 数据图表',
+            font: { size: 14 },
+          },
+          legend: {
+            position: 'bottom',
+          },
+        },
+        scales: isPie ? {} : {
+          x: { display: true },
+          y: { display: true, beginAtZero: true },
+        },
+      },
+    });
+
+    const id = `range-chart-${++this.chartIdCounter}`;
+    const instance: ChartInstance = {
+      id,
+      type: chartType,
+      destroy: () => { chart.destroy(); this.nativeCharts.delete(id); },
+      nativeChart: chart,
+    };
+
+    this.charts.set(id, instance);
+    this.nativeCharts.set(id, chart);
+    return instance;
+  }
+
+  /**
+   * 更新已有图表的数据
+   */
+  async updateChartData(chartId: string, newData: any[][]): Promise<void> {
+    const chart = this.nativeCharts.get(chartId);
+    if (!chart) return;
+
+    if (!newData || newData.length === 0) return;
+
+    const colCount = newData[0]?.length || 0;
+
+    if (colCount === 1) {
+      const labels = newData.map((_, i) => `${i + 1}`);
+      const values = newData.map(row => this.toNumber(row[0]));
+      chart.data.labels = labels;
+      if (chart.data.datasets[0]) {
+        chart.data.datasets[0].data = values;
+      }
+    } else {
+      const labels = newData.map(row => String(row[0] ?? ''));
+      chart.data.labels = labels;
+      for (let c = 1; c < colCount; c++) {
+        if (chart.data.datasets[c - 1]) {
+          chart.data.datasets[c - 1].data = newData.map(row => this.toNumber(row[c]));
+        }
+      }
+    }
+    chart.update();
+  }
+
+  /**
+   * 更新已有图表的类型
+   */
+  async updateChartType(chartId: string, chartType: 'bar' | 'line' | 'pie' | 'doughnut'): Promise<void> {
+    const chart = this.nativeCharts.get(chartId);
+    if (!chart) return;
+
+    const isPie = chartType === 'pie' || chartType === 'doughnut';
+    chart.config.type = chartType;
+    chart.options.scales = isPie ? {} : {
+      x: { display: true },
+      y: { display: true, beginAtZero: true },
+    };
+    // 重新分配颜色给饼图/环形图
+    if (isPie && chart.data.datasets.length > 0) {
+      chart.data.datasets.forEach((ds: any) => {
+        ds.backgroundColor = ds.data.map((_: any, i: number) => PALETTE[i % PALETTE.length]);
+        ds.borderColor = ds.data.map((_: any, i: number) => PALETTE[i % PALETTE.length]);
+      });
+    }
+    chart.update();
+  }
+
+  /**
+   * 导出图表为 PNG/SVG
+   */
+  exportChartAsImage(chartId: string, format: 'png' | 'svg' = 'png'): string {
+    const chart = this.nativeCharts.get(chartId);
+    if (!chart) return '';
+
+    if (format === 'png') {
+      return chart.toBase64Image('image/png', 1);
+    }
+    // SVG 不直接支持，回退到 PNG
+    return chart.toBase64Image('image/png', 1);
+  }
+
+  /**
+   * 获取原生 Chart.js 实例（用于高级自定义）
+   */
+  getNativeChart(chartId: string): any | undefined {
+    return this.nativeCharts.get(chartId);
   }
 
   // 从表格数据生成图表配置
-  chartConfigFromGridData(
+   chartConfigFromGridData(
     type: 'bar' | 'line' | 'pie' | 'doughnut',
     title: string,
     labels: string[],
@@ -344,12 +531,21 @@ export class ChartsService {
         datasets: datasets.map((ds, i) => ({
           label: ds.label,
           data: ds.data,
-          backgroundColor: ds.color || PALETTE[i % PALETTE.length],
+          backgroundColor: (type === 'pie' || type === 'doughnut')
+            ? ds.data.map((_, j) => PALETTE[j % PALETTE.length])
+            : (ds.color || PALETTE[i % PALETTE.length]),
           borderColor: ds.color ? this.hexToRgba(ds.color, 1) : PALETTE[i % PALETTE.length],
           borderWidth: 1
         }))
       }
     };
+  }
+
+  /** 将值转为数字（非数字返回 0） */
+  private toNumber(value: any): number {
+    if (value == null) return 0;
+    const num = typeof value === 'string' ? parseFloat(value.replace(/[,%\s]/g, '')) : Number(value);
+    return isNaN(num) ? 0 : num;
   }
 
   private hexToRgba(hex: string, alpha: number): string {

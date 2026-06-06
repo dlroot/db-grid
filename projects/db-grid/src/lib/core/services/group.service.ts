@@ -72,20 +72,50 @@ export class GroupService {
           if (!params?.node) return '';
           const node = params.node as RowNode;
           if (!node.group) return '';
+          
           const level = node.level || 0;
-          const indent = '  '.repeat(level);
+          const indent = level * 20;
           const icon = node.expanded ? '▼' : '▶';
           const key = node.key || node.data?.__groupKey || '';
-          const el = document.createElement('span');
+          
+          // 获取聚合值
+          let aggregationHtml = '';
+          if (node.data?.__aggregations) {
+            const aggs = node.data.__aggregations;
+            const aggParts: string[] = [];
+            Object.keys(aggs).forEach(field => {
+              Object.keys(aggs[field]).forEach(type => {
+                const result = aggs[field][type];
+                if (result && result.formatted) {
+                  aggParts.push(result.formatted);
+                }
+              });
+            });
+            if (aggParts.length > 0) {
+              aggregationHtml = `<span class="group-aggregations">${aggParts.join(', ')}</span>`;
+            }
+          }
+          
+          // 子项数量
+          const countText = node.allChildrenCount ? ` (${node.allChildrenCount} items)` : '';
+          
+          const el = document.createElement('div');
           el.className = 'db-grid-group-cell';
-          el.style.cursor = 'pointer';
-          el.style.userSelect = 'none';
-          el.innerHTML = `${indent}<span class="group-icon">${icon}</span> ${key}`;
-          el.addEventListener('click', () => {
-            const rowEl = el.closest('.db-grid-row');
+          el.style.cssText = `padding-left: ${indent}px; cursor: pointer; user-select: none; display: flex; align-items: center; gap: 6px;`;
+          el.innerHTML = `<span class="group-icon">${icon}</span><span class="group-key">${key}</span>${aggregationHtml}<span class="group-count">${countText}</span>`;
+          
+          // 点击切换展开/折叠
+          el.addEventListener('click', (e) => {
+            e.stopPropagation();
             const nodeId = node.id;
-            rowEl?.dispatchEvent(new CustomEvent('groupToggle', { detail: { nodeId }, bubbles: true }));
+            this.toggleGroup(nodeId);
+            // 更新图标
+            const iconEl = el.querySelector('.group-icon');
+            if (iconEl) {
+              iconEl.textContent = node.expanded ? '▼' : '▶';
+            }
           });
+          
           return el;
         },
       });
@@ -233,6 +263,49 @@ export class GroupService {
   isGroupingEnabled(): boolean { return !!(this.config?.groupFields?.length); }
   getGroupFields(): string[] { return this.config?.groupFields || []; }
   setOnGroupChange(callback: (event: GroupChangeEvent) => void): void { this.onGroupChange = callback; }
+
+  /**
+   * 获取节点层级（0=根）
+   * @param nodeId 节点ID
+   * @returns 层级，如果不是分组节点则返回 -1
+   */
+  getGroupLevel(nodeId: string): number {
+    const node = this.groupNodes.get(nodeId) || this.flatNodes.find(n => n.id === nodeId);
+    if (!node || !node.group) return -1;
+    return node.level || 0;
+  }
+
+  /**
+   * 判断是否为分组节点
+   * @param nodeId 节点ID
+   * @returns 是否为分组节点
+   */
+  isGroupNode(nodeId: string): boolean {
+    const node = this.groupNodes.get(nodeId) || this.flatNodes.find(n => n.id === nodeId);
+    return !!(node && node.group);
+  }
+
+  /**
+   * 获取分组状态
+   * @returns 分组状态信息
+   */
+  getGroupState(): any {
+    const state: any = {
+      groupFields: this.config?.groupFields || [],
+      expandAll: this.config?.expandAll || false,
+      groups: []
+    };
+    this.groupNodes.forEach((node, key) => {
+      state.groups.push({
+        nodeId: node.id,
+        key: node.key,
+        level: node.level,
+        expanded: node.expanded,
+        childCount: node.allChildrenCount
+      });
+    });
+    return state;
+  }
 
   private emitGroupChange(event: GroupChangeEvent): void {
     if (this.onGroupChange) this.onGroupChange(event);

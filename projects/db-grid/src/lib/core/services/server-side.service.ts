@@ -106,6 +106,37 @@ export class ServerSideService {
   private pageSize: number = 100;
   private cacheBlockSize: number = 100;
 
+  /** 设置数据块缓存大小（默认 100） */
+  setBlockSize(size: number): void {
+    this.cacheBlockSize = size;
+    this.pageSize = size;
+    // 重新加载
+    this.purgeAndReload();
+  }
+
+  /** 获取当前缓存的行数据 */
+  getCurrentData(): any[] {
+    return this.allRows.filter(r => r !== null);
+  }
+
+  /** 获取当前显示的行数 */
+  getDisplayedRowCount(): number {
+    return this.getRowCount();
+  }
+
+  /** 获取剩余行数（lastRow - 已加载行数） */
+  getRemainderCount(): number {
+    if (this.rowCount < 0) return -1;
+    const loadedRows = this.allRows.filter(r => r !== null).length;
+    return Math.max(0, this.rowCount - loadedRows);
+  }
+
+  /** 判断是否还有更多数据 */
+  hasMoreData(): boolean {
+    if (this.rowCount < 0) return true;
+    return this.allRows.filter(r => r !== null).length < this.rowCount;
+  }
+
   /** 设置数据源 */
   setDatasource(datasource: IServerSideDatasource): void {
     // 防止重复调用：如果 datasource 没有变化，跳过

@@ -35,3 +35,7 @@ export * from './undo-redo.service';
 export * from './server-side.service';
 export * from './charts.service';
 export * from './i18n.service';
+export * from './clipboard.service';
+export * from './overlay.service';
+export * from './excel-import.service';
+export * from './fill-handle.service';
