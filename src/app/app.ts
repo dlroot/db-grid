@@ -1680,4 +1680,19 @@ export class AppComponent implements OnInit {
   }
 
   sparklineOptions = { rowSelection: 'single' as any };
+
+  // ============ 中间列固定 Demo ============
+  pinnedCenterColumnDefs = [
+    { field: 'id', headerName: 'ID', width: 80, pinnedLeft: true },
+    { field: 'name', headerName: '姓名', width: 150, pinnedCenter: true },
+    { field: 'age', headerName: '年龄', width: 100 },
+    { field: 'email', headerName: '邮箱', width: 220 },
+    { field: 'department', headerName: '部门', width: 150 },
+    { field: 'position', headerName: '职位', width: 150 },
+    { field: 'salary', headerName: '薪资', width: 120 },
+    { field: 'status', headerName: '状态', width: 100, pinnedRight: true },
+  ];
+
+  pinnedCenterRowData = this.basicRowData;
+  pinnedCenterOptions = { rowSelection: 'multiple', enableColVirtualization: false };
 }

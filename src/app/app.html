@@ -79,6 +79,9 @@
     <button [class.active]="currentDemo() === 'sparkline'" (click)="switchDemo('sparkline')">
       📊 迷你图
     </button>
+    <button [class.active]="currentDemo() === 'centerpin'" (click)="switchDemo('centerpin')">
+      📌 中间列固定
+    </button>
     <span class="theme-selector">
       <label>主题:</label>
       <select [value]="currentTheme()" (change)="switchTheme($event)">
@@ -847,6 +850,25 @@
         [headerHeight]="40"
         [theme]="currentTheme()"
         (gridReady)="onGridReady($event)"
+      />
+    </div>
+  }
+
+  <!-- 中间列固定演示 -->
+  @if (currentDemo() === 'centerpin') {
+    <div class="demo-panel">
+      <div class="demo-header">
+        <h2>📌 中间列固定（Center Pinned）</h2>
+        <p class="demo-desc">四段式布局：左固定 + 中间固定 + 中间滚动 + 右固定。ID 列固定在左侧，姓名列固定在中间左侧，主数据区域可横向滚动，操作列固定在右侧。</p>
+      </div>
+      <db-grid
+        #myGrid
+        [columnDefs]="pinnedCenterColumnDefs"
+        [rowData]="pinnedCenterRowData"
+        [options]="pinnedCenterOptions"
+        [theme]="currentTheme()"
+        (gridReady)="onGridReady($event)"
+        style="height: 500px;"
       />
     </div>
   }

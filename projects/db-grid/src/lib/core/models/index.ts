@@ -17,10 +17,12 @@ export interface ColDef {
   maxWidth?: number;
   pinnedLeft?: boolean;
   pinnedRight?: boolean;
+  pinnedCenter?: boolean;
   flex?: number;
   colSpan?: number;
   pinnedLeftIndex?: number;
   pinnedRightIndex?: number;
+  pinnedCenterIndex?: number;
 
   // 列类型
   type?: string | string[];

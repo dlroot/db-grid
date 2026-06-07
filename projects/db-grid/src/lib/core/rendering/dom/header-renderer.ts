@@ -55,7 +55,7 @@ export class HeaderRendererService {
   /** 渲染指定列表头（列虚拟化）
    * @param columns 如果提供，只渲染这些列；否则渲染所有可见列
    */
-  renderWithColumns(columns?: { leftPinned: ColDef[]; center: ColDef[]; rightPinned: ColDef[]; offsetX: number; totalScrollableWidth: number }): HeaderRenderResult {
+  renderWithColumns(columns?: { leftPinned: ColDef[]; centerPinned: ColDef[]; center: ColDef[]; rightPinned: ColDef[]; offsetX: number; totalScrollableWidth: number }): HeaderRenderResult {
     const headerElement = this.createHeaderContainer();
     const columnHeaders = new Map<string, HTMLElement>();
 
@@ -76,6 +76,13 @@ export class HeaderRendererService {
         // 列虚拟化模式：渲染 leftPinned + center(带偏移) + rightPinned
         // 左固定列
         columns.leftPinned.forEach(colDef => {
+          const colHeader = this.createColumnHeader(colDef);
+          headerRow.appendChild(colHeader);
+          columnHeaders.set(colDef.field || colDef.colId || '', colHeader);
+        });
+
+        // 中间固定列（居中固定，不随主区域滚动）
+        (columns.centerPinned || []).forEach(colDef => {
           const colHeader = this.createColumnHeader(colDef);
           headerRow.appendChild(colHeader);
           columnHeaders.set(colDef.field || colDef.colId || '', colHeader);

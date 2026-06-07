@@ -10,7 +10,7 @@ export interface ColumnState {
   colId: string;
   width: number;
   hide: boolean;
-  pinned: 'left' | 'right' | null;
+  pinned: 'left' | 'right' | 'center' | null;
   sort: 'asc' | 'desc' | null;
   sortIndex: number | null;
   filter: string | null;
@@ -33,6 +33,9 @@ export class ColumnService {
 
   /** 固定在右边的列 */
   private rightPinnedColumns: ColDef[] = [];
+
+  /** 中间固定列（居中固定） */
+  private centerPinnedColumns: ColDef[] = [];
 
   /** 可滚动的列 */
   private scrollableColumns: ColDef[] = [];
@@ -168,6 +171,11 @@ export class ColumnService {
       .filter(col => this.getColumnState(col)?.pinned === 'right')
       .sort((a, b) => (a.pinnedRightIndex ?? 0) - (b.pinnedRightIndex ?? 0));
 
+    // 中间固定列（居中固定）
+    this.centerPinnedColumns = allColumns
+      .filter(col => this.getColumnState(col)?.pinned === 'center')
+      .sort((a, b) => (a.pinnedCenterIndex ?? 0) - (b.pinnedCenterIndex ?? 0));
+
     // 可滚动列
     this.scrollableColumns = allColumns
       .filter(col => !this.getColumnState(col)?.pinned)
@@ -249,7 +257,7 @@ export class ColumnService {
     scrollLeft: number,
     viewportWidth: number,
     buffer: number = 2
-  ): { leftPinned: ColDef[]; center: ColDef[]; rightPinned: ColDef[]; offsetX: number; totalScrollableWidth: number } {
+  ): { leftPinned: ColDef[]; centerPinned: ColDef[]; center: ColDef[]; rightPinned: ColDef[]; offsetX: number; totalScrollableWidth: number } {
     const leftPinned = this.visibleColumns.filter(col => {
       const state = this.getColumnState(col);
       return state?.pinned === 'left';
@@ -258,6 +266,12 @@ export class ColumnService {
     const rightPinned = this.visibleColumns.filter(col => {
       const state = this.getColumnState(col);
       return state?.pinned === 'right';
+    });
+
+    // 中间固定列（居中固定）
+    const centerPinned = this.visibleColumns.filter(col => {
+      const state = this.getColumnState(col);
+      return state?.pinned === 'center';
     });
 
     // 可滚动的可见列
@@ -310,7 +324,7 @@ export class ColumnService {
     const center = scrollable.slice(bufStart, bufEnd + 1);
     const offsetX = colOffsets[bufStart]?.start ?? 0;
 
-    return { leftPinned, center, rightPinned, offsetX, totalScrollableWidth };
+    return { leftPinned, centerPinned, center, rightPinned, offsetX, totalScrollableWidth };
   }
 
   /** 获取左固定列 */
@@ -321,6 +335,11 @@ export class ColumnService {
   /** 获取右固定列 */
   getRightPinnedColumns(): ColDef[] {
     return this.rightPinnedColumns;
+  }
+
+  /** 获取中间固定列（居中固定） */
+  getCenterPinnedColumns(): ColDef[] {
+    return this.centerPinnedColumns;
   }
 
   /** 获取可滚动列 */

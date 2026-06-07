@@ -9,17 +9,20 @@ import { ColDef } from '../models';
 export interface PinConfig {
   pinnedLeftColumns?: string[];
   pinnedRightColumns?: string[];
+  pinnedCenterColumns?: string[];
 }
 
 export class ColumnPinningService {
   private pinnedLeft: Set<string> = new Set();
   private pinnedRight: Set<string> = new Set();
+  private pinnedCenter: Set<string> = new Set();
 
-  private onPinnedChanged$ = new Subject<{ columnId: string; side: 'left' | 'right' | null }>();
+  private onPinnedChanged$ = new Subject<{ columnId: string; side: 'left' | 'right' | 'center' | null }>();
 
   initialize(columns: ColDef[], config?: PinConfig): void {
     this.pinnedLeft.clear();
     this.pinnedRight.clear();
+    this.pinnedCenter.clear();
 
     // 从 column definitions 读取
     columns.forEach(col => {
@@ -28,6 +31,8 @@ export class ColumnPinningService {
         this.pinnedLeft.add(colId);
       } else if (col.pinnedRight === true) {
         this.pinnedRight.add(colId);
+      } else if ((col as any).pinnedCenter === true) {
+        this.pinnedCenter.add(colId);
       }
     });
 
@@ -37,6 +42,9 @@ export class ColumnPinningService {
     }
     if (config?.pinnedRightColumns) {
       config.pinnedRightColumns.forEach(id => this.pinnedRight.add(id));
+    }
+    if (config?.pinnedCenterColumns) {
+      config.pinnedCenterColumns.forEach(id => this.pinnedCenter.add(id));
     }
   }
 
@@ -48,13 +56,18 @@ export class ColumnPinningService {
     return this.pinnedRight.has(colId);
   }
 
-  isPinned(colId: string): boolean {
-    return this.isPinnedLeft(colId) || this.isPinnedRight(colId);
+  isPinnedCenter(colId: string): boolean {
+    return this.pinnedCenter.has(colId);
   }
 
-  getPinnedSide(colId: string): 'left' | 'right' | null {
+  isPinned(colId: string): boolean {
+    return this.isPinnedLeft(colId) || this.isPinnedRight(colId) || this.isPinnedCenter(colId);
+  }
+
+  getPinnedSide(colId: string): 'left' | 'right' | 'center' | null {
     if (this.isPinnedLeft(colId)) return 'left';
     if (this.isPinnedRight(colId)) return 'right';
+    if (this.isPinnedCenter(colId)) return 'center';
     return null;
   }
 
@@ -66,12 +79,18 @@ export class ColumnPinningService {
     return Array.from(this.pinnedRight);
   }
 
-  pinColumn(colId: string, side: 'left' | 'right'): void {
+  getPinnedCenterIds(): string[] {
+    return Array.from(this.pinnedCenter);
+  }
+
+  pinColumn(colId: string, side: 'left' | 'right' | 'center'): void {
     this.unpinColumn(colId);
     if (side === 'left') {
       this.pinnedLeft.add(colId);
-    } else {
+    } else if (side === 'right') {
       this.pinnedRight.add(colId);
+    } else {
+      this.pinnedCenter.add(colId);
     }
     this.onPinnedChanged$.next({ columnId: colId, side });
   }
@@ -80,25 +99,29 @@ export class ColumnPinningService {
     const wasPinned = this.getPinnedSide(colId);
     this.pinnedLeft.delete(colId);
     this.pinnedRight.delete(colId);
+    this.pinnedCenter.delete(colId);
     if (wasPinned) {
       this.onPinnedChanged$.next({ columnId: colId, side: null });
     }
   }
 
-  moveToPinned(colId: string, side: 'left' | 'right', position?: number): void {
+  moveToPinned(colId: string, side: 'left' | 'right' | 'center', position?: number): void {
     this.pinColumn(colId, side);
   }
 
-  onPinnedChanged(callback: (event: { columnId: string; side: 'left' | 'right' | null }) => void): void {
+  onPinnedChanged(callback: (event: { columnId: string; side: 'left' | 'right' | 'center' | null }) => void): void {
     this.onPinnedChanged$.subscribe(callback);
   }
 
-  getPinnedWidth(columns: ColDef[], side: 'left' | 'right'): number {
-    const pinnedIds = side === 'left' ? this.pinnedLeft : this.pinnedRight;
+  getPinnedWidth(columns: ColDef[], side: 'left' | 'right' | 'center'): number {
+    let targetSet: Set<string>;
+    if (side === 'left') targetSet = this.pinnedLeft;
+    else if (side === 'right') targetSet = this.pinnedRight;
+    else targetSet = this.pinnedCenter;
     let width = 0;
     columns.forEach(col => {
       const colId = col.colId || col.field;
-      if (pinnedIds.has(colId)) {
+      if (targetSet.has(colId)) {
         width += col.width || 100;
       }
     });
