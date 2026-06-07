@@ -1,0 +1,110 @@
+/* 高对比度主题 (High Contrast Theme) for DB Grid */
+/* 使用方法：在 host 元素上添加 class="db-grid-theme-high-contrast" */
+
+:host-context(.db-grid-theme-high-contrast) .db-grid-container,
+.db-grid-theme-high-contrast .db-grid-container,
+.db-grid-theme-high-contrast {
+  --db-grid-bg: #000 !important;
+  --db-grid-header-bg: #000 !important;
+  --db-grid-text: #fff !important;
+  --db-grid-text-secondary: #fff !important;
+  --db-grid-border-color: #fff !important;
+  --db-grid-row-hover-bg: #333 !important;
+  --db-grid-selected-bg: #0066cc !important;
+  --db-grid-accent: #fff !important;
+  --db-grid-range-selection-background: rgba(255, 255, 255, 0.2) !important;
+  --db-grid-range-selection-border-color: #fff !important;
+  --db-grid-cell-editing-border-color: #ff0 !important;
+  
+  background: #000 !important;
+  color: #fff !important;
+  border-color: #fff !important;
+}
+
+/* 表头 */
+:host-context(.db-grid-theme-high-contrast) .db-grid-header-cell,
+.db-grid-theme-high-contrast .db-grid-header-cell {
+  background: #000 !important;
+  color: #fff !important;
+  border-color: #fff !important;
+  border-width: 2px !important;
+  font-weight: 700 !important;
+}
+
+/* 单元格 */
+:host-context(.db-grid-theme-high-contrast) .db-grid-cell,
+.db-grid-theme-high-contrast .db-grid-cell {
+  border-color: #fff !important;
+  border-width: 1px !important;
+  color: #fff !important;
+}
+
+/* 行 hover */
+:host-context(.db-grid-theme-high-contrast) .db-grid-row:hover,
+.db-grid-theme-high-contrast .db-grid-row:hover {
+  background: #333 !important;
+}
+
+/* 选中行 */
+:host-context(.db-grid-theme-high-contrast) .db-grid-row-selected,
+.db-grid-theme-high-contrast .db-grid-row-selected {
+  background: #0066cc !important;
+  color: #fff !important;
+}
+
+/* 焦点单元格 */
+:host-context(.db-grid-theme-high-contrast) .db-grid-cell-focused,
+.db-grid-theme-high-contrast .db-grid-cell-focused {
+  outline: 3px solid #ff0 !important;
+  outline-offset: -1px;
+  background: rgba(255, 255, 0, 0.2) !important;
+}
+
+/* 区域选择 */
+:host-context(.db-grid-theme-high-contrast) .db-grid-cell-in-range,
+.db-grid-theme-high-contrast .db-grid-cell-in-range {
+  background: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* 输入框 */
+:host-context(.db-grid-theme-high-contrast) input,
+:host-context(.db-grid-theme-high-contrast) select,
+:host-context(.db-grid-theme-high-contrast) textarea,
+.db-grid-theme-high-contrast input,
+.db-grid-theme-high-contrast select,
+.db-grid-theme-high-contrast textarea {
+  background: #000 !important;
+  color: #fff !important;
+  border: 2px solid #fff !important;
+}
+
+/* 按钮 */
+:host-context(.db-grid-theme-high-contrast) button,
+.db-grid-theme-high-contrast button {
+  background: #000 !important;
+  color: #fff !important;
+  border: 2px solid #fff !important;
+}
+
+/* 分组行 */
+:host-context(.db-grid-theme-high-contrast) .db-grid-group-row,
+.db-grid-theme-high-contrast .db-grid-group-row {
+  background: #1a1a1a !important;
+  border-color: #fff !important;
+}
+
+/* 筛选弹出框 */
+:host-context(.db-grid-theme-high-contrast) .db-filter-popup,
+.db-grid-theme-high-contrast .db-filter-popup {
+  background: #000 !important;
+  color: #fff !important;
+  border: 2px solid #fff !important;
+}
+
+/* 菜单 */
+:host-context(.db-grid-theme-high-contrast) .db-grid-menu,
+.db-grid-theme-high-contrast .db-grid-menu {
+  background: #000 !important;
+  color: #fff !important;
+  border: 2px solid #fff !important;
+}

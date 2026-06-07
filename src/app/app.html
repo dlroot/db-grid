@@ -82,6 +82,9 @@
     <button [class.active]="currentDemo() === 'centerpin'" (click)="switchDemo('centerpin')">
       📌 中间列固定
     </button>
+    <button [class.active]="currentDemo() === 'accessibility'" (click)="switchDemo('accessibility')">
+      ♿ 无障碍 (ARIA)
+    </button>
     <span class="theme-selector">
       <label>主题:</label>
       <select [value]="currentTheme()" (change)="switchTheme($event)">
@@ -869,6 +872,46 @@
         [theme]="currentTheme()"
         (gridReady)="onGridReady($event)"
         style="height: 500px;"
+      />
+    </div>
+  }
+
+  <!-- 无障碍演示 -->
+  @if (currentDemo() === 'accessibility') {
+    <div class="demo-panel">
+      <div class="demo-header">
+        <h2>♿ 无障碍 (ARIA) 支持</h2>
+        <p class="demo-desc">
+          支持屏幕阅读器 (NVDA/JAWS)：role=grid/row/gridcell、aria-sort、aria-colcount/aria-rowcount、
+          高对比度主题、键盘导航播报
+        </p>
+        <div class="demo-actions">
+          <button class="btn" (click)="toggleHighContrast()">
+            {{ highContrastMode ? '退出高对比度' : '高对比度主题' }}
+          </button>
+          <span class="demo-hint">按 F5 刷新表格，使用 NVDA/JAWS 测试</span>
+        </div>
+      </div>
+      <div class="aria-debug-panel" style="margin: 12px 0; padding: 8px; background: #f5f5f5; border-radius: 4px; font-size: 12px;">
+        <strong>ARIA 属性说明：</strong>
+        <ul style="margin: 4px 0 0 0; padding-left: 20px;">
+          <li><code>role="grid"</code> — 表格容器角色</li>
+          <li><code>role="row"</code> — 行角色</li>
+          <li><code>role="gridcell"</code> — 单元格角色</li>
+          <li><code>aria-sort="ascending|descending"</code> — 排序列</li>
+          <li><code>aria-rowcount/aria-colcount</code> — 行列总数</li>
+          <li><code>aria-selected</code> — 选中状态</li>
+          <li><code>aria-live="polite"</code> — 屏幕阅读器播报</li>
+        </ul>
+      </div>
+      <db-grid
+        #myGrid
+        [columnDefs]="accessibilityColumnDefs"
+        [rowData]="accessibilityRowData"
+        [options]="accessibilityOptions"
+        [theme]="currentTheme()"
+        (gridReady)="onAccessibilityGridReady($event)"
+        style="height: 400px;"
       />
     </div>
   }

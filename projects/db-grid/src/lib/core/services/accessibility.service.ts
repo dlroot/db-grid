@@ -71,6 +71,13 @@ export class AccessibilityService {
     this.createAnnouncer(grid);
   }
 
+  /** 更新表格的 ARIA 属性（行数/列数变化时调用） */
+  updateGridAria(rowCount: number, colCount: number): void {
+    if (!this.gridElement) return;
+    this.gridElement.setAttribute('aria-rowcount', String(rowCount));
+    this.gridElement.setAttribute('aria-colcount', String(colCount));
+  }
+
   private createAnnouncer(parent: HTMLElement): void {
     if (this.announcerElement) return;
 

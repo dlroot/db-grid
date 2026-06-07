@@ -105,6 +105,7 @@ import {
   selector: 'db-grid',
   standalone: true,
   imports: [CommonModule, DbCellEditorComponent, DbFilterPopupComponent, DbChartPanelComponent],
+  styleUrls: ['./db-grid-high-contrast.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div #gridContainer class="db-grid-container" [class]="themeClass()" (keydown)="onKeyDown($event)"

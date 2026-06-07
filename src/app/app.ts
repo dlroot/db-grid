@@ -1695,4 +1695,44 @@ export class AppComponent implements OnInit {
 
   pinnedCenterRowData = this.basicRowData;
   pinnedCenterOptions = { rowSelection: 'multiple', enableColVirtualization: false };
+
+
+  // ============ Accessibility (ARIA) Demo ============
+  accessibilityColumnDefs = [
+    { field: 'id', headerName: 'ID', width: 80, sortable: true, ariaLabel: 'ID 列' },
+    { field: 'name', headerName: '姓名', width: 150, sortable: true, filter: 'text', ariaLabel: '姓名列' },
+    { field: 'age', headerName: '年龄', width: 100, sortable: true, filter: 'number', ariaLabel: '年龄列' },
+    { field: 'department', headerName: '部门', width: 150, filter: 'set', ariaLabel: '部门列' },
+    { field: 'status', headerName: '状态', width: 100, filter: 'set', ariaLabel: '状态列' },
+  ];
+
+  accessibilityRowData = this.basicRowData;
+  accessibilityOptions = { 
+    rowSelection: 'multiple' as any, 
+    enableRangeSelection: true,
+    ariaLive: 'polite' as any,
+  };
+
+  highContrastMode = false;
+
+  toggleHighContrast(): void {
+    this.highContrastMode = !this.highContrastMode;
+    const gridElement = document.querySelector('db-grid')?.shadowRoot?.host || document.querySelector('db-grid');
+    if (gridElement) {
+      if (this.highContrastMode) {
+        gridElement.classList.add('db-grid-theme-high-contrast');
+      } else {
+        gridElement.classList.remove('db-grid-theme-high-contrast');
+      }
+    }
+  }
+
+  onAccessibilityGridReady(params: any): void {
+    this.gridApi = params.api;
+    this.apiStatus.set('已连接 (Accessibility Demo)');
+    // 演示屏幕阅读器播报
+    setTimeout(() => {
+      params.api.announce?.('表格已加载，共 ' + this.accessibilityRowData.length + ' 行数据');
+    }, 1000);
+  }
 }

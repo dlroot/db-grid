@@ -395,6 +395,20 @@ describe('AccessibilityService', () => {
     });
   });
 
+  describe('updateGridAria', () => {
+    it('should update aria-rowcount and aria-colcount on grid element', () => {
+      service.setGridElement(mockGridElement);
+      service.updateGridAria(100, 10);
+      
+      expect(mockGridElement.getAttribute('aria-rowcount')).toBe('100');
+      expect(mockGridElement.getAttribute('aria-colcount')).toBe('10');
+    });
+
+    it('should not throw when grid element is not set', () => {
+      expect(() => service.updateGridAria(10, 5)).not.toThrow();
+    });
+  });
+
   describe('destroy', () => {
     it('should remove announcer element', () => {
       service.setGridElement(mockGridElement);
