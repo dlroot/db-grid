@@ -1604,14 +1604,6 @@ export class AppComponent implements OnInit {
     { id: 0, name: '平均值', department: '—', salary: 0, status: '统计' }
   ]);
 
-  pinColumnDefs = [
-    { field: 'id', headerName: 'ID', width: 60 },
-    { field: 'name', headerName: '姓名', width: 120 },
-    { field: 'department', headerName: '部门', width: 100, filter: 'text' },
-    { field: 'salary', headerName: '薪资', width: 100, filter: 'number', cellAlign: 'right' as any },
-    { field: 'status', headerName: '状态', width: 80 },
-  ];
-
   pinRowData = this.generatePinData();
 
   generatePinData() {
@@ -1629,8 +1621,6 @@ export class AppComponent implements OnInit {
     }
     return data;
   }
-
-  pinOptions = { rowSelection: 'multiple' as any };
 
   addPinnedTopRow() {
     const current = this.pinnedTopRowData();
