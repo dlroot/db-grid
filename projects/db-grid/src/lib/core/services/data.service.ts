@@ -36,9 +36,17 @@ export class DataService {
   // 可选注入 FilterService（若未注入则使用内置简单筛选）
   private filterService: FilterService | null = null;
 
+  // 可选注入 ExternalFilterService
+  private externalFilterService: any | null = null;
+
   /** 注入 FilterService（由主组件调用） */
   setFilterService(fs: FilterService): void {
     this.filterService = fs;
+  }
+
+  /** 注入 ExternalFilterService（由主组件调用） */
+  setExternalFilterService(efs: any): void {
+    this.externalFilterService = efs;
   }
 
   /** 初始化数据 */
@@ -175,6 +183,11 @@ export class DataService {
       }
     } else if (Object.keys(this.filterModel).length > 0) {
       nodes = this.applyFilterToNodes(nodes);
+    }
+
+    // 应用外部筛选
+    if (this.externalFilterService && this.externalFilterService.hasExternalFilters()) {
+      nodes = nodes.filter(node => this.externalFilterService.passesExternalFilters(node));
     }
 
     // 应用多列排序

@@ -67,6 +67,15 @@ export class CellRendererService {
       const params: any = { data, colDef, column: colDef, context: {}, node: null };
       return colDef.valueGetter(params);
     }
+
+    // 如果有 refData 映射，返回映射后的值
+    if (colDef.refData && value != null) {
+      const key = String(value);
+      if (key in colDef.refData) {
+        return colDef.refData[key];
+      }
+    }
+
     return value;
   }
 

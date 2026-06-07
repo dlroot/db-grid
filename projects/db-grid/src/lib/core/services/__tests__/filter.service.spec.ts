@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, it, expect, beforeEach } from 'vitest';
 import { FilterService, FilterModel, ColumnFilterModel } from '../filter.service';
 

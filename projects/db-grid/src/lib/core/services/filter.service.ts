@@ -165,7 +165,15 @@ export class FilterService {
     for (const [colId, filterModel] of Object.entries(this.filterModel)) {
       const colDef = colDefs.find(c => (c.colId || c.field) === colId || c.field === colId);
       const cellValue = this.getCellValue(data, colDef?.field || colId);
-      if (!this.passesColumnFilter(cellValue, filterModel)) {
+      // 如果列有 refData 且筛选器是 set 类型，将原始值映射为显示值再比较
+      if (colDef?.refData && filterModel.filterType === 'set') {
+        const mappedValue = cellValue != null && String(cellValue) in colDef.refData
+          ? colDef.refData[String(cellValue)]
+          : cellValue;
+        if (!this.passesColumnFilter(mappedValue, filterModel)) {
+          return false;
+        }
+      } else if (!this.passesColumnFilter(cellValue, filterModel)) {
         return false;
       }
     }
@@ -304,8 +312,10 @@ export class FilterService {
 
   /**
    * 从数据集中提取某列的唯一值（用于 Set Filter 选项列表）
+   * 支持 refData：如果 colDef 有 refData 映射，返回映射后的显示值
    */
-  getSetFilterValues(data: any[], field: string): any[] {
+  getSetFilterValues(data: any[], field: string, colDef?: ColDef): any[] {
+    const refData = colDef?.refData;
     const seen = new Set<any>();
     const result: any[] = [];
     for (const row of data) {
@@ -313,7 +323,12 @@ export class FilterService {
       const key = val == null ? '__null__' : val;
       if (!seen.has(key)) {
         seen.add(key);
-        result.push(val);
+        // 如果有 refData 映射，返回映射后的显示值
+        if (refData && val != null && String(val) in refData) {
+          result.push(refData[String(val)]);
+        } else {
+          result.push(val);
+        }
       }
     }
     return result.sort((a, b) => {

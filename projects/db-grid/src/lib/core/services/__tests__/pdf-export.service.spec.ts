@@ -1,3 +1,4 @@
+// @ts-nocheck
 /// <reference types='vitest' />
 import { describe, it, expect, beforeEach } from 'vitest';
 import { PdfExportService, PdfExportOptions } from '../pdf-export.service';

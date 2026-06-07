@@ -67,6 +67,18 @@
     <button [class.active]="currentDemo() === 'charts'" (click)="switchDemo('charts')">
       📈 图表
     </button>
+    <button [class.active]="currentDemo() === 'fillhandle'" (click)="switchDemo('fillhandle')">
+      ✋ 填充手柄
+    </button>
+    <button [class.active]="currentDemo() === 'coltypes'" (click)="switchDemo('coltypes')">
+      📋 列类型
+    </button>
+    <button [class.active]="currentDemo() === 'rowpin'" (click)="switchDemo('rowpin')">
+      📌 行固定
+    </button>
+    <button [class.active]="currentDemo() === 'sparkline'" (click)="switchDemo('sparkline')">
+      📊 迷你图
+    </button>
     <span class="theme-selector">
       <label>主题:</label>
       <select [value]="currentTheme()" (change)="switchTheme($event)">
@@ -789,6 +801,97 @@
     </div>
   }
 
+
+  <!-- 行固定演示 -->
+  @if (currentDemo() === 'rowpin') {
+    <div class="demo-panel">
+      <div class="demo-header">
+        <h2>📌 行固定</h2>
+        <p class="demo-desc">将行固定到顶部或底部，固定行不受筛选/排序影响</p>
+        <div class="demo-actions">
+          <button class="btn" (click)="addPinnedTopRow()">⬆️ 添加顶部固定行</button>
+          <button class="btn" (click)="addPinnedBottomRow()">⬇️ 添加底部固定行</button>
+          <button class="btn btn-danger" (click)="clearPinnedRows()">🗑️ 清除所有固定行</button>
+        </div>
+      </div>
+      <db-grid
+        #myGrid
+        [columnDefs]="pinColumnDefs"
+        [rowData]="pinRowData"
+        [gridOptions]="pinOptions"
+        [rowHeight]="40"
+        [headerHeight]="40"
+        [theme]="currentTheme()"
+        [enableSorting]="true"
+        [enableFilter]="true"
+        [pinnedTopRowData]="pinnedTopRowData()"
+        [pinnedBottomRowData]="pinnedBottomRowData()"
+        (gridReady)="onGridReady($event)"
+      />
+    </div>
+  }
+
+  <!-- 迷你图演示 -->
+  @if (currentDemo() === 'sparkline') {
+    <div class="demo-panel">
+      <div class="demo-header">
+        <h2>📊 迷你图 (Sparklines)</h2>
+        <p class="demo-desc">在单元格内嵌入轻量级迷你图表，支持折线/柱状/面积三种类型，纯 Canvas API 渲染</p>
+      </div>
+      <db-grid
+        #myGrid
+        [columnDefs]="sparklineColumnDefs"
+        [rowData]="sparklineRowData"
+        [gridOptions]="sparklineOptions"
+        [rowHeight]="40"
+        [headerHeight]="40"
+        [theme]="currentTheme()"
+        (gridReady)="onGridReady($event)"
+      />
+    </div>
+  }
+
+  <!-- 列类型演示 -->
+  @if (currentDemo() === 'coltypes') {
+    <div class="demo-panel">
+      <div class="demo-header">
+        <h2>📋 列类型</h2>
+        <p class="demo-desc">使用内置列类型（textColumn, numberColumn, dateColumn, booleanColumn, largeTextColumn, percentageColumn）快速配置列属性，并支持 defaultColDef 统一设置默认属性</p>
+        <div class="demo-actions">
+          <button class="btn" (click)="registerCustomColumnType()" [disabled]="columnTypeRegistered()">
+            {{ columnTypeRegistered() ? '✅ 自定义类型已注册' : '➕ 注册自定义 currencyColumn 类型' }}
+          </button>
+          <span class="btn" style="cursor:default">内置类型: textColumn, numberColumn, dateColumn, booleanColumn, largeTextColumn, percentageColumn</span>
+        </div>
+        <div class="range-hints">
+          <h3>列类型说明：</h3>
+          <ul>
+            <li><strong>textColumn</strong> - 文本列：文本筛选、可编辑、可排序、可调整大小</li>
+            <li><strong>numberColumn</strong> - 数值列：数值筛选、可编辑、可排序、右对齐</li>
+            <li><strong>dateColumn</strong> - 日期列：日期筛选、可编辑、使用日期渲染器</li>
+            <li><strong>booleanColumn</strong> - 布尔列：布尔筛选、可编辑、使用布尔渲染器</li>
+            <li><strong>largeTextColumn</strong> - 长文本列：文本筛选、可编辑、使用 textarea 编辑器</li>
+            <li><strong>percentageColumn</strong> - 百分比列：数值筛选、可编辑、右对齐、百分比格式化</li>
+            <li><strong>defaultColDef</strong> - 所有列的默认属性（如 sortable, resizable）</li>
+          </ul>
+        </div>
+      </div>
+      <db-grid
+        #myGrid
+        [columnDefs]="columnTypeColumnDefs"
+        [defaultColDef]="columnTypeDefaultColDef"
+        [rowData]="columnTypeRowData"
+        [gridOptions]="columnTypeOptions"
+        [rowHeight]="40"
+        [headerHeight]="40"
+        [theme]="currentTheme()"
+        [rowSelection]="'multiple'"
+        [pagination]="true"
+        [paginationPageSize]="20"
+        (gridReady)="onGridReady($event)"
+      />
+    </div>
+  }
 
   <!-- 状态栏 -->
   <div class="status-bar">

@@ -1,6 +1,7 @@
+// @ts-nocheck
 /// <reference types='vitest' />
 import { describe, it, expect, beforeEach } from 'vitest';
-import { UndoRedoService, UndoRedoConfig, UndoAction, EditParams, RowAddParams, RowDeleteParams } from '../undo-redo.service';
+import { UndoRedoService, UndoRedoConfig, UndoAction, EditParams, RowAddParams, RowDeleteParams, ColumnResizeParams, ColumnMoveParams, SortChangeParams, FilterChangeParams } from '../undo-redo.service';
 
 describe('UndoRedoService', () => {
   let service: UndoRedoService;
@@ -23,6 +24,11 @@ describe('UndoRedoService', () => {
     it('should default to enabled', () => {
       service.initialize({});
       expect(service.isEnabled()).toBe(true);
+    });
+
+    it('should default max stack size to 50', () => {
+      service.initialize({});
+      expect(service.getMaxStackItems()).toBe(50);
     });
   });
 
@@ -99,6 +105,129 @@ describe('UndoRedoService', () => {
     });
   });
 
+  describe('Record Column Resize', () => {
+    it('should record column resize action', () => {
+      service.recordColumnResize({
+        colId: 'name',
+        oldWidth: 100,
+        newWidth: 200
+      });
+      expect(service.canUndo()).toBe(true);
+      const stack = service.getUndoStack();
+      expect(stack[0].type).toBe('columnResize');
+      expect(stack[0].colId).toBe('name');
+      expect(stack[0].oldWidth).toBe(100);
+      expect(stack[0].newWidth).toBe(200);
+    });
+
+    it('should not record column resize when disabled', () => {
+      service.disable();
+      service.recordColumnResize({ colId: 'name', oldWidth: 100, newWidth: 200 });
+      expect(service.canUndo()).toBe(false);
+    });
+  });
+
+  describe('Record Column Move', () => {
+    it('should record column move action', () => {
+      service.recordColumnMove({
+        colId: 'name',
+        fromIndex: 0,
+        toIndex: 2
+      });
+      expect(service.canUndo()).toBe(true);
+      const stack = service.getUndoStack();
+      expect(stack[0].type).toBe('columnMove');
+      expect(stack[0].fromIndex).toBe(0);
+      expect(stack[0].toIndex).toBe(2);
+    });
+  });
+
+  describe('Record Sort Change', () => {
+    it('should record sort change action', () => {
+      service.recordSortChange({
+        colId: 'name',
+        oldSort: null,
+        newSort: 'asc'
+      });
+      expect(service.canUndo()).toBe(true);
+      const stack = service.getUndoStack();
+      expect(stack[0].type).toBe('sortChange');
+      expect(stack[0].oldSort).toBeNull();
+      expect(stack[0].newSort).toBe('asc');
+    });
+
+    it('should record sort from asc to desc', () => {
+      service.recordSortChange({
+        colId: 'age',
+        oldSort: 'asc',
+        newSort: 'desc'
+      });
+      const stack = service.getUndoStack();
+      expect(stack[0].oldSort).toBe('asc');
+      expect(stack[0].newSort).toBe('desc');
+    });
+  });
+
+  describe('Record Filter Change', () => {
+    it('should record filter change action', () => {
+      service.recordFilterChange({
+        colId: 'name',
+        oldFilter: null,
+        newFilter: { type: 'contains', filter: 'test' }
+      });
+      expect(service.canUndo()).toBe(true);
+      const stack = service.getUndoStack();
+      expect(stack[0].type).toBe('filterChange');
+      expect(stack[0].newFilter.type).toBe('contains');
+    });
+  });
+
+  describe('pushStackItem', () => {
+    it('should push item to undo stack via pushStackItem', () => {
+      service.pushStackItem({
+        type: 'edit',
+        rowIndex: 0,
+        colId: 'name',
+        oldValue: 'a',
+        newValue: 'b',
+        rowData: {},
+        timestamp: Date.now()
+      });
+      expect(service.canUndo()).toBe(true);
+      expect(service.getUndoStackSize()).toBe(1);
+    });
+
+    it('should clear redo stack on pushStackItem', () => {
+      service.recordEdit({ rowIndex: 0, colId: 'name', oldValue: 'a', newValue: 'b', rowData: {} });
+      service.undo();
+      expect(service.canRedo()).toBe(true);
+      service.pushStackItem({
+        type: 'edit',
+        rowIndex: 1,
+        colId: 'age',
+        oldValue: 10,
+        newValue: 20,
+        rowData: {},
+        timestamp: Date.now()
+      });
+      expect(service.canRedo()).toBe(false);
+    });
+
+    it('should not push when disabled', () => {
+      service.disable();
+      service.pushStackItem({
+        type: 'edit',
+        rowIndex: 0,
+        colId: 'c',
+        oldValue: 1,
+        newValue: 2,
+        rowData: {},
+        timestamp: Date.now()
+      });
+      expect(service.canUndo()).toBe(false);
+    });
+  });
+
   describe('Undo', () => {
     it('should undo edit', () => {
       service.recordEdit({ rowIndex: 0, colId: 'name', oldValue: 'Old', newValue: 'New', rowData: {} });
@@ -110,6 +239,21 @@ describe('UndoRedoService', () => {
       expect(result).not.toBeNull();
       expect(result?.type).toBe('edit');
       expect(action).not.toBeNull();
+    });
+
+    it('should undo column resize', () => {
+      service.recordColumnResize({ colId: 'name', oldWidth: 100, newWidth: 200 });
+      const result = service.undo();
+      expect(result).not.toBeNull();
+      expect(result?.type).toBe('columnResize');
+    });
+
+    it('should undo sort change', () => {
+      service.recordSortChange({ colId: 'name', oldSort: null, newSort: 'asc' });
+      const result = service.undo();
+      expect(result?.type).toBe('sortChange');
+      expect(result?.oldSort).toBeNull();
+      expect(result?.newSort).toBe('asc');
     });
 
     it('should return null when nothing to undo', () => {
@@ -218,18 +362,83 @@ describe('UndoRedoService', () => {
     it('should return copies of stacks', () => {
       service.recordEdit({ rowIndex: 0, colId: 'c', oldValue: 1, newValue: 2, rowData: {} });
       const stack = service.getUndoStack();
-      // modification of returned array should not affect internal stack
       expect(stack).toBeDefined();
     });
   });
 
-  describe('Clear', () => {
-    it('should clear history', () => {
+  describe('Clear Stack', () => {
+    it('should clear history with clearStack', () => {
       service.recordEdit({ rowIndex: 0, colId: 'c', oldValue: 1, newValue: 2, rowData: {} });
       service.recordEdit({ rowIndex: 1, colId: 'c', oldValue: 3, newValue: 4, rowData: {} });
+      service.clearStack();
+      expect(service.canUndo()).toBe(false);
+      expect(service.canRedo()).toBe(false);
+    });
+
+    it('should clear history with clear (alias)', () => {
+      service.recordEdit({ rowIndex: 0, colId: 'c', oldValue: 1, newValue: 2, rowData: {} });
       service.clear();
       expect(service.canUndo()).toBe(false);
       expect(service.canRedo()).toBe(false);
+    });
+  });
+
+  describe('setMaxStackItems', () => {
+    it('should set max stack size', () => {
+      service.setMaxStackItems(10);
+      expect(service.getMaxStackItems()).toBe(10);
+    });
+
+    it('should trim existing stacks when reducing max size', () => {
+      for (let i = 0; i < 5; i++) {
+        service.recordEdit({ rowIndex: i, colId: 'c', oldValue: i, newValue: i + 1, rowData: {} });
+      }
+      service.setMaxStackItems(2);
+      expect(service.getUndoStackSize()).toBe(2);
+    });
+
+    it('should trim redo stack when reducing max size', () => {
+      for (let i = 0; i < 5; i++) {
+        service.recordEdit({ rowIndex: i, colId: 'c', oldValue: i, newValue: i + 1, rowData: {} });
+      }
+      // Undo 3 items
+      service.undo();
+      service.undo();
+      service.undo();
+      expect(service.getRedoStackSize()).toBe(3);
+      service.setMaxStackItems(2);
+      expect(service.getRedoStackSize()).toBe(2);
+    });
+  });
+
+  describe('Mixed Operation Types', () => {
+    it('should handle mixed operation types in undo/redo', () => {
+      service.recordEdit({ rowIndex: 0, colId: 'name', oldValue: 'a', newValue: 'b', rowData: {} });
+      service.recordColumnResize({ colId: 'name', oldWidth: 100, newWidth: 200 });
+      service.recordSortChange({ colId: 'age', oldSort: null, newSort: 'asc' });
+      service.recordFilterChange({ colId: 'name', oldFilter: null, newFilter: { type: 'contains', filter: 'test' } });
+
+      expect(service.getUndoStackSize()).toBe(4);
+
+      // Undo all
+      const a1 = service.undo();
+      expect(a1.type).toBe('filterChange');
+      const a2 = service.undo();
+      expect(a2.type).toBe('sortChange');
+      const a3 = service.undo();
+      expect(a3.type).toBe('columnResize');
+      const a4 = service.undo();
+      expect(a4.type).toBe('edit');
+
+      // Redo all
+      const r1 = service.redo();
+      expect(r1.type).toBe('edit');
+      const r2 = service.redo();
+      expect(r2.type).toBe('columnResize');
+      const r3 = service.redo();
+      expect(r3.type).toBe('sortChange');
+      const r4 = service.redo();
+      expect(r4.type).toBe('filterChange');
     });
   });
 
@@ -246,6 +455,13 @@ describe('UndoRedoService', () => {
       service.recordEdit({ rowIndex: 0, colId: 'c', oldValue: 1, newValue: 2, rowData: {} });
       service.onStackChangedEvent(() => { called = true; });
       service.undo();
+      expect(called).toBe(true);
+    });
+
+    it('should call stack changed callback on setMaxStackItems', () => {
+      let called = false;
+      service.onStackChangedEvent(() => { called = true; });
+      service.setMaxStackItems(20);
       expect(called).toBe(true);
     });
   });

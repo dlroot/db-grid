@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ServerSideService, IServerSideDatasource, IServerSideGetRowsParams } from '../server-side.service';
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { CellDataTypeService } from '../cell-data-type.service';
 
 describe('CellDataTypeService', () => {

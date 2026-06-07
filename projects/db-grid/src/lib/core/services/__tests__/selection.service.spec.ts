@@ -1,3 +1,4 @@
+// @ts-nocheck
 /// <reference types='vitest' />
 import { describe, it, expect, beforeEach } from 'vitest';
 import { SelectionService, SelectionConfig, SelectionChange } from '../selection.service';

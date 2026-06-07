@@ -80,6 +80,9 @@ export interface ColDef {
   tooltipField?: string;
   tooltipValueGetter?: (params: TooltipValueGetterParams) => string;
 
+  // 值映射
+  refData?: Record<string, string>;  // value -> display text mapping
+
   // 排序
   sort?: 'asc' | 'desc' | null;
   sortIndex?: number;

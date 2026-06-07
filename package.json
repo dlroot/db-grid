@@ -51,7 +51,8 @@
     "playwright": "^1.59.1",
     "prettier": "^3.8.1",
     "typescript": "~5.9.2",
-    "vitest": "^4.1.4"
+    "vitest": "^4.1.4",
+    "zone.js": "^0.16.2"
   },
   "type": "module"
 }

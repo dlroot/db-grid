@@ -85,6 +85,10 @@ import {
   IServerSideDatasource,
   ServerSideConfig,
   OverlayService,
+  ColumnTypeService,
+  TooltipService,
+  ExternalFilterService,
+  ValueMappingService,
 } from '../../../core/services';
 
 import { DbCellEditorComponent } from '../cell-editor/db-cell-editor.component';
@@ -227,6 +231,17 @@ import {
         <input #fileInput type="file" accept=".xlsx,.xls" style="display:none" (change)="onFileSelected($event)" />
         <div #dragOverlay class="db-grid-drag-import-overlay">
           <span class="db-grid-drag-import-text">📥 释放导入 Excel 文件</span>
+        </div>
+      }
+
+      <!-- 填充手柄 (Fill Handle) -->
+      @if (fillHandleVisible() && enableFillHandle) {
+        <div #fillHandle 
+             class="db-grid-fill-handle" 
+             [style.left.px]="fillHandlePosition().x"
+             [style.top.px]="fillHandlePosition().y"
+             (mousedown)="onFillHandleMouseDown($event)"
+             (mousemove)="onFillHandleMouseMove($event)">
         </div>
       }
     </div>
@@ -500,12 +515,75 @@ import {
       z-index: 5;
     }
 
+    /* 填充手柄拖拽元素 */
+    .db-grid-fill-handle {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: var(--db-grid-primary, #2196f3);
+      border: 1px solid #fff;
+      border-radius: 1px;
+      cursor: crosshair;
+      z-index: 100;
+      display: none;
+    }
+    .db-grid-fill-handle.visible {
+      display: block;
+    }
+    .db-grid-fill-handle:hover {
+      background: var(--db-grid-primary-dark, #1976d2);
+      transform: scale(1.2);
+    }
+    .db-grid-fill-handle.dragging {
+      opacity: 0.7;
+      background: var(--db-grid-primary-dark, #1976d2);
+    }
+
+    /* 填充预览高亮 */
+    .db-grid-cell-fill-preview {
+      background: var(--db-grid-fill-preview-bg, rgba(33, 150, 243, 0.25)) !important;
+      outline: 1px dashed var(--db-grid-primary, #2196f3);
+      outline-offset: -1px;
+    }
+
+    /* ========== Tooltip ========== */
+    :host .db-grid-tooltip {
+      position: absolute;
+      background: var(--db-grid-bg, #fff);
+      border: 1px solid var(--db-grid-border-color, #ddd);
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      z-index: 9999;
+      pointer-events: none;
+      animation: db-grid-tooltip-fadein 0.15s ease-out;
+    }
+    .db-grid-tooltip-content {
+      padding: 6px 10px;
+      font-size: 12px;
+      max-width: 300px;
+      word-wrap: break-word;
+      color: var(--db-grid-text-color, #333);
+    }
+    .db-grid-tooltip.db-grid-tooltip-fadeout {
+      animation: db-grid-tooltip-fadeout 0.15s ease-out forwards;
+    }
+    @keyframes db-grid-tooltip-fadein {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes db-grid-tooltip-fadeout {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+
     :host(:focus) { outline: none; }
   `],
 })
 export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewInit {
   // ============ Inputs ============
   @Input() columnDefs: ColDef[] = [];
+  @Input() defaultColDef?: Partial<ColDef>;
+  @Input() columnTypes?: Record<string, Partial<ColDef>>;
   @Input() rowData: any[] = [];
   private _gridOptions: GridOptions = {};
   @Input() set gridOptions(value: GridOptions) { this._gridOptions = value || {}; }
@@ -572,6 +650,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   /** 启用集成图表功能 */
   @Input() enableCharts: boolean = false;
 
+  // ============ 行固定 Inputs ============
+  /** 顶部固定行数据 */
+  @Input() pinnedTopRowData: any[] = [];
+  /** 底部固定行数据 */
+  @Input() pinnedBottomRowData: any[] = [];
+
   // ============ Menu Inputs ============
   /** 启用列头菜单按钮（三横线图标） */
   @Input() enableColumnMenu: boolean = true;
@@ -600,6 +684,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   @Output() groupExpanded = new EventEmitter<any>();
   @Output() groupCollapsed = new EventEmitter<any>();
   @Output() viewportChanged = new EventEmitter<{ startIndex: number; endIndex: number; offsetY: number }>();
+  @Output() externalFilterChanged = new EventEmitter<void>();
 
   // ============ 编辑 Inputs ============
   @Input() enableCellEdit: boolean = false;
@@ -642,6 +727,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   @ViewChild('footerContainer') footerContainer!: ElementRef<HTMLDivElement>;
   @ViewChild('dragOverlay') dragOverlay!: ElementRef<HTMLDivElement>;
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('fillHandle') fillHandleEl!: ElementRef<HTMLDivElement>;
 
   // ============ Signals ============
   rowCount = signal(0);
@@ -725,7 +811,11 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   private pivotService: PivotService;
   private i18nService: I18nService;
   private clipboardService: ClipboardService;
+  private columnTypeService: ColumnTypeService;
   overlayService: OverlayService;
+  private tooltipService: TooltipService;
+  private externalFilterService: ExternalFilterService;
+  private valueMappingService: ValueMappingService;
   private _dataTypesApplied = false;
 
   // ============ State ============
@@ -748,6 +838,14 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   gridMenuPosition = signal<{x: number; y: number}>({x: 0, y: 0});
   gridMenuItems = signal<ColumnMenuItemType[]>([]);
   private gridMenuColId = '';
+
+  // ============ Fill Handle State ============
+  fillHandleVisible = signal<boolean>(false);
+  fillHandlePosition = signal<{x: number; y: number}>({x: 0, y: 0});
+  private isDraggingFillHandle = false;
+  private fillHandleDragStart = { rowIndex: -1, colId: '' };
+  private fillHandleDragCurrent = { rowIndex: -1, colId: '' };
+  private fillPreviewRanges: any[] = [];
   private _pendingRefresh = false; // 标记是否需要在视图就绪后重试刷新
 
   // ============ Chart Panel State ============
@@ -816,19 +914,43 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.pivotService = new PivotService();
     this.i18nService = new I18nService();
     this.overlayService = new OverlayService();
+    this.tooltipService = new TooltipService();
+    this.externalFilterService = new ExternalFilterService();
+    this.valueMappingService = new ValueMappingService();
+    this.columnTypeService = new ColumnTypeService();
     this.i18nService.setLocale(this.locale);
   }
 
   // ============ Lifecycle ============
 
+  /** Apply column types + defaultColDef and initialize column service */
+  private initializeColumns(colDefs?: ColDef[]): void {
+    const defs = colDefs || this.columnDefs;
+    // Register custom column types if provided
+    if (this.columnTypes) {
+      this.columnTypeService.registerColumnTypes(this.columnTypes);
+    }
+    // Resolve defaultColDef from input or gridOptions
+    const resolvedDefault = this.defaultColDef || this.gridOptions?.defaultColDef;
+    // Apply column types + defaultColDef
+    const appliedDefs = this.columnTypeService.applyColumnTypes(defs, resolvedDefault);
+    this.columnDefs = appliedDefs;
+    this.columnService.initialize(appliedDefs);
+    this.pinnedLeftColumnIds.set(this.pinningService.getPinnedLeftIds());
+  }
+
   ngOnInit(): void {
 
     // 初始化列服务
-    this.columnService.initialize(this.columnDefs);
-    this.pinnedLeftColumnIds.set(this.pinningService.getPinnedLeftIds());
+    this.initializeColumns();
+    // pinnedLeftColumnIds is set inside initializeColumns, so no need to set it again
+    // this.pinnedLeftColumnIds.set(this.pinningService.getPinnedLeftIds());
     this.dataService.setScrollConfig({ rowHeight: this.rowHeight, viewportHeight: 400, bufferSize: 5 });
     // 注入筛选服务（支持列筛选 + 快速筛选）
     this.dataService.setFilterService(this.filterService);
+
+    // Wire external filter service into data service filtering
+    this.dataService.setExternalFilterService(this.externalFilterService);
 
     // 订阅快速筛选输入（防抖 200ms）
     this.quickFilterSubject.pipe(
@@ -844,8 +966,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     if (this.rowData && this.rowData.length > 0) {
       this.cellDataTypeService.applyAutoTypes(this.columnDefs, this.rowData, this.gridOptions);
       // 重新初始化列服务（类型推断可能修改了 columnDefs）
-      this.columnService.initialize(this.columnDefs);
-      this.pinnedLeftColumnIds.set(this.pinningService.getPinnedLeftIds());
+      this.initializeColumns();
     }
 
     // 初始化主从表服务
@@ -996,8 +1117,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       this.setRowData(changes['rowData'].currentValue);
     }
     if (changes['columnDefs'] && !changes['columnDefs'].firstChange) {
-      this.columnService.initialize(changes['columnDefs'].currentValue);
-      this.pinnedLeftColumnIds.set(this.pinningService.getPinnedLeftIds());
+      this.initializeColumns(changes['columnDefs'].currentValue);
       this.refreshHeader();
     }
     // 语言变更
@@ -1059,7 +1179,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
           // 透视清除：恢复原始 columnDefs 和数据
           this.isPivotMode = false;
           this.columnDefs = this.originalColumnDefs || this.columnDefs;
-          this.columnService.initialize(this.columnDefs);
+          this.initializeColumns();
           this.pivotService.disablePivotMode();
           this.setRowData(this.rowData);
         }
@@ -1165,6 +1285,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         this.rowRenderer
       );
       this.keyboardNavigationService.setRowHeight(this.rowHeight);
+      // Wire Ctrl+Z / Ctrl+Y undo/redo shortcuts
+      this.keyboardNavigationService.setUndoRedoService(this.undoRedoService);
       // 订阅焦点变化事件
       this.keyboardNavigationService.onFocusChange.subscribe(event => {
         this.ngZone.run(() => this.onFocusChanged(event.current));
@@ -1235,7 +1357,11 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.statusBarService.destroy();
     this.masterDetailService.destroy();
     this.undoRedoService.destroy();
+    this.columnTypeService.destroy();
     this.serverSideService.destroy();
+    this.tooltipService.destroy();
+    this.externalFilterService.destroy();
+    this.valueMappingService.destroy();
   }
 
   // ============ Grid API ============
@@ -1312,6 +1438,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         }
       },
       getColumnDef: (colId: string) => this.columnService.getColumn(colId) || this.columnDefs.find(c => (c.colId || c.field) === colId),
+      getColumnTypeService: () => this.columnTypeService,
       getViewportInfo: () => this.viewportInfo(),
 
       // ========== 树形数据 ==========
@@ -1532,8 +1659,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         const existingIds = this.columnDefs.map(c => c.colId);
         const newCols = result.groupColumnDefs.filter(c => !existingIds.includes(c.colId!));
         this.columnDefs = [...result.groupColumnDefs, ...this.columnDefs];
-        this.columnService.initialize(this.columnDefs);
-        this.pinnedLeftColumnIds.set(this.pinningService.getPinnedLeftIds());
+        this.initializeColumns();
         this.refreshHeader();
       }
       // 使用 initializeNodes 传入展开后的扁平节点数组（只渲染展开状态的节点）
@@ -1563,7 +1689,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       this.dataService.initialize(pivotResult.flatRows, this.gridOptions, pivotColDefs);
       // 更新 columnDefs 和 columnService，使 header 和 body 列定义一致
       this.columnDefs = pivotColDefs as any;
-      this.columnService.initialize(this.columnDefs);
+      this.initializeColumns();
       this.rowCount.set(pivotResult.flatRows.length);
     } else {
       this.isPivotMode = false;
@@ -2502,9 +2628,211 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
       // 同步更新列头选中样式
       this.updateColumnHeaderSelectionStyles();
+
+      // ============ 更新填充手柄位置 ============
+      this.updateFillHandlePosition();
     } catch (err) {
       console.error('[DBGrid] updateRangeStyles error:', err);
     }
+  }
+
+  /** 更新填充手柄（小方块）位置 */
+  private updateFillHandlePosition(): void {
+    if (!this.enableFillHandle) {
+      this.fillHandleVisible.set(false);
+      return;
+    }
+
+    const activeRange = this.rangeSelectionService.getActiveRange();
+    if (!activeRange) {
+      this.fillHandleVisible.set(false);
+      return;
+    }
+
+    // 获取选中范围右下角的单元格
+    const maxRow = Math.max(activeRange.start.rowIndex, activeRange.end.rowIndex);
+    const visibleColumns = this.columnService.getVisibleColumns();
+    const startColIdx = visibleColumns.findIndex(c => (c.field ?? c.colId) === activeRange.start.colId);
+    const endColIdx = visibleColumns.findIndex(c => (c.field ?? c.colId) === activeRange.end.colId);
+    const maxColIdx = Math.max(startColIdx, endColIdx);
+
+    if (maxColIdx < 0 || maxRow < 0) {
+      this.fillHandleVisible.set(false);
+      return;
+    }
+
+    // 找到对应的单元格元素
+    const rowsContainer = this.rowsContainer?.nativeElement;
+    if (!rowsContainer) {
+      this.fillHandleVisible.set(false);
+      return;
+    }
+
+    const targetRow = rowsContainer.querySelectorAll('.db-grid-row')[maxRow];
+    if (!targetRow) {
+      this.fillHandleVisible.set(false);
+      return;
+    }
+
+    const targetCell = targetRow.querySelectorAll('.db-grid-cell')[maxColIdx];
+    if (!targetCell) {
+      this.fillHandleVisible.set(false);
+      return;
+    }
+
+    // 计算填充手柄位置（相对于 grid-container）
+    const cellRect = targetCell.getBoundingClientRect();
+    const gridRect = this.gridContainer.nativeElement.getBoundingClientRect();
+
+    const x = cellRect.right - gridRect.left - 4;  // 右对齐
+    const y = cellRect.bottom - gridRect.top - 4; // 底对齐
+
+    this.fillHandlePosition.set({ x, y });
+    this.fillHandleVisible.set(true);
+  }
+
+  /** 填充手柄鼠标按下：开始拖拽 */
+  onFillHandleMouseDown(event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!this.enableFillHandle) return;
+
+    const activeRange = this.rangeSelectionService.getActiveRange();
+    if (!activeRange) return;
+
+    // 记录拖拽起始位置
+    this.isDraggingFillHandle = true;
+    this.fillHandleDragStart = {
+      rowIndex: Math.max(activeRange.start.rowIndex, activeRange.end.rowIndex),
+      colId: activeRange.end.colId || activeRange.start.colId || ''
+    };
+    this.fillHandleDragCurrent = { ...this.fillHandleDragStart };
+
+    // 添加全局 mousemove 和 mouseup 监听
+    this.ngZone.runOutsideAngular(() => {
+      window.addEventListener('mousemove', this.onFillHandleDragMove);
+      window.addEventListener('mouseup', this.onFillHandleDragEnd);
+    });
+
+    // 添加 dragging 样式
+    this.fillHandleEl?.nativeElement?.classList.add('dragging');
+  }
+
+  /** 填充手柄拖拽中 */
+  private onFillHandleDragMove = (event: MouseEvent): void => {
+    if (!this.isDraggingFillHandle) return;
+
+    // 找到鼠标位置对应的单元格
+    const target = document.elementFromPoint(event.clientX, event.clientY);
+    const cell = (target as HTMLElement)?.closest('.db-grid-cell') as HTMLElement;
+    if (!cell) return;
+
+    const rowEl = cell.closest('.db-grid-row') as HTMLElement;
+    if (!rowEl) return;
+
+    const rowIndex = parseInt(rowEl.dataset['rowIndex'] || '0', 10);
+    const colId = cell.dataset['colId'] || '';
+
+    this.fillHandleDragCurrent = { rowIndex, colId };
+
+    // 显示预览（高亮将要填充的单元格）
+    this.showFillPreview();
+  };
+
+  /** 显示填充预览 */
+  private showFillPreview(): void {
+    // 清除之前的预览
+    this.clearFillPreview();
+
+    if (!this.isDraggingFillHandle) return;
+
+    const start = this.fillHandleDragStart;
+    const current = this.fillHandleDragCurrent;
+
+    // 确定填充方向和范围
+    const startRow = Math.min(start.rowIndex, current.rowIndex);
+    const endRow = Math.max(start.rowIndex, current.rowIndex);
+    const visibleColumns = this.columnService.getVisibleColumns();
+    const startColIdx = visibleColumns.findIndex(c => (c.field ?? c.colId) === start.colId);
+    const currentColIdx = visibleColumns.findIndex(c => (c.field ?? c.colId) === current.colId);
+    const startCol = Math.min(startColIdx, currentColIdx);
+    const endCol = Math.max(startColIdx, currentColIdx);
+
+    // 高亮预览区域
+    const rowsContainer = this.rowsContainer?.nativeElement;
+    if (!rowsContainer) return;
+
+    const rows = rowsContainer.querySelectorAll('.db-grid-row');
+    for (let r = startRow; r <= endRow; r++) {
+      const row = rows[r] as HTMLElement;
+      if (!row) continue;
+
+      const cells = row.querySelectorAll('.db-grid-cell');
+      for (let c = startCol; c <= endCol; c++) {
+        const cell = cells[c] as HTMLElement;
+        if (cell) {
+          cell.classList.add('db-grid-cell-fill-preview');
+        }
+      }
+    }
+  }
+
+  /** 清除填充预览 */
+  private clearFillPreview(): void {
+    const previewCells = this.gridContainer?.nativeElement?.querySelectorAll('.db-grid-cell-fill-preview');
+    previewCells?.forEach((cell: Element) => {
+      cell.classList.remove('db-grid-cell-fill-preview');
+    });
+  }
+
+  /** 填充手柄拖拽结束 */
+  private onFillHandleDragEnd = (event: MouseEvent): void => {
+    if (!this.isDraggingFillHandle) return;
+
+    this.isDraggingFillHandle = false;
+
+    // 移除全局监听
+    window.removeEventListener('mousemove', this.onFillHandleDragMove);
+    window.removeEventListener('mouseup', this.onFillHandleDragEnd);
+
+    // 移除 dragging 样式
+    this.fillHandleEl?.nativeElement?.classList.remove('dragging');
+
+    // 清除预览
+    this.clearFillPreview();
+
+    // 执行填充
+    this.executeFillHandle();
+  };
+
+  /** 执行填充操作 */
+  private executeFillHandle(): void {
+    const start = this.fillHandleDragStart;
+    const end = this.fillHandleDragCurrent;
+
+    if (start.rowIndex === end.rowIndex && start.colId === end.colId) {
+      // 没有拖拽，忽略
+      return;
+    }
+
+    // 确定填充方向
+    const direction: 'down' | 'up' | 'left' | 'right' = 
+      end.rowIndex > start.rowIndex ? 'down' :
+      end.rowIndex < start.rowIndex ? 'up' :
+      end.colId !== start.colId ? 'right' : 'down';
+
+    // 计算填充数量
+    const visibleColumns = this.columnService.getVisibleColumns();
+    const startColIdx = visibleColumns.findIndex(c => (c.field ?? c.colId) === start.colId);
+    const endColIdx = visibleColumns.findIndex(c => (c.field ?? c.colId) === end.colId);
+
+    const rowCount = Math.abs(end.rowIndex - start.rowIndex) + 1;
+    const colCount = Math.abs(endColIdx - startColIdx) + 1;
+    const count = Math.max(rowCount, colCount);
+
+    // 调用 fillHandle API
+    this.fillHandle(direction, count);
   }
 
   async copyToClipboard(data?: any[], columns?: any[]): Promise<boolean> {
@@ -3653,6 +3981,9 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   // ============ 事件 ============
 
   onScroll(event: Event): void {
+    // Hide tooltip on scroll
+    this.tooltipService.hideTooltip();
+
     const target = event.target as HTMLElement;
     const newScrollTop = target.scrollTop;
     const newScrollLeft = target.scrollLeft;
@@ -3850,6 +4181,32 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       const colDef = this.columnDefs.find(c => (c.colId || c.field) === colId);
       this.ngZone.run(() => this.showCellContextMenu(e, { rowData: data, rowIndex, colDef }));
     });
+
+    // Tooltip: mouseenter / mouseleave on cells
+    rowElement.addEventListener('mouseenter', (e: MouseEvent) => {
+      const cell = (e.target as HTMLElement).closest('.db-grid-cell') as HTMLElement;
+      if (!cell) return;
+      const colId = cell.dataset?.['colId'] || '';
+      const colDef = this.columnDefs.find(c => (c.colId || c.field) === colId);
+      if (!colDef) return;
+      if (!colDef.tooltipField && !colDef.tooltipValueGetter) return;
+      const field = colDef.field || colId;
+      const value = data[field];
+      this.tooltipService.showTooltip({
+        value,
+        colDef,
+        rowIndex,
+        column: colDef,
+        cellElement: cell,
+      });
+    }, true);
+
+    rowElement.addEventListener('mouseleave', (e: MouseEvent) => {
+      const cell = (e.target as HTMLElement).closest('.db-grid-cell') as HTMLElement;
+      if (cell) {
+        this.tooltipService.hideTooltip();
+      }
+    }, true);
   }
 
   // ============ 筛选器事件 ============

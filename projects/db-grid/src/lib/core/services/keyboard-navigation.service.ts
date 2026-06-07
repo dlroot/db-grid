@@ -1,6 +1,11 @@
 /**
  * Keyboard Navigation Service
  * 完整键盘操作支持：Tab / Enter / Arrow / Escape / 编辑快捷键
+ * 支持 AG Grid 兼容的快捷键：
+ *   - Ctrl+Home/End: 跳转到首/末单元格
+ *   - Ctrl+方向键: 跳转到数据边缘
+ *   - Shift+方向键: 扩展选择区域
+ *   - Ctrl+Shift+方向键: 扩展选择到边缘
  *
  * 用法：
  *   const kb = new KeyboardNavigationService();
@@ -49,6 +54,8 @@ export class KeyboardNavigationService {
   private columnService: ColumnService | null = null;
   private rowRenderer: any = null;
   private gridElement: HTMLElement | null = null;
+  private rangeSelectionService: any = null; // RangeSelectionService reference
+  private undoRedoService: any = null; // UndoRedoService reference
 
   /** 当前焦点单元格 */
   private _focusedRowIndex = -1;
@@ -57,6 +64,9 @@ export class KeyboardNavigationService {
   /** 焦点列索引缓存 */
   private _colIdToIndexCache: Map<string, number> = new Map();
   private _indexToColIdCache: Map<number, string> = new Map();
+
+  /** 行数据引用（用于查找数据边缘） */
+  private rowData: any[] = [];
 
   // ========== 事件发射器 ==========
 
@@ -81,13 +91,32 @@ export class KeyboardNavigationService {
     gridApi: GridFocusApi,
     gridElement: HTMLElement,
     columnService: ColumnService,
-    rowRenderer: any
+    rowRenderer: any,
+    rowData?: any[]
   ): void {
     this.gridApi = gridApi;
     this.gridElement = gridElement;
     this.columnService = columnService;
     this.rowRenderer = rowRenderer;
+    if (rowData) {
+      this.rowData = rowData;
+    }
     this.refreshColumnCache();
+  }
+
+  /** 设置 RangeSelectionService 引用（用于 Shift+方向键扩展选择） */
+  setRangeSelectionService(service: any): void {
+    this.rangeSelectionService = service;
+  }
+
+  /** 设置 UndoRedoService 引用（用于 Ctrl+Z / Ctrl+Y） */
+  setUndoRedoService(service: any): void {
+    this.undoRedoService = service;
+  }
+
+  /** 设置行数据（用于 Ctrl+方向键查找数据边缘） */
+  setRowData(rowData: any[]): void {
+    this.rowData = rowData;
   }
 
   /** 刷新列索引缓存（列定义变化时调用） */
@@ -176,15 +205,51 @@ export class KeyboardNavigationService {
     switch (key) {
       // ===== 焦点移动 =====
       case 'ArrowUp':
+        if (ctrl && shift) {
+          // Ctrl+Shift+Up: 扩展选择到当前列第一个单元格
+          this.extendSelectionToEdge('top');
+          return { consumed: true };
+        }
+        if (ctrl) {
+          // Ctrl+Up: 跳转到当前列的第一个单元格
+          return this.jumpToDataEdge('up');
+        }
         return this.moveFocus('up', shift);
 
       case 'ArrowDown':
+        if (ctrl && shift) {
+          // Ctrl+Shift+Down: 扩展选择到当前列最后一个单元格
+          this.extendSelectionToEdge('bottom');
+          return { consumed: true };
+        }
+        if (ctrl) {
+          // Ctrl+Down: 跳转到当前列的最后一个单元格
+          return this.jumpToDataEdge('down');
+        }
         return this.moveFocus('down', shift);
 
       case 'ArrowLeft':
+        if (ctrl && shift) {
+          // Ctrl+Shift+Left: 扩展选择到当前行第一个单元格
+          this.extendSelectionToEdge('left');
+          return { consumed: true };
+        }
+        if (ctrl) {
+          // Ctrl+Left: 跳转到当前行的第一个单元格
+          return this.jumpToDataEdge('left');
+        }
         return this.moveFocus('left', shift);
 
       case 'ArrowRight':
+        if (ctrl && shift) {
+          // Ctrl+Shift+Right: 扩展选择到当前行最后一个单元格
+          this.extendSelectionToEdge('right');
+          return { consumed: true };
+        }
+        if (ctrl) {
+          // Ctrl+Right: 跳转到当前行的最后一个单元格
+          return this.jumpToDataEdge('right');
+        }
         return this.moveFocus('right', shift);
 
       // ===== Tab 导航 =====
@@ -222,6 +287,29 @@ export class KeyboardNavigationService {
       case 'End':
         return this.handleEndKey(ctrl, shift);
 
+      // ===== Undo/Redo =====
+      case 'z':
+      case 'Z':
+        if (ctrl && !shift) {
+          // Ctrl+Z: Undo
+          if (this.undoRedoService && this.undoRedoService.canUndo()) {
+            this.undoRedoService.undo();
+          }
+          return { consumed: true };
+        }
+        return { consumed: false };
+
+      case 'y':
+      case 'Y':
+        if (ctrl) {
+          // Ctrl+Y: Redo
+          if (this.undoRedoService && this.undoRedoService.canRedo()) {
+            this.undoRedoService.redo();
+          }
+          return { consumed: true };
+        }
+        return { consumed: false };
+
       default:
         return { consumed: false };
     }
@@ -229,9 +317,101 @@ export class KeyboardNavigationService {
 
   // ========== 内部方法 ==========
 
+  /** 跳转到第一个单元格（Ctrl+Home）*/
+  private jumpToFirstCell(): KeyEventResult {
+    const firstColId = this._indexToColIdCache.get(0);
+    if (!firstColId) return { consumed: false };
+    this.setFocusedCell(0, firstColId);
+    return { consumed: true };
+  }
+
+  /** 跳转到最后一个单元格（Ctrl+End）*/
+  private jumpToLastCell(): KeyEventResult {
+    const maxRow = (this.gridApi?.getDisplayedRowCount() ?? 1) - 1;
+    const lastColIndex = this._indexToColIdCache.size - 1;
+    const lastColId = this._indexToColIdCache.get(lastColIndex);
+    if (!lastColId) return { consumed: false };
+    this.setFocusedCell(maxRow, lastColId);
+    return { consumed: true };
+  }
+
+  /** 跳转到数据边缘（Ctrl+方向键）
+   *  - Up: 跳转到当前列的第一个非空单元格
+   *  - Down: 跳转到当前列的最后一个非空单元格
+   *  - Left: 跳转到当前行的第一个单元格
+   *  - Right: 跳转到当前行的最后一个单元格
+   */
+  private jumpToDataEdge(direction: 'up' | 'down' | 'left' | 'right'): KeyEventResult {
+    const current = this.getFocusedCell();
+    if (!current) {
+      this.focusFirstCell();
+      return { consumed: true };
+    }
+
+    let { rowIndex, colId } = current;
+    const colIndex = this._colIdToIndexCache.get(colId) ?? 0;
+    const maxRow = (this.gridApi?.getDisplayedRowCount() ?? 1) - 1;
+    const maxCol = this._indexToColIdCache.size - 1;
+
+    switch (direction) {
+      case 'up':
+        // 跳转到当前列的第一个非空单元格（或第一行）
+        rowIndex = this.findEdgeRow(colIndex, 'up');
+        break;
+      case 'down':
+        // 跳转到当前列的最后一个非空单元格（或最后一行）
+        rowIndex = this.findEdgeRow(colIndex, 'down');
+        break;
+      case 'left':
+        // 跳转到当前行的第一个单元格
+        colId = this._indexToColIdCache.get(0) || colId;
+        break;
+      case 'right':
+        // 跳转到当前行的最后一个单元格
+        colId = this._indexToColIdCache.get(maxCol) || colId;
+        break;
+    }
+
+    if (rowIndex === current.rowIndex && colId === current.colId) {
+      return { consumed: false };
+    }
+
+    this.setFocusedCell(rowIndex, colId);
+    return { consumed: true };
+  }
+
+  /** 查找边缘行（向上/向下找到第一个非空单元格） */
+  private findEdgeRow(colIndex: number, direction: 'up' | 'down'): number {
+    const current = this.getFocusedCell();
+    if (!current) return 0;
+
+    const maxRow = (this.gridApi?.getDisplayedRowCount() ?? 1) - 1;
+    const colId = this._indexToColIdCache.get(colIndex) || '';
+
+    if (direction === 'up') {
+      // 向上找到第一个非空单元格
+      for (let i = current.rowIndex - 1; i >= 0; i--) {
+        const value = this.getCellValue(i, colId);
+        if (value !== null && value !== undefined && value !== '') {
+          return i;
+        }
+      }
+      return 0; // 如果没有非空单元格，返回第一行
+    } else {
+      // 向下找到第一个非空单元格
+      for (let i = current.rowIndex + 1; i <= maxRow; i++) {
+        const value = this.getCellValue(i, colId);
+        if (value !== null && value !== undefined && value !== '') {
+          return i;
+        }
+      }
+      return maxRow; // 如果没有非空单元格，返回最后一行
+    }
+  }
+
   /** 移动焦点 */
   private moveFocus(
-    direction: 'up' | 'down' | 'left' | 'right' | 'next' | 'prev',
+    direction: 'up' | 'down' | 'left' | 'right' | 'next' | 'prev' | 'home' | 'end',
     extend: boolean
   ): KeyEventResult {
     const current = this.getFocusedCell();
@@ -284,6 +464,15 @@ export class KeyboardNavigationService {
           colId = this._indexToColIdCache.get(lastColIndex) || '';
         }
         break;
+      case 'home':
+        // Home: 跳转到当前行第一个单元格
+        colId = this._indexToColIdCache.get(0) || colId;
+        break;
+      case 'end':
+        // End: 跳转到当前行最后一个单元格
+        const lastColIdx = this._indexToColIdCache.size - 1;
+        colId = this._indexToColIdCache.get(lastColIdx) || colId;
+        break;
     }
 
     // 边界检查
@@ -294,8 +483,25 @@ export class KeyboardNavigationService {
       return { consumed: false };
     }
 
+    // 如果 extend 为 true（Shift 键），扩展选择区域
+    if (extend && this.rangeSelectionService) {
+      this.extendSelection(rowIndex, colId);
+    }
+
     this.setFocusedCell(rowIndex, colId);
     return { consumed: true };
+  }
+
+  /** 扩展选择区域（Shift+方向键） */
+  private extendSelection(rowIndex: number, colId: string): void {
+    if (!this.rangeSelectionService) return;
+
+    const current = this.getFocusedCell();
+    if (!current) return;
+
+    // 使用 RangeSelectionService 扩展选择
+    this.rangeSelectionService.startRangeSelection(current.rowIndex, current.colId);
+    this.rangeSelectionService.extendRange(rowIndex, colId);
   }
 
   /** 按 Page Up/Down 移动（移动一屏） */
@@ -315,8 +521,30 @@ export class KeyboardNavigationService {
     const current = this.getFocusedCell();
     if (!current) return { consumed: false };
 
+    if (ctrl && shift) {
+      // Ctrl+Shift+Home: 扩展选择到第一个单元格
+      const firstColId = this._indexToColIdCache.get(0) || '';
+      if (this.rangeSelectionService) {
+        this.rangeSelectionService.startRangeSelection(current.rowIndex, current.colId);
+        this.rangeSelectionService.extendRange(0, firstColId);
+      }
+      this.setFocusedCell(0, firstColId);
+      return { consumed: true };
+    }
+
+    if (ctrl) {
+      // Ctrl+Home: 跳转到第一个单元格
+      return this.jumpToFirstCell();
+    }
+
+    // Home: 跳转到当前行第一个单元格
     const firstColId = this._indexToColIdCache.get(0) || '';
-    this.setFocusedCell(ctrl ? 0 : current.rowIndex, firstColId);
+    if (shift && this.rangeSelectionService) {
+      // Shift+Home: 扩展选择到当前行第一个单元格
+      this.rangeSelectionService.startRangeSelection(current.rowIndex, current.colId);
+      this.rangeSelectionService.extendRange(current.rowIndex, firstColId);
+    }
+    this.setFocusedCell(current.rowIndex, firstColId);
     return { consumed: true };
   }
 
@@ -326,8 +554,61 @@ export class KeyboardNavigationService {
 
     const maxRow = (this.gridApi?.getDisplayedRowCount() ?? 1) - 1;
     const lastColId = this._indexToColIdCache.get(this._indexToColIdCache.size - 1) || '';
-    this.setFocusedCell(ctrl ? maxRow : current.rowIndex, lastColId);
+
+    if (ctrl && shift) {
+      // Ctrl+Shift+End: 扩展选择到最后一个单元格
+      if (this.rangeSelectionService) {
+        this.rangeSelectionService.startRangeSelection(current.rowIndex, current.colId);
+        this.rangeSelectionService.extendRange(maxRow, lastColId);
+      }
+      this.setFocusedCell(maxRow, lastColId);
+      return { consumed: true };
+    }
+
+    if (ctrl) {
+      // Ctrl+End: 跳转到最后一个单元格
+      return this.jumpToLastCell();
+    }
+
+    // End: 跳转到当前行最后一个单元格
+    if (shift && this.rangeSelectionService) {
+      // Shift+End: 扩展选择到当前行最后一个单元格
+      this.rangeSelectionService.startRangeSelection(current.rowIndex, current.colId);
+      this.rangeSelectionService.extendRange(current.rowIndex, lastColId);
+    }
+    this.setFocusedCell(current.rowIndex, lastColId);
     return { consumed: true };
+  }
+
+  /** 扩展选择到边缘（Ctrl+Shift+方向键）*/
+  private extendSelectionToEdge(direction: 'top' | 'bottom' | 'left' | 'right'): void {
+    if (!this.rangeSelectionService) return;
+
+    const current = this.getFocusedCell();
+    if (!current) return;
+
+    let targetRow = current.rowIndex;
+    let targetColId = current.colId;
+    const maxRow = (this.gridApi?.getDisplayedRowCount() ?? 1) - 1;
+
+    switch (direction) {
+      case 'top':
+        targetRow = 0;
+        break;
+      case 'bottom':
+        targetRow = maxRow;
+        break;
+      case 'left':
+        targetColId = this._indexToColIdCache.get(0) || current.colId;
+        break;
+      case 'right':
+        targetColId = this._indexToColIdCache.get(this._indexToColIdCache.size - 1) || current.colId;
+        break;
+    }
+
+    this.rangeSelectionService.startRangeSelection(current.rowIndex, current.colId);
+    this.rangeSelectionService.extendRange(targetRow, targetColId);
+    this.setFocusedCell(targetRow, targetColId);
   }
 
   /** Enter 键 */

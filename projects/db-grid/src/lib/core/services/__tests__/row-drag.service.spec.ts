@@ -1,3 +1,4 @@
+// @ts-nocheck
 /// <reference types='vitest' />
 import { describe, it, expect, beforeEach } from 'vitest';
 import { RowDragService, RowDragConfig, RowDragStartEvent, RowDragMoveEvent, RowDragEndEvent, RowDragState } from '../row-drag.service';

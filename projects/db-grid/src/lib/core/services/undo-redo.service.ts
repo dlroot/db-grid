@@ -1,15 +1,15 @@
 import { Injectable } from '@angular/core';
 
 /**
- * 撤销/重做服务 — 支持单元格编辑的历史记录管理
- * AG Grid 对应功能：Undo/Redo Cell Edits
+ * 撤销/重做服务 — 支持单元格编辑、列操作、排序、筛选的历史记录管理
+ * AG Grid 对应功能：Undo/Redo Cell Edits + 扩展操作类型
  */
 @Injectable({ providedIn: 'root' })
 export class UndoRedoService {
   private enabled = true;
   private undoStack: UndoAction[] = [];
   private redoStack: UndoAction[] = [];
-  private maxStackSize = 100;
+  private maxStackSize = 50;
 
   private onUndo: ((action: UndoAction) => void) | null = null;
   private onRedo: ((action: UndoAction) => void) | null = null;
@@ -18,7 +18,7 @@ export class UndoRedoService {
   /** 初始化 */
   initialize(config: UndoRedoConfig = {}): void {
     this.enabled = config.enabled ?? true;
-    this.maxStackSize = config.maxStackSize ?? 100;
+    this.maxStackSize = config.maxStackSize ?? 50;
     this.clear();
   }
 
@@ -45,17 +45,7 @@ export class UndoRedoService {
       timestamp: Date.now()
     };
 
-    this.undoStack.push(action);
-
-    // 清空 redo 栈（新操作使 redo 失效）
-    this.redoStack = [];
-
-    // 限制栈大小
-    if (this.undoStack.length > this.maxStackSize) {
-      this.undoStack.shift();
-    }
-
-    this.emitStackChanged();
+    this.pushStackItem(action);
   }
 
   /** 记录行添加 */
@@ -69,14 +59,7 @@ export class UndoRedoService {
       timestamp: Date.now()
     };
 
-    this.undoStack.push(action);
-    this.redoStack = [];
-
-    if (this.undoStack.length > this.maxStackSize) {
-      this.undoStack.shift();
-    }
-
-    this.emitStackChanged();
+    this.pushStackItem(action);
   }
 
   /** 记录行删除 */
@@ -90,9 +73,85 @@ export class UndoRedoService {
       timestamp: Date.now()
     };
 
-    this.undoStack.push(action);
+    this.pushStackItem(action);
+  }
+
+  /** 记录列宽变更 */
+  recordColumnResize(params: ColumnResizeParams): void {
+    if (!this.enabled) return;
+
+    const action: UndoAction = {
+      type: 'columnResize',
+      colId: params.colId,
+      oldWidth: params.oldWidth,
+      newWidth: params.newWidth,
+      rowData: {},
+      timestamp: Date.now()
+    };
+
+    this.pushStackItem(action);
+  }
+
+  /** 记录列移动 */
+  recordColumnMove(params: ColumnMoveParams): void {
+    if (!this.enabled) return;
+
+    const action: UndoAction = {
+      type: 'columnMove',
+      colId: params.colId,
+      fromIndex: params.fromIndex,
+      toIndex: params.toIndex,
+      rowData: {},
+      timestamp: Date.now()
+    };
+
+    this.pushStackItem(action);
+  }
+
+  /** 记录排序变更 */
+  recordSortChange(params: SortChangeParams): void {
+    if (!this.enabled) return;
+
+    const action: UndoAction = {
+      type: 'sortChange',
+      colId: params.colId,
+      oldSort: params.oldSort,
+      newSort: params.newSort,
+      rowData: {},
+      timestamp: Date.now()
+    };
+
+    this.pushStackItem(action);
+  }
+
+  /** 记录筛选变更 */
+  recordFilterChange(params: FilterChangeParams): void {
+    if (!this.enabled) return;
+
+    const action: UndoAction = {
+      type: 'filterChange',
+      colId: params.colId,
+      oldFilter: params.oldFilter,
+      newFilter: params.newFilter,
+      rowData: {},
+      timestamp: Date.now()
+    };
+
+    this.pushStackItem(action);
+  }
+
+  /**
+   * 推入撤销栈
+   * 同时清空重做栈，并限制栈大小
+   */
+  pushStackItem(item: UndoAction): void {
+    if (!this.enabled) return;
+
+    this.undoStack.push(item);
+    // 新操作使重做栈失效
     this.redoStack = [];
 
+    // 限制栈大小
     if (this.undoStack.length > this.maxStackSize) {
       this.undoStack.shift();
     }
@@ -102,7 +161,7 @@ export class UndoRedoService {
 
   /** 撤销 */
   undo(): UndoAction | null {
-    if (!this.enabled || this.undoStack.length === 0) return null;
+    if (!this.canUndo()) return null;
 
     const action = this.undoStack.pop()!;
     this.redoStack.push(action);
@@ -115,7 +174,7 @@ export class UndoRedoService {
 
   /** 重做 */
   redo(): UndoAction | null {
-    if (!this.enabled || this.redoStack.length === 0) return null;
+    if (!this.canRedo()) return null;
 
     const action = this.redoStack.pop()!;
     this.undoStack.push(action);
@@ -157,10 +216,33 @@ export class UndoRedoService {
   }
 
   /** 清空历史 */
-  clear(): void {
+  clearStack(): void {
     this.undoStack = [];
     this.redoStack = [];
     this.emitStackChanged();
+  }
+
+  /** 清空历史（别名） */
+  clear(): void {
+    this.clearStack();
+  }
+
+  /** 设置最大栈大小 */
+  setMaxStackItems(max: number): void {
+    this.maxStackSize = max;
+    // 如果当前栈超过新限制，裁剪
+    while (this.undoStack.length > this.maxStackSize) {
+      this.undoStack.shift();
+    }
+    while (this.redoStack.length > this.maxStackSize) {
+      this.redoStack.shift();
+    }
+    this.emitStackChanged();
+  }
+
+  /** 获取最大栈大小 */
+  getMaxStackItems(): number {
+    return this.maxStackSize;
   }
 
   /** 注册撤销回调 */
@@ -206,11 +288,19 @@ export interface UndoRedoConfig {
 
 /** 撤销动作 */
 export interface UndoAction {
-  type: 'edit' | 'rowAdd' | 'rowDelete';
-  rowIndex: number;
+  type: 'edit' | 'rowAdd' | 'rowDelete' | 'columnResize' | 'columnMove' | 'sortChange' | 'filterChange';
+  rowIndex?: number;
   colId?: string;
   oldValue?: any;
   newValue?: any;
+  oldWidth?: number;
+  newWidth?: number;
+  fromIndex?: number;
+  toIndex?: number;
+  oldSort?: 'asc' | 'desc' | null;
+  newSort?: 'asc' | 'desc' | null;
+  oldFilter?: any;
+  newFilter?: any;
   rowData: any;
   timestamp: number;
 }
@@ -234,4 +324,32 @@ export interface RowAddParams {
 export interface RowDeleteParams {
   rowIndex: number;
   rowData: any;
+}
+
+/** 列宽变更参数 */
+export interface ColumnResizeParams {
+  colId: string;
+  oldWidth: number;
+  newWidth: number;
+}
+
+/** 列移动参数 */
+export interface ColumnMoveParams {
+  colId: string;
+  fromIndex: number;
+  toIndex: number;
+}
+
+/** 排序变更参数 */
+export interface SortChangeParams {
+  colId: string;
+  oldSort: 'asc' | 'desc' | null;
+  newSort: 'asc' | 'desc' | null;
+}
+
+/** 筛选变更参数 */
+export interface FilterChangeParams {
+  colId: string;
+  oldFilter: any;
+  newFilter: any;
 }

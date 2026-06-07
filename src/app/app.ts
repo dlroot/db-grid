@@ -326,6 +326,63 @@ export class AppComponent implements OnInit {
   undoStackSize = signal<number>(0);
   redoStackSize = signal<number>(0);
 
+  // ========== 列类型演示 ==========
+  columnTypeColumnDefs = [
+    { field: "id", headerName: "ID", width: 80, type: "numberColumn", editable: false },
+    { field: "name", headerName: "姓名", width: 150, type: "textColumn" },
+    { field: "age", headerName: "年龄", width: 100, type: "numberColumn" },
+    { field: "email", headerName: "邮箱", width: 220, type: "textColumn" },
+    { field: "birthDate", headerName: "出生日期", width: 130, type: "dateColumn" },
+    { field: "active", headerName: "在职", width: 80, type: "booleanColumn" },
+    { field: "salary", headerName: "薪资", width: 120, type: "numberColumn" },
+    { field: "bonus", headerName: "奖金比例", width: 110, type: "percentageColumn" },
+    { field: "notes", headerName: "备注", width: 200, type: "largeTextColumn" },
+  ];
+  columnTypeDefaultColDef = { sortable: true, resizable: true };
+  columnTypeRowData = this.generateColumnTypeData();
+  columnTypeOptions = { rowSelection: 'multiple', enableCellEdit: true, editOnDoubleClick: true };
+  columnTypeRegistered = signal<boolean>(false);
+
+  generateColumnTypeData(): any[] {
+    const names = ['张三', '李四', '王五', '赵六', '钱七', '孙八', '周九', '吴十', '郑十一', '冯十二',
+                  '陈小明', '林小红', '黄小刚', '杨小芳', '刘小伟', '吕小丽', '施小强', '张小梅', '何小军', '罗小琴'];
+    const depts = ['技术部', '产品部', '市场部', '财务部', '研发部'];
+    const data: any[] = [];
+    for (let i = 0; i < 20; i++) {
+      data.push({
+        id: i + 1,
+        name: names[i % names.length],
+        age: 22 + Math.floor(Math.random() * 35),
+        email: `user${i + 1}@example.com`,
+        birthDate: `${1990 + Math.floor(Math.random() * 10)}-${String(1 + Math.floor(Math.random() * 12)).padStart(2, '0')}-${String(1 + Math.floor(Math.random() * 28)).padStart(2, '0')}`,
+        active: Math.random() > 0.3,
+        salary: 5000 + Math.floor(Math.random() * 45000),
+        bonus: Math.round((Math.random() * 0.3 + 0.05) * 100) / 100,
+        notes: i % 3 === 0 ? '优秀员工，多次获得表彰' : (i % 3 === 1 ? '需要加强培训' : ''),
+      });
+    }
+    return data;
+  }
+
+  registerCustomColumnType(): void {
+    if (this.gridApi) {
+      const typeService = this.gridApi.getColumnTypeService?.();
+      if (typeService) {
+        typeService.registerColumnType('currencyColumn', {
+          filter: 'number',
+          editable: true,
+          cellAlign: 'right',
+          valueFormatter: (params: any) => {
+            const val = params.value;
+            if (val == null) return '';
+            return '¥' + Number(val).toLocaleString();
+          },
+        });
+        this.columnTypeRegistered.set(true);
+      }
+    }
+  }
+
   // ========== 键盘导航演示 ==========
   keyboardColumnDefs = [
     { field: "id", headerName: "ID", width: 80, sortable: true, filter: "number" },
@@ -1161,6 +1218,35 @@ export class AppComponent implements OnInit {
   rowVirtualViewportRows = signal<number>(0);
   private rowVirtualGridApi: any = null;
 
+  // ========== 填充手柄演示 (Phase 2.5) ==========
+  fillHandleColumnDefs = [
+    { field: "id", headerName: "ID", width: 80, sortable: true, editable: false },
+    { field: "number", headerName: "数值", width: 120, sortable: true, editable: true, cellEditor: "number" },
+    { field: "date", headerName: "日期", width: 130, sortable: true, editable: true, cellEditor: "date" },
+    { field: "text", headerName: "文本", width: 150, sortable: true, editable: true },
+    { field: "formula", headerName: "公式", width: 120, sortable: true, editable: true },
+  ];
+  fillHandleRowData = this.generateFillHandleData();
+  fillHandleOptions = { rowSelection: "multiple" };
+
+  /** 生成填充手柄演示数据 */
+  private generateFillHandleData(): any[] {
+    const data: any[] = [];
+    // 数值序列：1, 2, 3...
+    // 日期序列：2024-01-01, 2024-01-02...
+    // 文本：复制填充
+    for (let i = 1; i <= 20; i++) {
+      data.push({
+        id: i,
+        number: i <= 3 ? i : null,  // 前3行有数值，其他为空
+        date: i <= 3 ? `2024-01-${String(i).padStart(2, '0')}` : null,
+        text: i === 1 ? '副本' : null,
+        formula: i === 1 ? '=A1*2' : null,
+      });
+    }
+    return data;
+  }
+
   /** 生成大量行数据 */
   private generateLargeData(count: number): any[] {
     const names = ["张伟","王芳","李明","刘洋","陈静","杨帆","赵雷","黄丽","周杰","吴敏","徐强","孙悦","马超","朱华","何平","林涛","潘敏","韩伟","魏芳","冯勇"];
@@ -1509,4 +1595,99 @@ export class AppComponent implements OnInit {
       }
     });
   }
+
+  // ========== 行固定演示 (Phase 3.1) ==========
+  pinnedTopRowData = signal<any[]>([
+    { id: 0, name: '汇总行', department: '—', salary: 0, status: '汇总' }
+  ]);
+  pinnedBottomRowData = signal<any[]>([
+    { id: 0, name: '平均值', department: '—', salary: 0, status: '统计' }
+  ]);
+
+  pinColumnDefs = [
+    { field: 'id', headerName: 'ID', width: 60 },
+    { field: 'name', headerName: '姓名', width: 120 },
+    { field: 'department', headerName: '部门', width: 100, filter: 'text' },
+    { field: 'salary', headerName: '薪资', width: 100, filter: 'number', cellAlign: 'right' as any },
+    { field: 'status', headerName: '状态', width: 80 },
+  ];
+
+  pinRowData = this.generatePinData();
+
+  generatePinData() {
+    const depts = ['工程', '产品', '设计', '运营'];
+    const statuses = ['在职', '休假', '离职'];
+    const data = [];
+    for (let i = 1; i <= 30; i++) {
+      data.push({
+        id: i,
+        name: `员工${i}`,
+        department: depts[i % depts.length],
+        salary: 3000 + Math.floor(Math.random() * 12000),
+        status: statuses[i % statuses.length],
+      });
+    }
+    return data;
+  }
+
+  pinOptions = { rowSelection: 'multiple' as any };
+
+  addPinnedTopRow() {
+    const current = this.pinnedTopRowData();
+    const totalSalary = this.pinRowData.reduce((s, r) => s + r.salary, 0);
+    this.pinnedTopRowData.set([
+      ...current,
+      { id: current.length, name: `动态汇总 #${current.length + 1}`, department: '—', salary: totalSalary, status: '自动' }
+    ]);
+  }
+
+  addPinnedBottomRow() {
+    const current = this.pinnedBottomRowData();
+    const avgSalary = Math.round(this.pinRowData.reduce((s, r) => s + r.salary, 0) / this.pinRowData.length);
+    this.pinnedBottomRowData.set([
+      ...current,
+      { id: current.length, name: `统计 #${current.length + 1}`, department: '—', salary: avgSalary, status: '平均' }
+    ]);
+  }
+
+  clearPinnedRows() {
+    this.pinnedTopRowData.set([]);
+    this.pinnedBottomRowData.set([]);
+  }
+
+  // ========== 迷你图演示 (Phase 3.5) ==========
+  sparklineColumnDefs = [
+    { field: 'name', headerName: '产品', width: 100 },
+    { field: 'sales', headerName: '销售额趋势', width: 150, cellRenderer: 'sparkline' as any, sparklineType: 'line' as any, sparklineColor: '#2196f3' as any },
+    { field: 'profit', headerName: '利润趋势', width: 150, cellRenderer: 'sparkline' as any, sparklineType: 'area' as any, sparklineColor: '#4caf50' as any },
+    { field: 'volume', headerName: '成交量', width: 150, cellRenderer: 'sparkline' as any, sparklineType: 'bar' as any, sparklineColor: '#ff9800' as any },
+    { field: 'totalSales', headerName: '总销售额', width: 120, cellAlign: 'right' as any },
+    { field: 'totalProfit', headerName: '总利润', width: 120, cellAlign: 'right' as any },
+  ];
+
+  sparklineRowData = this.generateSparklineData();
+
+  generateSparklineData() {
+    const products = ['产品A', '产品B', '产品C', '产品D', '产品E', '产品F', '产品G', '产品H'];
+    return products.map(name => {
+      const sales: number[] = [];
+      const profit: number[] = [];
+      const volume: number[] = [];
+      for (let i = 0; i < 12; i++) {
+        sales.push(Math.floor(50 + Math.random() * 200));
+        profit.push(Math.floor(-20 + Math.random() * 80));
+        volume.push(Math.floor(100 + Math.random() * 500));
+      }
+      return {
+        name,
+        sales,
+        profit,
+        volume,
+        totalSales: sales.reduce((a, b) => a + b, 0),
+        totalProfit: profit.reduce((a, b) => a + b, 0),
+      };
+    });
+  }
+
+  sparklineOptions = { rowSelection: 'single' as any };
 }
