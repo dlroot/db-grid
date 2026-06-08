@@ -430,10 +430,13 @@ export class I18nService {
     }
   }
 
-  /** 翻译一个 key */
+  /** 翻译一个 key（支持自定义翻译覆盖） */
   t(key: string): string {
-    const lang = this.locale();
-    return translations[lang]?.[key] ?? translations['en']?.[key] ?? key;
+    const lang = this.getLocale();
+    const custom = this.customTranslations.get(lang);
+    if (custom?.[key]) return custom[key];
+    const translationsRecord = translations as Record<string, Record<string, string>>;
+    return translationsRecord[lang]?.[key] ?? translationsRecord['en']?.[key] ?? key;
   }
 
   /** 设置语言 */
@@ -460,5 +463,85 @@ export class I18nService {
       ko: '한국어',
     };
     return names[locale] ?? locale;
+  }
+
+  // ========== 自定义语言包 ==========
+
+  /** 自定义翻译覆盖（用户注册的额外翻译） */
+  private customTranslations: Map<string, Record<string, string>> = new Map();
+
+  /** 自定义 Locale 注册表 */
+  private customLocales: Map<string, { name: string; rtl?: boolean }> = new Map();
+
+  /**
+   * 注册自定义语言包
+   * @param locale - 语言标识（如 'fr', 'de', 'pt-BR'）
+   * @param translations - 翻译键值对
+   * @param displayName - 语言显示名（如 'Français'）
+   * @param rtl - 是否为 RTL 语言
+   */
+  registerLocale(
+    locale: string,
+    translations: Record<string, string>,
+    displayName?: string,
+    rtl?: boolean
+  ): void {
+    this.customTranslations.set(locale, translations);
+    this.customLocales.set(locale, { name: displayName || locale, rtl });
+  }
+
+  /**
+   * 注册自定义翻译覆盖（覆盖内置翻译中的特定 key）
+   * @param locale - 要覆盖的语言标识
+   * @param translations - 要覆盖的翻译键值对
+   */
+  registerTranslations(locale: string, translations: Record<string, string>): void {
+    if (this.customTranslations.has(locale)) {
+      Object.assign(this.customTranslations.get(locale)!, translations);
+    } else {
+      this.customTranslations.set(locale, translations);
+    }
+  }
+
+  /** 注销自定义语言包 */
+  unregisterLocale(locale: string): void {
+    this.customTranslations.delete(locale);
+    this.customLocales.delete(locale);
+  }
+
+  /** 获取所有已注册的语言标识（内置 + 自定义） */
+  getAllLocales(): string[] {
+    const builtIn: string[] = ['en', 'zh', 'ja', 'ko'];
+    const custom = Array.from(this.customLocales.keys());
+    return [...builtIn, ...custom];
+  }
+
+  /** 获取语言显示名（支持自定义语言） */
+  getLocaleName(locale: string): string {
+    const builtIn: Record<string, string> = { en: 'English', zh: '中文', ja: '日本語', ko: '한국어' };
+    if (builtIn[locale]) return builtIn[locale];
+    return this.customLocales.get(locale)?.name ?? locale;
+  }
+
+  // ========== RTL 支持 ==========
+
+  /** 检查指定语言是否为 RTL */
+  isRtl(locale?: string): boolean {
+    const lang = locale || this.getLocale();
+    // 内置 RTL 语言
+    const builtInRtl = ['ar', 'he', 'fa', 'ur'];
+    if (builtInRtl.some(rtl => lang.startsWith(rtl))) return true;
+    // 自定义 RTL 语言
+    return this.customLocales.get(lang)?.rtl ?? false;
+  }
+
+  /** 获取当前语言方向 */
+  getDirection(): 'ltr' | 'rtl' {
+    return this.isRtl() ? 'rtl' : 'ltr';
+  }
+
+  /** 获取所有支持的语言（含自定义） */
+  getSupportedLocalesAll(): string[] {
+    return this.getAllLocales();
   }
 }

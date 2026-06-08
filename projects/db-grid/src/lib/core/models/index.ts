@@ -739,3 +739,203 @@ export interface DetailChartConfig {
 }
 
 export { RowNode, createEmptyRowNode } from './row-node';
+
+// ============ 泛型类型（TypeScript 类型安全升级） ============
+//
+// 这些泛型版本提供更强的类型安全，同时保持向后兼容。
+// 所有泛型参数都有默认值 (any)，因此现有代码无需修改。
+//
+// 用法示例：
+//   interface Employee { id: number; name: string; salary: number; }
+//   const colDefs: ColDef<Employee>[] = [
+//     { field: 'name', headerName: '姓名' },            // ✅ 类型安全
+//     { field: 'salary', headerName: '薪资', filter: 'number' },
+//   ];
+//   const options: GridOptions<Employee> = {
+//     columnDefs: colDefs,
+//     rowData: employees,
+//   };
+//
+
+/**
+ * 泛型列定义
+ * @template TData - 行数据类型
+ *
+ * 相比基础 ColDef，泛型版本提供：
+ *   - valueGetter 参数的 data 字段类型安全
+ *   - valueSetter 的 newValue/oldValue 类型安全
+ *   - cellStyle/cellClass 回调参数类型安全
+ */
+export interface ColDefGeneric<TData = any> extends ColDef {
+  /** 行数据类型安全的值获取器 */
+  valueGetter?: (params: ValueGetterParams & { data?: TData }) => any;
+  /** 行数据类型安全的值设置器 */
+  valueSetter?: (params: ValueSetterParams & { data: TData; newValue: any; oldValue: any }) => any;
+  /** 行数据类型安全的单元格样式 */
+  cellStyle?: CellStyle | ((params: CellStyleParams<TData>) => CellStyle);
+  /** 行数据类型安全的单元格样式 */
+  cellClass?: string | string[] | ((params: CellClassParams & { data: TData }) => string | string[] | object);
+  /** 行数据类型安全的可编辑判断 */
+  editable?: boolean | ((params: CellEditableParams<TData>) => boolean);
+}
+
+/** 泛型 ColDef 的简写别名 */
+export type GColDef<TData = any> = ColDefGeneric<TData>;
+
+/** 单元格样式回调参数（泛型） */
+export interface CellStyleParams<TData = any> {
+  data: TData;
+  node: IRowNode;
+  colDef: ColDef;
+  rowIndex: number;
+  api: any;
+  context?: any;
+}
+
+/** 单元格可编辑判断参数（泛型） */
+export interface CellEditableParams<TData = any> {
+  data: TData;
+  node: IRowNode;
+  colDef: ColDef;
+  column: ColDef;
+  rowIndex: number;
+}
+
+/**
+ * 泛型 GridOptions
+ * @template TData - 行数据类型
+ * @template TContext - 上下文类型
+ */
+export interface GridOptionsGeneric<TData = any, TContext = any> extends GridOptions {
+  columnDefs?: ColDefGeneric<TData>[];
+  rowData?: TData[];
+  context?: TContext;
+  getRowId?: (params: GetRowIdParams & { data: TData }) => string;
+  getRowHeight?: (params: GetRowHeightParams & { data: TData }) => number | null;
+  getRowStyle?: (params: GetRowStyleParams & { data: TData }) => CellStyle | null;
+  getRowClass?: (params: GetRowClassParams & { data: TData }) => string | string[] | ((params: any) => string | string[] | null | undefined) | null | undefined;
+  isRowSelectable?: (params: IsRowSelectableParams & { data: TData; node: IRowNode }) => boolean;
+}
+
+/** 泛型 GridOptions 的简写别名 */
+export type GGridOptions<TData = any, TContext = any> = GridOptionsGeneric<TData, TContext>;
+
+/**
+ * 泛型 GridApi
+ * @template TData - 行数据类型
+ */
+export interface GridApiGeneric<TData = any> {
+  // 数据
+  setRowData(rowData: TData[]): void;
+  getDisplayedRows(): TData[];
+  forEachNode(callback: (node: IRowNode, index: number) => void): void;
+  getRowNode(id: string): IRowNode | undefined;
+
+  // 选择
+  selectAll(): void;
+  deselectAll(): void;
+  selectNode(node: IRowNode, clearSelection?: boolean): void;
+  deselectNode(node: IRowNode): void;
+  getSelectedNodes(): IRowNode[];
+  getSelectedRows(): TData[];
+  getSelectedRowNodes(): IRowNode[];
+
+  // 排序
+  setSortModel(model: SortModelItem[]): void;
+  getSortModel(): SortModelItem[];
+  sortByColumn(column: ColDef, sortDirection?: SortDirection): void;
+  setSort(field: string, direction: SortDirection | null): void;
+  clearSort(): void;
+
+  // 筛选
+  setFilterModel(model: FilterModel): void;
+  getFilterModel(): FilterModel;
+  onFilterChanged(): void;
+
+  // 刷新
+  refreshCells(params?: RefreshCellsParams): void;
+  redrawRows(params?: RedrawRowsParams): void;
+  sizeColumnsToFit(): void;
+  resetColumnState(): void;
+
+  // 滚动
+  ensureIndexVisible(index: number, align?: string): void;
+  ensureNodeVisible(node: IRowNode, align?: string): void;
+
+  // 导出
+  exportDataAsCsv(params?: CsvExportParams): string;
+  getDataAsCsv(params?: CsvExportParams): string;
+
+  // 列操作
+  getColumnDef(colId: string): ColDef | null;
+  getAllColumnDefs(): ColDef[];
+
+  // 行固定
+  pinRow(pinIndex: number, data: TData, position?: 'top' | 'bottom'): void;
+  getPinnedTopRowData(): TData[];
+  getPinnedBottomRowData(): TData[];
+
+  // 剪贴板
+  copyToClipboard(data?: TData[], columns?: any[]): Promise<boolean>;
+  copySelectedRange(): Promise<boolean>;
+  pasteToGrid(text?: string): Promise<void>;
+}
+
+/** 泛型 GridApi 的简写别名 */
+export type GGridApi<TData = any> = GridApiGeneric<TData>;
+
+/**
+ * 泛型 GridReadyEvent
+ * @template TData - 行数据类型
+ */
+export interface GridReadyEventGeneric<TData = any> extends Omit<BaseEvent, 'api'> {
+  api: GridApiGeneric<TData>;
+  columnApi: any;
+}
+
+/** 泛型 GridReadyEvent 的简写别名 */
+export type GGridReadyEvent<TData = any> = GridReadyEventGeneric<TData>;
+
+/**
+ * 泛型 IRowNode
+ * @template TData - 行数据类型
+ */
+export interface IRowNodeGeneric<TData = any> extends IRowNode {
+  data: TData;
+  setData(data: TData): void;
+  updateData(data: Partial<TData>): void;
+}
+
+/** 泛型 IRowNode 的简写别名 */
+export type GRowNode<TData = any> = IRowNodeGeneric<TData>;
+
+/**
+ * 泛型行事件
+ * @template TData - 行数据类型
+ */
+export interface RowEventGeneric<TData = any> extends RowEvent {
+  data: TData;
+  node: IRowNodeGeneric<TData>;
+}
+
+/**
+ * 泛型单元格事件
+ * @template TData - 行数据类型
+ */
+export interface CellEventGeneric<TData = any> extends CellEvent {
+  data: TData;
+  node: IRowNodeGeneric<TData>;
+}
+
+/**
+ * 泛型 RowDataTransaction
+ * @template TData - 行数据类型
+ */
+export interface RowDataTransactionGeneric<TData = any> {
+  add?: TData[];
+  remove?: TData[];
+  update?: TData[];
+}
+
+/** 泛型 RowDataTransaction 的简写别名 */
+export type GRowDataTransaction<TData = any> = RowDataTransactionGeneric<TData>;

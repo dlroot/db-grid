@@ -62,6 +62,7 @@ import {
   ContextMenuService,
   ColumnMenuService,
   ColumnMenuItem as ColumnMenuItemType,
+  CrossGridDragService,
   DragDropService,
   FilterService,
   EditorService,
@@ -847,6 +848,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   private columnMenuService: ColumnMenuService;
   private dragDropService: DragDropService;
   private rowDragService: RowDragService;
+  private crossGridDragService: CrossGridDragService;
+  private _crossGridDragId = 'default';
   private filterService: FilterService;
   private editorService: EditorService;
   private cellDataTypeService: CellDataTypeService;
@@ -952,6 +955,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.columnMenuService = new ColumnMenuService();
     this.dragDropService = new DragDropService();
     this.rowDragService = new RowDragService();
+    this.crossGridDragService = new CrossGridDragService();
     this.filterService = new FilterService();
     this.editorService = new EditorService();
     this.cellDataTypeService = new CellDataTypeService();
@@ -1680,6 +1684,31 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       endDrag: (targetIndex: number, event: MouseEvent) => this.endDrag(targetIndex, event),
       getDragDropService: () => this.dragDropService,
       getRowDragService: () => this.rowDragService,
+      getCrossGridDragService: () => this.crossGridDragService,
+
+      // ========== 跨网格拖拽 ==========
+      registerCrossGridDrag: (gridId: string) => {
+        this._crossGridDragId = gridId;
+        this.crossGridDragService.registerGrid(gridId, {
+          getContainerElement: () => this.bodyContainer?.nativeElement as HTMLElement,
+          getRowTop: (index: number) => index * this.rowHeight,
+          getRowHeight: () => this.rowHeight,
+          getRowCount: () => this.rowCount(),
+          addRowAt: (index: number, data: any) => {
+            this.dataService.addRow(data, index);
+            this.renderRows();
+          },
+          removeRowData: (data: any) => {
+            this.dataService.removeRowByData(data);
+            this.renderRows();
+          },
+        });
+      },
+      unregisterCrossGridDrag: (gridId: string) => this.crossGridDragService.unregisterGrid(gridId),
+      startCrossGridDrag: (rowNodes: any[], event?: DragEvent, options?: any) =>
+        this.crossGridDragService.startCrossGridDrag(this._crossGridDragId || 'default', rowNodes, event, options),
+      endCrossGridDrag: () => this.crossGridDragService.endCrossGridDrag(),
+      isCrossGridDragging: () => this.crossGridDragService.isCurrentlyDragging(),
 
       // ========== 服务端行模型 ==========
       getServerSideService: () => this.serverSideService,

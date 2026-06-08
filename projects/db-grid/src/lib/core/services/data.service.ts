@@ -454,6 +454,15 @@ export class DataService {
     this.reindexRows();
   }
 
+  /** 通过数据引用删除行 */
+  removeRowByData(data: any): void {
+    const index = this.rowData.indexOf(data);
+    if (index >= 0) {
+      this.rowData.splice(index, 1);
+      this.reindexRows();
+    }
+  }
+
   updateRow(id: string, data: any): void {
     const node = this.rowNodeMap.get(id);
     if (node) {
