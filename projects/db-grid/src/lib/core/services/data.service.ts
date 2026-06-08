@@ -39,6 +39,9 @@ export class DataService {
   // 可选注入 ExternalFilterService
   private externalFilterService: any | null = null;
 
+  // 可选注入 AdvancedFilterService
+  private advancedFilterService: any | null = null;
+
   /** 注入 FilterService（由主组件调用） */
   setFilterService(fs: FilterService): void {
     this.filterService = fs;
@@ -47,6 +50,28 @@ export class DataService {
   /** 注入 ExternalFilterService（由主组件调用） */
   setExternalFilterService(efs: any): void {
     this.externalFilterService = efs;
+  }
+
+  /** 注入 AdvancedFilterService（由主组件调用） */
+  setAdvancedFilterService(afs: any): void {
+    this.advancedFilterService = afs;
+  }
+
+  // 可选注入 RowPinningService
+  private rowPinningService: any | null = null;
+
+  /** 注入 RowPinningService（由主组件调用） */
+  setRowPinningService(rps: any): void {
+    this.rowPinningService = rps;
+  }
+
+  /** 获取固定行数据（供渲染层使用） */
+  getPinnedTopRowData(): any[] {
+    return this.rowPinningService ? this.rowPinningService.getPinnedTopRowData() : [];
+  }
+
+  getPinnedBottomRowData(): any[] {
+    return this.rowPinningService ? this.rowPinningService.getPinnedBottomRowData() : [];
   }
 
   /** 初始化数据 */
@@ -174,8 +199,12 @@ export class DataService {
   private getFilteredAndSortedNodes(): RowNode[] {
     let nodes = Array.from(this.rowNodeMap.values());
 
-    // 应用筛选（优先使用 FilterService，否则用内置简单筛选）
-    if (this.filterService) {
+    // 应用筛选（优先使用 AdvancedFilterService，其次 FilterService，否则用内置简单筛选）
+    if (this.advancedFilterService && this.advancedFilterService.isAdvancedFilterActive()) {
+      nodes = nodes.filter(node =>
+        this.advancedFilterService.passesAdvancedFilter(node.data, this.colDefs)
+      );
+    } else if (this.filterService) {
       if (this.filterService.isFilterActive()) {
         nodes = nodes.filter(node =>
           this.filterService!.passesAllFilters(node.data, this.colDefs)

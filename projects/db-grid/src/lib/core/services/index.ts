@@ -45,3 +45,4 @@ export * from './external-filter.service';
 export * from './value-mapping.service';
 export * from './row-pinning.service';
 export * from './sparkline.service';
+export * from './advanced-filter.service';

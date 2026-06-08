@@ -89,6 +89,8 @@ import {
   TooltipService,
   ExternalFilterService,
   ValueMappingService,
+  AdvancedFilterService,
+  RowPinningService,
 } from '../../../core/services';
 
 import { DbCellEditorComponent } from '../cell-editor/db-cell-editor.component';
@@ -121,7 +123,18 @@ import {
       <div #headerContainer class="db-grid-header-container"></div>
       <div #bodyContainer class="db-grid-body-container" (scroll)="onScroll($event)">
         <div #virtualScroll class="db-grid-virtual-scroll">
+          <!-- Pinned Top Rows -->
+          @if (hasPinnedTopRows()) {
+            <div #pinnedTopContainer class="db-grid-pinned-top"></div>
+          }
+          
           <div #rowsContainer class="db-grid-rows"></div>
+          
+          <!-- Pinned Bottom Rows -->
+          @if (hasPinnedBottomRows()) {
+            <div #pinnedBottomContainer class="db-grid-pinned-bottom"></div>
+          }
+          
           @if (pinnedLeftColumnIds.length > 0) {
             <div #pinnedLeftContainer class="db-grid-pinned-left"></div>
           }
@@ -580,6 +593,34 @@ import {
     }
 
     :host(:focus) { outline: none; }
+
+    /* ========== Pinned Rows ========== */
+    .db-grid-pinned-top {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      background: var(--db-grid-bg, #fff);
+      border-bottom: 2px solid var(--db-grid-border-color, #ddd);
+    }
+    .db-grid-pinned-bottom {
+      position: sticky;
+      bottom: 0;
+      z-index: 3;
+      background: var(--db-grid-bg, #fff);
+      border-top: 2px solid var(--db-grid-border-color, #ddd);
+    }
+    .db-grid-row-pinned-top {
+      background: var(--db-grid-pinned-row-bg, #f0f7ff) !important;
+    }
+    .db-grid-row-pinned-top:hover {
+      background: var(--db-grid-pinned-row-hover-bg, #e3f2fd) !important;
+    }
+    .db-grid-row-pinned-bottom {
+      background: var(--db-grid-pinned-row-bg, #f0f7ff) !important;
+    }
+    .db-grid-row-pinned-bottom:hover {
+      background: var(--db-grid-pinned-row-hover-bg, #e3f2fd) !important;
+    }
   `],
 })
 export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewInit {
@@ -727,6 +768,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   @ViewChild('virtualScroll') virtualScroll!: ElementRef<HTMLDivElement>;
   @ViewChild('rowsContainer') rowsContainer!: ElementRef<HTMLDivElement>;
   @ViewChild('pinnedLeftContainer') pinnedLeftContainer!: ElementRef<HTMLDivElement>;
+  @ViewChild('pinnedTopContainer') pinnedTopContainer!: ElementRef<HTMLDivElement>;
+  @ViewChild('pinnedBottomContainer') pinnedBottomContainer!: ElementRef<HTMLDivElement>;
   @ViewChild('footerContainer') footerContainer!: ElementRef<HTMLDivElement>;
   // 中间固定列容器（动态创建，不通过模板）
   pinnedCenterContainerEl: HTMLElement | null = null;
@@ -741,6 +784,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   });
   pinnedLeftColumnIds = signal<string[]>([]);
   pinnedCenterColumnIds = signal<string[]>([]);
+  hasPinnedTopRows = computed(() => this.rowPinningService?.getPinnedTopRows().length > 0);
+  hasPinnedBottomRows = computed(() => this.rowPinningService?.getPinnedBottomRows().length > 0);
   themeClass = computed(() => `db-grid-theme-${this.theme()}`);
 
   // ============ Overlay computed signals ============
@@ -821,7 +866,9 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   overlayService: OverlayService;
   private tooltipService: TooltipService;
   private externalFilterService: ExternalFilterService;
+  private advancedFilterService: AdvancedFilterService;
   private valueMappingService: ValueMappingService;
+  private rowPinningService: RowPinningService;
   private _dataTypesApplied = false;
 
   // ============ State ============
@@ -923,6 +970,15 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.tooltipService = new TooltipService();
     this.externalFilterService = new ExternalFilterService();
     this.valueMappingService = new ValueMappingService();
+    this.advancedFilterService = new AdvancedFilterService();
+    this.rowPinningService = new RowPinningService();
+    // 初始化行固定数据（从 @Input）
+    if (this.pinnedTopRowData.length > 0 || this.pinnedBottomRowData.length > 0) {
+      this.rowPinningService.initialize({
+        pinnedTopRowData: this.pinnedTopRowData,
+        pinnedBottomRowData: this.pinnedBottomRowData,
+      });
+    }
     this.columnTypeService = new ColumnTypeService();
     this.i18nService.setLocale(this.locale);
   }
@@ -957,6 +1013,9 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
     // Wire external filter service into data service filtering
     this.dataService.setExternalFilterService(this.externalFilterService);
+
+    // Wire row pinning service into data service
+    this.dataService.setRowPinningService(this.rowPinningService);
 
     // 订阅快速筛选输入（防抖 200ms）
     this.quickFilterSubject.pipe(
@@ -1054,6 +1113,11 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.rowDragService.initialize({
       rowDragEnabled: this.rowDragEnabled,
       rowDragMultiRow: this.rowDragMultiRow,
+    });
+
+    // 订阅固定行变更事件
+    this.rowPinningService.onPinnedRowsChanged(() => {
+      this.ngZone.run(() => this.renderPinnedRows());
     });
 
     // 初始化服务端行模型
@@ -1163,6 +1227,14 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         this.isPaginated = false;
       }
       this.refreshView();
+    }
+    // 行固定数据变更
+    if (changes['pinnedTopRowData'] || changes['pinnedBottomRowData']) {
+      this.rowPinningService.initialize({
+        pinnedTopRowData: this.pinnedTopRowData,
+        pinnedBottomRowData: this.pinnedBottomRowData,
+      });
+      this.renderPinnedRows();
     }
     // 拖拽配置变更
     if (changes['rowDragEnabled'] || changes['colDragEnabled'] || changes['rowDragMultiRow']) {
@@ -1537,6 +1609,17 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       unpinColumn: (colId: string) => this.unpinColumn(colId),
       getPinnedColumns: () => this.getPinnedColumns(),
       getPinningService: () => this.pinningService,
+
+      // ========== 行固定 ==========
+      pinRow: (pinIndex: number, data: any, position?: 'top' | 'bottom') => this.rowPinningService.pinRow(pinIndex, data, position || 'top'),
+      unpinRow: (pinIndex: number, position?: 'top' | 'bottom') => this.rowPinningService.unpinRow(pinIndex, position),
+      getPinnedTopRows: () => this.rowPinningService.getPinnedTopRows(),
+      getPinnedBottomRows: () => this.rowPinningService.getPinnedBottomRows(),
+      getPinnedTopRowData: () => this.rowPinningService.getPinnedTopRowData(),
+      getPinnedBottomRowData: () => this.rowPinningService.getPinnedBottomRowData(),
+      clearPinnedRows: (position?: 'top' | 'bottom') => this.rowPinningService.unpinAll(position),
+      hasPinnedRows: () => this.rowPinningService.hasPinnedRows(),
+      getRowPinningService: () => this.rowPinningService,
 
       // ========== 分页 ==========
       setPageSize: (size: number) => this.setPageSize(size),
@@ -3660,6 +3743,63 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     if (this.pagination) this.renderFooter();
   }
 
+  /** 渲染固定行（顶部/底部） */
+  private renderPinnedRows(): void {
+    // 渲染固定顶部行
+    if (this.pinnedTopContainer?.nativeElement) {
+      const container = this.pinnedTopContainer.nativeElement;
+      container.innerHTML = '';
+      const pinnedTopData = this.dataService.getPinnedTopRowData();
+      
+      pinnedTopData.forEach((data, index) => {
+        const rowId = `pinned-top-${index}`;
+        const rowNode: any = {
+          id: rowId,
+          data,
+          rowIndex: -1,
+          selected: false,
+          rowHeight: this.rowHeight,
+          uiLevel: 0,
+          isFloating: () => true,
+          isFloatingRow: () => true,
+          setSelected: () => {},
+        };
+        
+        const { rowElement } = this.rowRenderer.render(-1, data, rowNode);
+        rowElement.classList.add('db-grid-row-pinned-top');
+        rowElement.style.width = '100%';
+        container.appendChild(rowElement);
+      });
+    }
+    
+    // 渲染固定底部行
+    if (this.pinnedBottomContainer?.nativeElement) {
+      const container = this.pinnedBottomContainer.nativeElement;
+      container.innerHTML = '';
+      const pinnedBottomData = this.dataService.getPinnedBottomRowData();
+      
+      pinnedBottomData.forEach((data, index) => {
+        const rowId = `pinned-bottom-${index}`;
+        const rowNode: any = {
+          id: rowId,
+          data,
+          rowIndex: -1,
+          selected: false,
+          rowHeight: this.rowHeight,
+          uiLevel: 0,
+          isFloating: () => true,
+          isFloatingRow: () => true,
+          setSelected: () => {},
+        };
+        
+        const { rowElement } = this.rowRenderer.render(-1, data, rowNode);
+        rowElement.classList.add('db-grid-row-pinned-bottom');
+        rowElement.style.width = '100%';
+        container.appendChild(rowElement);
+      });
+    }
+  }
+
   private renderRows(): void {
 
     // Guard: skip if view references are not yet initialized (called before ngAfterViewInit)
@@ -3677,6 +3817,9 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     if (this.pinnedCenterContainerEl) {
       this.pinnedCenterContainerEl.innerHTML = '';
     }
+
+    // 渲染固定行（顶部/底部）
+    this.renderPinnedRows();
 
     const viewport = this.viewportInfo();
     const rowsContainer = this.rowsContainer?.nativeElement;
