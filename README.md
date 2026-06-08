@@ -133,6 +133,157 @@ All `ColDef`, `GridOptions`, and `GridApi` interfaces are **100% compatible** wi
 ### 🚧 Coming Next
 - [ ] Charts integration
 
+## 📖 API Reference
+
+### GridApi Methods
+
+#### Data Operations
+| Method | Description |
+|--------|-------------|
+| `setRowData(data)` | Set all row data |
+| `getDisplayedRowCount()` | Get visible row count |
+| `getDisplayedRows()` | Get all visible row data |
+| `forEachNode(callback)` | Iterate over all row nodes |
+| `getRowNode(id)` | Get row node by ID |
+| `getSelectedRows()` | Get selected row data |
+| `getSelectedNodes()` | Get selected row nodes |
+
+#### Sorting & Filtering
+| Method | Description |
+|--------|-------------|
+| `setSortModel(model)` | Set sort configuration |
+| `getSortModel()` | Get current sort model |
+| `sortByColumn(col, dir)` | Sort by specific column |
+| `clearSort()` | Clear all sorts |
+| `setFilterModel(model)` | Set filter configuration |
+| `getFilterModel()` | Get current filter model |
+| `onFilterChanged()` | Trigger filter change |
+
+#### Row Operations
+| Method | Description |
+|--------|-------------|
+| `selectAll()` | Select all rows |
+| `deselectAll()` | Clear selection |
+| `selectNode(node)` | Select a row node |
+| `deselectNode(node)` | Deselect a row node |
+| `pinRow(index, data, 'top'|'bottom')` | Pin row to top/bottom |
+| `getPinnedTopRowData()` | Get pinned top rows |
+| `getPinnedBottomRowData()` | Get pinned bottom rows |
+| `expandAll()` | Expand all groups |
+| `collapseAll()` | Collapse all groups |
+
+#### Cross-Grid Drag
+| Method | Description |
+|--------|-------------|
+| `registerCrossGridDrag(gridId)` | Register grid for drag-drop |
+| `unregisterCrossGridDrag(gridId)` | Unregister grid |
+| `startCrossGridDrag(nodes, event)` | Begin cross-grid drag |
+| `endCrossGridDrag()` | End drag operation |
+| `isCrossGridDragging()` | Check if dragging |
+
+#### Export & Clipboard
+| Method | Description |
+|--------|-------------|
+| `exportDataAsCsv(params?)` | Export to CSV file |
+| `getDataAsCsv(params?)` | Get CSV string |
+| `copyToClipboard(data?)` | Copy data to clipboard |
+| `copySelectedRange()` | Copy selected cells |
+| `pasteToGrid(text?)` | Paste from clipboard |
+
+### ColDef Properties
+
+#### Essential Properties
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `field` | `string` | - | Data field path (e.g., `'user.name'`) |
+| `headerName` | `string` | `field` | Column header title |
+| `width` | `number` | `150` | Column width in pixels |
+| `flex` | `number` | - | Flex grow factor |
+| `sortable` | `boolean` | `false` | Enable sorting |
+| `filter` | `string` | `false` | Filter type: `'text'`, `'number'`, `'date'`, `'boolean'`, `'set'` |
+| `editable` | `boolean` | `false` | Enable cell editing |
+
+#### Cell Rendering
+| Property | Type | Description |
+|----------|------|-------------|
+| `cellRenderer` | `Component\<any\> \| string` | Custom cell component |
+| `cellRendererParams` | `object` | Params passed to renderer |
+| `cellEditor` | `Component\<any\>` | Custom cell editor |
+| `cellEditorParams` | `object` | Params passed to editor |
+| `valueGetter` | `(params) => any` | Custom value computation |
+| `valueFormatter` | `(params) => string` | Display formatting |
+| `valueParser` | `(params) => any` | Parse edited value |
+
+#### Advanced Properties
+| Property | Type | Description |
+|----------|------|-------------|
+| `pinned` | `'left' \| 'right'` | Pin column |
+| `rowGroup` | `boolean` | Enable row grouping |
+| `aggFunc` | `string` | Aggregation: `'sum'`, `'avg'`, `'min'`, `'max'`, `'count'` |
+| `enableCharts` | `boolean` | Show sparkline in column |
+| `chartConfig` | `ChartCellRendererConfig` | Chart configuration |
+
+### GridOptions Properties
+
+#### Data & Selection
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `rowData` | `any[]` | `[]` | Row data array |
+| `rowSelection` | `'single' \| 'multiple'` | `null` | Selection mode |
+| `suppressRowClickSelection` | `boolean` | `false` | Disable click-to-select |
+| `getRowId` | `(params) => string` | auto | Custom row ID getter |
+
+#### Virtualization & Performance
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `rowHeight` | `number` | `32` | Row height in pixels |
+| `suppressVirtualScroll` | `boolean` | `false` | Disable virtualization |
+| `cacheBlockSize` | `number` | `100` | Server-side cache block size |
+
+#### Styling & Theming
+| Property | Type | Description |
+|----------|------|-------------|
+| `theme` | `'alpine' \| 'balham' \| 'material'` | Grid theme |
+| `getRowStyle` | `(params) => object` | Dynamic row styles |
+| `getRowClass` | `(params) => string[]` | Dynamic row CSS classes |
+| `headerHeight` | `number` | Header row height |
+
+#### Events
+| Property | Type | Description |
+|----------|------|-------------|
+| `onGridReady` | `EventEmitter\<GridReadyEvent\>` | Grid initialized |
+| `onRowClicked` | `EventEmitter\<RowClickedEvent\>` | Row clicked |
+| `onCellClicked` | `EventEmitter\<CellClickedEvent\>` | Cell clicked |
+| `onSelectionChanged` | `EventEmitter\<SelectionChangedEvent\>` | Selection changed |
+| `onCellValueChanged` | `EventEmitter\<CellValueChangedEvent\>` | Cell edited |
+
+### TypeScript Generics
+
+For type safety, use generic versions:
+
+```typescript
+import { ColDefGeneric as ColDef, GridApiGeneric as GridApi } from 'db-grid';
+
+interface Employee {
+  id: number;
+  name: string;
+  department: string;
+  salary: number;
+}
+
+// Type-safe column definitions
+const cols: ColDef<Employee>[] = [
+  { field: 'name', headerName: '姓名' },
+  { field: 'salary', filter: 'number' }
+];
+
+// Type-safe API
+onGridReady(event: GridReadyEventGeneric<Employee>) {
+  this.api = event.api; // GridApiGeneric<Employee>
+  const rows = this.api.getSelectedRows(); // Employee[]
+}
+```
+
 ## 🏗️ Architecture
 
 ```
