@@ -8,8 +8,7 @@ import { CommonModule } from '@angular/common';
 import { DbGridComponent } from './angular/components/grid/db-grid.component';
 
 @NgModule({
-  imports: [CommonModule],
-  declarations: [DbGridComponent],
+  imports: [CommonModule, DbGridComponent],
   exports: [DbGridComponent],
 })
 export class DbGridModule {}
