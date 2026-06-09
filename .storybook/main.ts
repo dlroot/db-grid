@@ -8,10 +8,15 @@ const config: StorybookConfig = {
   ],
   framework: {
     name: '@storybook/angular',
-    options: {},
+    options: {
+      enableIvy: true,
+    },
   },
   docs: {
     autodocs: 'tag',
+  },
+  core: {
+    disableTelemetry: true,
   },
 };
 
