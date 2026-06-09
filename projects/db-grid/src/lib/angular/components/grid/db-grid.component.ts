@@ -1027,6 +1027,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       takeUntil(this.destroy$)
     ).subscribe((value: string) => {
       this.filterService.setQuickFilter(value);
+      // 同步到 cellRenderer 用于高亮
+      this.cellRenderer.setQuickFilterText(value);
       this.refreshView();
       this.filterChanged.emit({ type: 'filterChanged', api: this.gridApi });
     });
@@ -1934,6 +1936,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   setQuickFilter(text: string): void {
     this.filterService.setQuickFilter(text);
+    this.cellRenderer.setQuickFilterText(text);
     this.refreshView();
     this.filterChanged.emit({ type: 'filterChanged', api: this.gridApi });
   }
@@ -1944,6 +1947,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   clearQuickFilter(): void {
     this.filterService.setQuickFilter('');
+    this.cellRenderer.setQuickFilterText('');
     this.refreshView();
     this.filterChanged.emit({ type: 'filterChanged', api: this.gridApi });
   }

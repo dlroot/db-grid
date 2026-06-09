@@ -21,7 +21,20 @@ export class CellRendererService {
   private _isTreeMode = false;
   private _firstColumnField: string | null = null;
 
+  /** Quick Filter 文本（用于高亮匹配） */
+  private _quickFilterText: string = '';
+
   constructor(private columnService: ColumnService, private chartsService?: ChartsService) {}
+
+  /** 设置 Quick Filter 文本 */
+  setQuickFilterText(text: string): void {
+    this._quickFilterText = text.toLowerCase().trim();
+  }
+
+  /** 获取 Quick Filter 文本 */
+  getQuickFilterText(): string {
+    return this._quickFilterText;
+  }
 
   /** 设置树模式 */
   setTreeMode(isTreeMode: boolean, firstColumnField: string | null): void {
@@ -249,8 +262,53 @@ export class CellRendererService {
       return;
     }
 
-    // 默认文本渲染
-    container.textContent = formattedValue;
+    // 默认文本渲染（支持高亮）
+    this.renderTextWithHighlight(container, formattedValue);
+  }
+
+  /** 渲染文本并高亮 Quick Filter 匹配 */
+  private renderTextWithHighlight(container: HTMLElement, text: string): void {
+    if (!this._quickFilterText || !text) {
+      container.textContent = text;
+      return;
+    }
+
+    const lowerText = text.toLowerCase();
+    const filterLower = this._quickFilterText;
+    
+    if (!lowerText.includes(filterLower)) {
+      container.textContent = text;
+      return;
+    }
+
+    // 找到匹配并高亮
+    container.innerHTML = '';
+    let lastIndex = 0;
+    let index = lowerText.indexOf(filterLower);
+
+    while (index !== -1) {
+      // 添加匹配前的普通文本
+      if (index > lastIndex) {
+        container.appendChild(document.createTextNode(text.slice(lastIndex, index)));
+      }
+
+      // 添加高亮的匹配文本
+      const highlightSpan = document.createElement('span');
+      highlightSpan.className = 'db-grid-quick-filter-highlight';
+      highlightSpan.textContent = text.slice(index, index + filterLower.length);
+      highlightSpan.style.backgroundColor = '#fff3cd'; // 黄色高亮
+      highlightSpan.style.borderRadius = '2px';
+      highlightSpan.style.padding = '0 2px';
+      container.appendChild(highlightSpan);
+
+      lastIndex = index + filterLower.length;
+      index = lowerText.indexOf(filterLower, lastIndex);
+    }
+
+    // 添加剩余文本
+    if (lastIndex < text.length) {
+      container.appendChild(document.createTextNode(text.slice(lastIndex)));
+    }
   }
 
   /** 渲染自定义单元格渲染器 */
