@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { Component, Input, Output, EventEmitter, signal, OnInit } from '@angular/core';
 
 // Import db-grid
-import { DbGridModule } from '../../projects/db-grid/src/lib/angular/db-grid.module';
+import { DbGridModule } from '../../projects/db-grid/src/lib/db-grid.module';
 
 /**
  * DB Grid is a high-performance Angular data grid component,

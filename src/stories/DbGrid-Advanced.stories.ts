@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import { moduleMetadata } from '@storybook/angular';
 import { CommonModule } from '@angular/common';
-import { DbGridModule } from '../../projects/db-grid/src/lib/angular/db-grid.module';
+import { DbGridModule } from '../../projects/db-grid/src/lib/db-grid.module';
 
 const meta: Meta = {
   title: 'DB Grid/Advanced',
