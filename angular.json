@@ -94,6 +94,22 @@
           },
           "defaultConfiguration": "development"
         },
+        "storybook": {
+          "builder": "@storybook/angular:start-storybook",
+          "options": {
+            "configDir": ".storybook",
+            "browserTarget": "db-grid:build:development",
+            "port": 6006
+          }
+        },
+        "build-storybook": {
+          "builder": "@storybook/angular:build-storybook",
+          "options": {
+            "configDir": ".storybook",
+            "browserTarget": "db-grid:build:development",
+            "outputDir": "storybook-static"
+          }
+        },
         "test": {
           "builder": "@angular/build:karma",
           "options": {

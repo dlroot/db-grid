@@ -10,8 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "deploy": "npx angular-cli-ghpages --dir=dist/db-grid/browser --no-silent",
-    "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "storybook": "ng run db-grid:storybook",
+    "build-storybook": "ng run db-grid:build-storybook"
   },
   "private": true,
   "packageManager": "npm@10.9.8",
@@ -41,7 +41,7 @@
   "devDependencies": {
     "@angular-devkit/build-angular": "^21.2.7",
     "@angular/build": "^21.2.7",
-    "@angular/cli": "^22.0.0",
+    "@angular/cli": "^21.0.0",
     "@angular/compiler-cli": "^21.2.0",
     "@angular/platform-browser-dynamic": "^21.2.9",
     "@types/jasmine": "^6.0.0",
