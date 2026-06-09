@@ -5,11 +5,9 @@
     "types": []
   },
   "include": [
-    "src/**/*.ts",
-    "projects/**/*.ts"
+    "src/**/*.ts"
   ],
   "exclude": [
-    "src/**/*.spec.ts",
-    "projects/**/*.spec.ts"
+    "src/**/*.spec.ts"
   ]
 }
