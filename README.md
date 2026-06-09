@@ -131,7 +131,7 @@ All `ColDef`, `GridOptions`, and `GridApi` interfaces are **100% compatible** wi
 - [x] Undo/Redo (Ctrl+Z/Y)
 
 ### 🚧 Coming Next
-- [ ] Charts integration
+- [x] Charts integration (✅ 已完成)
 
 ## 📖 API Reference
 
