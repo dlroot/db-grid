@@ -33,37 +33,19 @@ jobs:
       - name: Build demo app
         run: npm run build:demo
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload demo artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: "./dist/db-grid/browser"
-
-  storybook-build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: "24"
-          package-manager-cache: false
-
-      - name: Install dependencies
-        run: npm install --legacy-peer-deps
-
       - name: Build Storybook
         run: npm run build-storybook
 
-      - name: Upload Storybook artifact
-        uses: actions/upload-artifact@v4
+      - name: Copy Storybook to demo output
+        run: cp -r storybook-static dist/db-grid/browser/storybook
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: storybook-static
-          path: "storybook-static/"
+          path: "./dist/db-grid/browser"
 
   deploy:
     environment:
