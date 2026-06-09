@@ -23,7 +23,10 @@
       📥 Excel 导入
     </button>
     <button [class.active]="currentDemo() === 'server'" (click)="switchDemo('server')">
-      🌐 服务端模式
+      🌐 服务端
+    </button>
+    <button [class.active]="currentDemo() === 'infinite'" (click)="switchDemo('infinite')">
+      ♾️ 无限
     </button>
     <button [class.active]="currentDemo() === 'master'" (click)="switchDemo('master')">
       📋 主从表
@@ -85,6 +88,9 @@
     <button [class.active]="currentDemo() === 'accessibility'" (click)="switchDemo('accessibility')">
       ♿ 无障碍 (ARIA)
     </button>
+    <a href="storybook/" target="_blank" class="btn" style="text-decoration:none; margin-left:8px;">
+      📚 Storybook 文档
+    </a>
     <span class="theme-selector">
       <label>主题:</label>
       <select [value]="currentTheme()" (change)="switchTheme($event)">
@@ -363,6 +369,42 @@
         [enableServerSide]="true"
         [pagination]="true"
         [paginationPageSize]="100"
+        (gridReady)="onGridReady($event)"
+      />
+    </div>
+  }
+
+  <!-- Infinite Scroll 演示 -->
+  @if (currentDemo() === 'infinite') {
+    <div class="demo-panel">
+      <div class="demo-header">
+        <h2>♾️ 无限滚动模式</h2>
+        <p class="demo-desc">滚动时自动加载数据，模拟 100 万行数据（API 延迟 100-300ms）</p>
+        <div class="demo-actions">
+          <div class="server-status">
+            <span class="status-badge" [class.loading]="infiniteLoading()">
+              {{ infiniteLoading() ? '⏳ 加载中...' : '✅ 就绪' }}
+            </span>
+            <span class="data-range">
+              📊 已加载: {{ infiniteLoadedRange() }} / {{ 1000000 }}
+            </span>
+            <span class="cache-info">
+              ⚡ API延迟: {{ infiniteApiDelay() }}ms
+            </span>
+          </div>
+        </div>
+      </div>
+      <db-grid
+        #myGrid
+        [columnDefs]="infiniteColumnDefs"
+        [rowData]="[]"
+        [serverSideDatasource]="infiniteDatasource"
+        [gridOptions]="infiniteOptions"
+        [rowHeight]="40"
+        [headerHeight]="40"
+        [theme]="currentTheme()"
+        [enableServerSide]="true"
+        [pagination]="false"
         (gridReady)="onGridReady($event)"
       />
     </div>

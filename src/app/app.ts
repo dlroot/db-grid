@@ -263,6 +263,67 @@ export class AppComponent implements OnInit {
   serverLoadedRange = signal<string>("0-0");
   serverApiDelay = signal<number>(0);
 
+  // ========== Infinite Scroll 数据演示 (Phase 5.1) ==========
+  // 真正的无限滚动：滚动到底部自动加载下一页，不使用分页控件
+  readonly TOTAL_INFINITE_ROWS = 1000000; // 100万行
+  infiniteColumnDefs = [
+    { field: "id", headerName: "ID", width: 80, sortable: true, filter: "number" },
+    { field: "name", headerName: "姓名", width: 150, sortable: true, filter: "text" },
+    { field: "email", headerName: "邮箱", width: 220, filter: "text" },
+    { field: "department", headerName: "部门", width: 150, filter: "set" },
+    { field: "position", headerName: "职位", width: 150, filter: "set" },
+    { field: "salary", headerName: "薪资", width: 120, sortable: true, filter: "number" },
+    { field: "status", headerName: "状态", width: 100, filter: "set" },
+  ];
+  infiniteDatasource = {
+    getRows: (params: any) => {
+      const startTime = Date.now();
+      console.log('[Infinite] Request:', params.startRow, '-', params.endRow);
+      
+      // 模拟 API 延迟 (100-300ms)
+      const delay = 100 + Math.random() * 200;
+      
+      setTimeout(() => {
+        const rowsThisPage: any[] = [];
+        const endId = Math.min(params.endRow, this.TOTAL_INFINITE_ROWS) + 1;
+        
+        for (let i = params.startRow + 1; i < endId; i++) {
+          rowsThisPage.push(this.generateServerRow(i));
+        }
+
+        // 模拟服务端排序
+        let sortedData = [...rowsThisPage];
+        if (params.sortModel && params.sortModel.length > 0) {
+          const sort = params.sortModel[0];
+          sortedData.sort((a, b) => {
+            const aVal = a[sort.colId];
+            const bVal = b[sort.colId];
+            const cmp = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+            return sort.sort === 'asc' ? cmp : -cmp;
+          });
+        }
+
+        // 更新已加载范围显示
+        const endRow = Math.min(params.endRow, this.TOTAL_INFINITE_ROWS);
+        this.infiniteLoadedRange.set(`${params.startRow}-${endRow}`);
+        this.infiniteRowCount.set(this.TOTAL_INFINITE_ROWS);
+        this.infiniteLoading.set(false);
+        
+        const actualDelay = Date.now() - startTime;
+        this.infiniteApiDelay.set(Math.round(actualDelay));
+        
+        console.log('[Infinite] Returning', sortedData.length, 'rows, delay:', actualDelay + 'ms');
+        params.successCallback(sortedData, this.TOTAL_INFINITE_ROWS);
+      }, delay);
+    }
+  };
+  infiniteConfig = { infinite: true, pageSize: 100, cacheBlockSize: 100, maxBlocksInCache: 10 };
+  infiniteOptions = { rowSelection: "multiple" as const };
+  infiniteLoading = signal<boolean>(false);
+  infiniteRowCount = signal<number>(0);
+  infiniteLoadedRange = signal<string>("0-0");
+  infiniteApiDelay = signal<number>(0);
+
   // ========== Master-Detail 演示 ==========
   masterColumnDefs = [
     { field: "id", headerName: "订单ID", width: 100 },
@@ -574,6 +635,20 @@ export class AppComponent implements OnInit {
           console.log('[App] Server rows updated:', count);
         });
         ss.setDatasource(this.serverSideDatasource);
+      }
+    }
+    if (this.currentDemo() === "infinite" && this.gridApi) {
+      const ss = this.gridApi.getServerSideService?.();
+      if (ss) {
+        ss.initialize({ infinite: true, pageSize: 100, cacheBlockSize: 100, maxBlocksInCache: 10 });
+        ss.onLoadingChangedEvent((loading: boolean) => {
+          this.infiniteLoading.set(loading);
+        });
+        ss.onRowsUpdatedEvent(() => {
+          const count = ss.getRowCount();
+          this.infiniteRowCount.set(count);
+        });
+        ss.setDatasource(this.infiniteDatasource);
       }
     }
     if (this.currentDemo() === "undoredo" && this.gridApi) {
