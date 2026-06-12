@@ -34,6 +34,9 @@
     <button [class.active]="currentDemo() === 'undo'" (click)="switchDemo('undo')">
       ↩️ 撤销重做
     </button>
+    <button [class.active]="currentDemo() === 'transaction'" (click)="switchDemo('transaction')">
+      🔄 增量更新
+    </button>
     <button [class.active]="currentDemo() === 'keyboard'" (click)="switchDemo('keyboard')">
       ⌨️ 键盘导航
     </button>
@@ -51,6 +54,12 @@
     </button>
     <button [class.active]="currentDemo() === 'colgroup'" (click)="switchDemo('colgroup')">
       📑 列组表头
+    </button>
+    <button [class.active]="currentDemo() === 'angular-renderer'" (click)="switchDemo('angular-renderer')">
+      🧩 自定义组件
+    </button>
+    <button [class.active]="currentDemo() === 'performance'" (click)="switchDemo('performance')">
+      ⚡ 性能测试
     </button>
     <button [class.active]="currentDemo() === 'colvirtual'" (click)="switchDemo('colvirtual')">
       🏗️ 列虚拟化
@@ -172,6 +181,7 @@
           <button class="btn" (click)="collapseAllGroups()">➖ 折叠全部</button>
           <button class="btn" (click)="setGroupField('department')">按部门分组</button>
           <button class="btn" (click)="setGroupField('department,status')">按部门+状态分组</button>
+          <button class="btn" (click)="setGroupWithAutoColumn()">📁 自动分组列</button>
           <button class="btn btn-danger" (click)="resetGroup()">🔄 重置分组</button>
         </div>
       </div>
@@ -316,6 +326,8 @@
         <div class="demo-actions">
           <button class="btn-export" (click)="exportCsv()">📥 导出 CSV</button>
           <button class="btn-export" (click)="exportXlsx()">📊 导出 XLSX</button>
+          <button class="btn-export" (click)="exportHtml()">🌐 导出 HTML</button>
+          <button class="btn-export" (click)="exportCsvSelected()">📋 导出选中 CSV</button>
           <label class="btn-import">
             📤 导入 XLSX
             <input type="file" accept=".xlsx,.xls" style="display:none" (change)="onExcelImport($event)">
@@ -463,6 +475,42 @@
     </div>
   }
 
+  <!-- Transaction 增量更新演示 -->
+  @if (currentDemo() === 'transaction') {
+    <div class="demo-panel">
+      <div class="demo-header">
+        <h2>🔄 增量更新（RowDataTransaction）</h2>
+        <p class="demo-desc">api.applyTransaction() 增量添加/删除/更新行，支持行动画</p>
+        <div class="demo-actions">
+          <button class="btn" (click)="addRowsTransaction()">➕ 批量添加 5 行</button>
+          <button class="btn" (click)="removeRowsTransaction()">🗑️ 删除选中行</button>
+          <button class="btn" (click)="updateRowsTransaction()">✏️ 更新选中行</button>
+          <button class="btn" (click)="addRowsAsync()">⏳ 异步批量添加</button>
+          <span class="demo-hint">提示：先选中行再操作</span>
+        </div>
+      </div>
+      <db-grid
+        #myGrid
+        [columnDefs]="transactionColumnDefs"
+        [rowData]="transactionRowData"
+        [gridOptions]="transactionOptions"
+        [rowHeight]="40"
+        [headerHeight]="40"
+        [theme]="currentTheme()"
+        [rowSelection]="'multiple'"
+        [pagination]="true"
+        [paginationPageSize]="20"
+        [animateRows]="true"
+        (gridReady)="onGridReady($event)"
+        (selectionChanged)="onSelectionChanged()"
+      />
+      <div class="transaction-stats">
+        <span>当前行数: {{ rowCount() }}</span>
+        <span>选中行数: {{ selectedCount() }}</span>
+      </div>
+    </div>
+  }
+
   <!-- 键盘导航演示 -->
   @if (currentDemo() === 'keyboard') {
     <div class="demo-panel">
@@ -592,6 +640,30 @@
         [pivotRowGroupColumns]="['country', 'product']"
         [pivotValueColumns]="pivotValueColumns"
         (gridReady)="onGridReady($event)"
+      />
+    </div>
+  }
+
+  <!-- Angular 组件渲染器演示 -->
+  @if (currentDemo() === 'angular-renderer') {
+    <div class="demo-panel">
+      <div class="demo-header">
+        <h2>🧩 Angular 自定义组件渲染器</h2>
+        <p class="demo-desc">使用 Angular 原生组件作为单元格渲染器，支持星级评分、进度条、动作按钮等</p>
+        <div class="demo-actions">
+          <span class="btn" style="cursor:default">🌟 评分列 | 📊 进度列 | ⚡ 操作列</span>
+        </div>
+      </div>
+      <db-grid
+        #myGrid
+        [columnDefs]="angularRendererColumnDefs"
+        [rowData]="angularRendererRowData"
+        [gridOptions]="angularRendererOptions"
+        [rowHeight]="48"
+        [headerHeight]="40"
+        [theme]="currentTheme()"
+        (gridReady)="onGridReady($event)"
+        (rowAction)="onRowAction($event)"
       />
     </div>
   }
@@ -773,6 +845,38 @@
         (gridReady)="onGridReady($event)"
         (rangeSelectionChanged)="onRangeChanged($event)"
       />
+    </div>
+  }
+
+  <!-- 性能测试演示 -->
+  @if (currentDemo() === 'performance') {
+    <div class="demo-panel">
+      <div class="demo-header">
+        <h2>⚡ 性能压测</h2>
+        <p class="demo-desc">10万行 × 50列基准测试，验证虚拟滚动和渲染性能</p>
+        <div class="demo-actions">
+          <button class="btn" (click)="startPerformanceTest()">🚀 开始压测</button>
+          <button class="btn" (click)="loadLargeDataset()">📊 加载 10万行</button>
+          <button class="btn" (click)="loadWideDataset()">📐 加载 50列</button>
+          <span class="demo-hint">当前: {{ rowCount() }} 行 × {{ performanceColCount() }} 列</span>
+        </div>
+      </div>
+      <db-grid
+        #myGrid
+        [columnDefs]="performanceColumnDefs"
+        [rowData]="performanceRowData"
+        [gridOptions]="performanceOptions"
+        [rowHeight]="40"
+        [headerHeight]="40"
+        [theme]="currentTheme()"
+        [pagination]="false"
+        (gridReady)="onGridReady($event)"
+      />
+      <div class="performance-stats">
+        <span>✅ 虚拟滚动已启用</span>
+        <span>⏱️ 渲染时间: {{ performanceRenderTime() }}ms</span>
+        <span>📊 FPS: {{ performanceFps() }}</span>
+      </div>
     </div>
   }
 
@@ -995,6 +1099,44 @@
         [rowSelection]="'multiple'"
         [pagination]="true"
         [paginationPageSize]="20"
+        (gridReady)="onGridReady($event)"
+      />
+    </div>
+  }
+
+  <!-- 填充手柄演示 -->
+  @if (currentDemo() === 'fillhandle') {
+    <div class="demo-panel">
+      <div class="demo-header">
+        <h2>✋ 填充手柄</h2>
+        <p class="demo-desc">Excel 风格的拖拽填充功能，支持数值序列、日期序列、文本复制等</p>
+        <div class="demo-actions">
+          <button class="btn" (click)="fillDown()">⬇️ 向下填充</button>
+          <button class="btn" (click)="fillUp()">⬆️ 向上填充</button>
+          <button class="btn" (click)="fillLeft()">⬅️ 向左填充</button>
+          <button class="btn" (click)="fillRight()">➡️ 向右填充</button>
+        </div>
+        <div class="range-hints">
+          <h3>使用说明：</h3>
+          <ul>
+            <li><strong>数值序列</strong> - 选中前3行数值，拖拽填充柄自动递增</li>
+            <li><strong>日期序列</strong> - 选中前3行日期，拖拽填充柄自动递增</li>
+            <li><strong>文本复制</strong> - 选中单元格，拖拽填充柄复制内容</li>
+            <li><strong>公式保持</strong> - 公式会自动调整相对引用</li>
+          </ul>
+        </div>
+      </div>
+      <db-grid
+        #myGrid
+        [columnDefs]="fillHandleColumnDefs"
+        [rowData]="fillHandleRowData"
+        [gridOptions]="fillHandleOptions"
+        [rowHeight]="40"
+        [headerHeight]="40"
+        [theme]="currentTheme()"
+        [enableFillHandle]="true"
+        [enableCellSelection]="true"
+        [editable]="true"
         (gridReady)="onGridReady($event)"
       />
     </div>

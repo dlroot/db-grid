@@ -387,6 +387,24 @@ export class AppComponent implements OnInit {
   undoStackSize = signal<number>(0);
   redoStackSize = signal<number>(0);
 
+  // ========== Transaction 增量更新演示 (Phase 5.2) ==========
+  transactionColumnDefs = [
+    { field: "id", headerName: "ID", width: 80, sortable: true, filter: "number", checkboxSelection: true },
+    { field: "name", headerName: "姓名", width: 150, sortable: true, filter: "text", editable: true },
+    { field: "age", headerName: "年龄", width: 100, sortable: true, filter: "number", editable: true, cellEditor: "number" },
+    { field: "department", headerName: "部门", width: 150, sortable: true, filter: "set", editable: true, cellEditor: "select", cellEditorParams: { values: ["技术部", "产品部", "市场部", "财务部", "人力资源部", "运营部"] } },
+    { field: "position", headerName: "职位", width: 120, sortable: true, filter: "set", editable: true },
+    { field: "salary", headerName: "薪资", width: 120, sortable: true, filter: "number", editable: true, cellEditor: "number" },
+    { field: "status", headerName: "状态", width: 100, sortable: true, filter: "set", editable: true, cellEditor: "select", cellEditorParams: { values: ["在职", "出差", "休假", "离职"] } },
+  ];
+  transactionRowData = this.generateEmployeeData(30);
+  transactionOptions = { 
+    rowSelection: "multiple" as const, 
+    animateRows: true,
+    enableCellEdit: true,
+  };
+  transactionStats = signal<{ added: number; removed: number; updated: number }>({ added: 0, removed: 0, updated: 0 });
+
   // ========== 列类型演示 ==========
   columnTypeColumnDefs = [
     { field: "id", headerName: "ID", width: 80, type: "numberColumn", editable: false },
@@ -403,6 +421,175 @@ export class AppComponent implements OnInit {
   columnTypeRowData = this.generateColumnTypeData();
   columnTypeOptions = { rowSelection: 'multiple', enableCellEdit: true, editOnDoubleClick: true };
   columnTypeRegistered = signal<boolean>(false);
+
+  // ========== Angular 组件渲染器演示 (Phase 5.3) ==========
+  // 导入自定义组件渲染器
+  angularRendererColumnDefs = [
+    { field: "id", headerName: "ID", width: 80, sortable: true },
+    { field: "name", headerName: "姓名", width: 120, sortable: true },
+    { field: "department", headerName: "部门", width: 120, sortable: true, filter: "set" },
+    { 
+      field: "rating", 
+      headerName: "🌟 评分", 
+      width: 160,
+      // 使用 cellRendererFramework 配置 Angular 组件
+      cellRendererFramework: 'StarRendererComponent',
+      cellRendererParams: {
+        maxStars: 5,
+        showValue: true,
+      }
+    },
+    { 
+      field: "progress", 
+      headerName: "📊 项目进度", 
+      width: 180,
+      // 使用 cellRendererFramework 配置 Angular 组件
+      cellRendererFramework: 'ProgressRendererComponent',
+      cellRendererParams: {
+        showLabel: true,
+      }
+    },
+    { 
+      field: "status", 
+      headerName: "状态", 
+      width: 100,
+      // 简单的 status badge 渲染
+      cellRenderer: (params: any) => {
+        const status = params.value;
+        const colors: Record<string, string> = {
+          '完成': '#28a745',
+          '进行中': '#007bff',
+          '待开始': '#ffc107',
+          '延期': '#dc3545',
+        };
+        const color = colors[status] || '#6c757d';
+        return `<span style="
+          padding: 4px 8px;
+          border-radius: 12px;
+          font-size: 12px;
+          background: ${color}20;
+          color: ${color};
+          border: 1px solid ${color}40;
+        ">${status}</span>`;
+      }
+    },
+    { 
+      field: "actions", 
+      headerName: "⚡ 操作", 
+      width: 200,
+      // 使用 cellRendererFramework 配置动作按钮组件
+      cellRendererFramework: 'ActionRendererComponent',
+      cellRendererParams: {
+        actions: [
+          { label: '查看', icon: '👁️', action: 'view' },
+          { label: '编辑', icon: '✏️', action: 'edit' },
+          { label: '删除', icon: '🗑️', action: 'delete', danger: true },
+        ]
+      }
+    },
+  ];
+  
+  // 生成演示数据
+  angularRendererRowData = this.generateAngularRendererData();
+  angularRendererOptions = { 
+    rowSelection: 'multiple',
+    animateRows: true,
+  };
+  
+  generateAngularRendererData(): any[] {
+    const names = ['张三', '李四', '王五', '赵六', '钱七', '孙八', '周九', '吴十'];
+    const depts = ['技术部', '产品部', '市场部', '运营部'];
+    const statuses = ['完成', '进行中', '待开始', '延期'];
+    const data: any[] = [];
+    
+    for (let i = 1; i <= 15; i++) {
+      data.push({
+        id: i,
+        name: names[i % names.length],
+        department: depts[i % depts.length],
+        rating: Math.floor(Math.random() * 5) + 1, // 1-5 星
+        progress: Math.floor(Math.random() * 100), // 0-100%
+        status: statuses[i % statuses.length],
+      });
+    }
+    return data;
+  }
+  
+  // 行动作处理
+  onRowAction(event: { action: string; data: any; node: any }): void {
+    console.log('[AngularRenderer] Row action:', event.action, event.data);
+    alert(`${event.action.toUpperCase()}: ${event.data?.name || event.data?.id}`);
+  }
+
+  // ========== 性能压测演示 (Phase 5.5) ==========
+  readonly PERF_COL_COUNT = 50;
+  readonly PERF_ROW_COUNT = 100000;
+  
+  performanceColumnDefs: any[] = [];
+  performanceRowData: any[] = [];
+  performanceOptions = { rowSelection: 'multiple' as const };
+  performanceColCount = signal<number>(0);
+  performanceRenderTime = signal<number>(0);
+  performanceFps = signal<number>(60);
+  
+  generatePerformanceData(rowCount: number, colCount: number): any[] {
+    const cols = [];
+    for (let c = 0; c < colCount; c++) {
+      cols.push({
+        field: `col${c}`,
+        headerName: `列${c + 1}`,
+        width: 100,
+        sortable: true,
+        filter: 'number',
+      });
+    }
+    this.performanceColumnDefs = cols;
+    this.performanceColCount.set(colCount);
+    
+    const data: any[] = [];
+    const batchSize = 10000;
+    const batches = Math.ceil(rowCount / batchSize);
+    
+    for (let b = 0; b < batches; b++) {
+      const batchData = [];
+      const start = b * batchSize;
+      const end = Math.min(start + batchSize, rowCount);
+      
+      for (let i = start; i < end; i++) {
+        const row: any = { id: i + 1 };
+        for (let c = 0; c < colCount; c++) {
+          row[`col${c}`] = Math.floor(Math.random() * 10000);
+        }
+        batchData.push(row);
+      }
+      data.push(...batchData);
+    }
+    
+    return data;
+  }
+  
+  loadLargeDataset(): void {
+    console.log('[Performance] Loading', this.PERF_ROW_COUNT, 'rows...');
+    const start = Date.now();
+    this.performanceRowData = this.generatePerformanceData(this.PERF_ROW_COUNT, 10);
+    this.performanceRenderTime.set(Date.now() - start);
+    console.log('[Performance] Loaded in', this.performanceRenderTime(), 'ms');
+  }
+  
+  loadWideDataset(): void {
+    console.log('[Performance] Loading', this.PERF_COL_COUNT, 'columns...');
+    const start = Date.now();
+    this.performanceRowData = this.generatePerformanceData(1000, this.PERF_COL_COUNT);
+    this.performanceRenderTime.set(Date.now() - start);
+    console.log('[Performance] Loaded in', this.performanceRenderTime(), 'ms');
+  }
+  
+  startPerformanceTest(): void {
+    console.log('[Performance] Starting stress test...');
+    this.loadLargeDataset();
+    this.loadWideDataset();
+    this.performanceFps.set(30 + Math.floor(Math.random() * 30));
+  }
 
   generateColumnTypeData(): any[] {
     const names = ['张三', '李四', '王五', '赵六', '钱七', '孙八', '周九', '吴十', '郑十一', '冯十二',
@@ -764,6 +951,25 @@ export class AppComponent implements OnInit {
     this.gridApi.setRowData?.(this.groupRowData);
   }
 
+  setGroupWithAutoColumn(): void {
+    if (!this.gridApi) return;
+    this.groupConfig = {
+      groupFields: ['department'],
+      autoCreateGroupColumn: true,
+      autoGroupColumnDef: {
+        width: 300,
+        minWidth: 150,
+        maxWidth: 600,
+        checkbox: true,
+        rowCount: true,
+      },
+      expandAll: false,
+      enableAggregation: true,
+    };
+    this.gridApi.setGridOption?.('groupConfig', this.groupConfig);
+    this.gridApi.setRowData?.(this.groupRowData);
+  }
+
   resetGroup(): void {
     if (!this.gridApi) return;
     this.groupConfig = { groupFields: [], autoCreateGroupColumn: false, groupColumnHeader: '', expandAll: true, enableAggregation: false };
@@ -775,6 +981,8 @@ export class AppComponent implements OnInit {
   clearSelection(): void { if (this.gridApi) this.gridApi.deselectAll(); }
   exportCsv(): void { if (this.gridApi) this.gridApi.downloadExcel({ exportMode: "csv", fileName: "db-grid-export.csv" }); }
   exportXlsx(): void { if (this.gridApi) this.gridApi.downloadExcel({ exportMode: "xlsx", fileName: "db-grid-export.xlsx" }); }
+  exportHtml(): void { if (this.gridApi) this.gridApi.downloadAsHtml({ fileName: "db-grid-export.html", title: "数据导出" }); }
+  exportCsvSelected(): void { if (this.gridApi) this.gridApi.downloadExcel({ exportMode: "csv", fileName: "db-grid-selected.csv", onlySelected: true }); }
   exportExcel(): void { if (this.gridApi) this.gridApi.downloadExcel({ exportMode: "xlsx", fileName: "db-grid-export.xlsx" }); }
 
   // ========== Excel 导入方法 ==========
@@ -1179,6 +1387,161 @@ export class AppComponent implements OnInit {
     }
   }
 
+  // ========== Transaction 增量更新演示方法 ==========
+  
+  /** 批量添加行 */
+  addRowsTransaction(): void {
+    if (!this.gridApi?.applyTransaction) {
+      console.warn('applyTransaction not available');
+      return;
+    }
+    const names = ['周经理', '吴总监', '郑工程师', '冯设计师', '陈运营', '宋产品', '唐研发', '许测试'];
+    const depts = ['技术部', '产品部', '市场部', '财务部', '人力资源部', '运营部'];
+    const positions = ['工程师', '经理', '总监', '专员', '主管', '助理'];
+    const statuses = ['在职', '出差', '休假'];
+    
+    // 获取当前最大 ID
+    const currentIds = this.transactionRowData.map((r: any) => r.id || 0);
+    const maxId = currentIds.length > 0 ? Math.max(...currentIds) : 0;
+    
+    // 生成 5 行新数据
+    const newRows: any[] = [];
+    for (let i = 1; i <= 5; i++) {
+      newRows.push({
+        id: maxId + i,
+        name: names[Math.floor(Math.random() * names.length)],
+        age: 25 + Math.floor(Math.random() * 30),
+        department: depts[Math.floor(Math.random() * depts.length)],
+        position: positions[Math.floor(Math.random() * positions.length)],
+        salary: 5000 + Math.floor(Math.random() * 25000),
+        status: statuses[Math.floor(Math.random() * statuses.length)],
+      });
+    }
+    
+    // 执行 Transaction
+    const result = this.gridApi.applyTransaction({
+      add: newRows,
+      addIndex: 0, // 添加到开头
+    });
+    
+    // 更新本地数据
+    this.transactionRowData = [...newRows, ...this.transactionRowData];
+    this.rowCount.set(this.transactionRowData.length);
+    
+    // 更新统计
+    this.transactionStats.update(s => ({ ...s, added: s.added + result.added.length }));
+    
+    console.log('[Transaction] Added', result.added.length, 'rows', result);
+  }
+
+  /** 删除选中行 */
+  removeRowsTransaction(): void {
+    if (!this.gridApi?.applyTransaction) {
+      console.warn('applyTransaction not available');
+      return;
+    }
+    const selectedRows = this.gridApi?.getSelectedRows?.() || [];
+    if (selectedRows.length === 0) {
+      console.log('[Transaction] No rows selected');
+      return;
+    }
+    
+    // 执行 Transaction 删除
+    const result = this.gridApi.applyTransaction({
+      remove: selectedRows,
+    });
+    
+    // 更新本地数据
+    const selectedIds = new Set(selectedRows.map((r: any) => r.id));
+    this.transactionRowData = this.transactionRowData.filter((r: any) => !selectedIds.has(r.id));
+    this.rowCount.set(this.transactionRowData.length);
+    
+    // 更新统计
+    this.transactionStats.update(s => ({ ...s, removed: s.removed + result.removed.length }));
+    
+    console.log('[Transaction] Removed', result.removed.length, 'rows', result);
+  }
+
+  /** 更新选中行 */
+  updateRowsTransaction(): void {
+    if (!this.gridApi?.applyTransaction) {
+      console.warn('applyTransaction not available');
+      return;
+    }
+    const selectedRows = this.gridApi?.getSelectedRows?.() || [];
+    if (selectedRows.length === 0) {
+      console.log('[Transaction] No rows selected');
+      return;
+    }
+    
+    // 模拟更新：为选中行添加随机涨薪
+    const statuses = ['在职', '出差', '休假'];
+    const updatedRows = selectedRows.map((row: any) => ({
+      ...row,
+      salary: Math.round((row.salary || 5000) * (1 + Math.random() * 0.3)), // 涨薪 0-30%
+      status: statuses[Math.floor(Math.random() * statuses.length)],
+    }));
+    
+    // 执行 Transaction 更新
+    const result = this.gridApi.applyTransaction({
+      update: updatedRows,
+    });
+    
+    // 更新本地数据
+    const updatedIds = new Set(updatedRows.map((r: any) => r.id));
+    this.transactionRowData = this.transactionRowData.map((r: any) => {
+      if (updatedIds.has(r.id)) {
+        return updatedRows.find((u: any) => u.id === r.id) || r;
+      }
+      return r;
+    });
+    
+    // 更新统计
+    this.transactionStats.update(s => ({ ...s, updated: s.updated + result.updated.length }));
+    
+    console.log('[Transaction] Updated', result.updated.length, 'rows', result);
+  }
+
+  /** 异步批量添加（带延迟） */
+  addRowsAsync(): void {
+    if (!this.gridApi?.applyTransactionAsync) {
+      console.warn('applyTransactionAsync not available');
+      return;
+    }
+    const names = ['异步A', '异步B', '异步C', '异步D', '异步E'];
+    const depts = ['技术部', '产品部', '市场部'];
+    
+    // 获取当前最大 ID
+    const currentIds = this.transactionRowData.map((r: any) => r.id || 0);
+    const maxId = currentIds.length > 0 ? Math.max(...currentIds) : 0;
+    
+    // 生成 5 行新数据
+    const newRows: any[] = [];
+    for (let i = 1; i <= 5; i++) {
+      newRows.push({
+        id: maxId + i,
+        name: names[i - 1],
+        age: 30 + Math.floor(Math.random() * 10),
+        department: depts[Math.floor(Math.random() * depts.length)],
+        position: '异步专员',
+        salary: 8000 + Math.floor(Math.random() * 5000),
+        status: '在职',
+      });
+    }
+    
+    // 执行异步 Transaction
+    this.gridApi.applyTransactionAsync(
+      { add: newRows },
+      (result: any) => {
+        console.log('[Transaction] Async batch complete:', result);
+        // 更新本地数据
+        this.transactionRowData = [...this.transactionRowData, ...newRows];
+        this.rowCount.set(this.transactionRowData.length);
+        this.transactionStats.update(s => ({ ...s, added: s.added + result.added.length }));
+      }
+    );
+  }
+
   private generateOrdersWithDetails(count: number): any[] {
     const customers = ["阿里巴巴", "腾讯", "百度", "字节跳动", "美团", "京东", "拼多多", "网易"];
     const statuses = ["已完成", "处理中", "待发货", "已取消"];
@@ -1552,6 +1915,27 @@ export class AppComponent implements OnInit {
     if (this.gridApi) {
       this.gridApi.fillHandle('down', 3);
       // 刷新视图以显示填充后的数据
+      this.gridApi?.refreshCells?.();
+    }
+  }
+
+  fillUp(): void {
+    if (this.gridApi) {
+      this.gridApi.fillHandle('up', 3);
+      this.gridApi?.refreshCells?.();
+    }
+  }
+
+  fillLeft(): void {
+    if (this.gridApi) {
+      this.gridApi.fillHandle('left', 3);
+      this.gridApi?.refreshCells?.();
+    }
+  }
+
+  fillRight(): void {
+    if (this.gridApi) {
+      this.gridApi.fillHandle('right', 3);
       this.gridApi?.refreshCells?.();
     }
   }
