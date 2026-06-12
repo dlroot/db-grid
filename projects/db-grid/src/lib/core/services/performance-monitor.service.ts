@@ -1,229 +1,349 @@
+import { Injectable, signal } from '@angular/core';
+
 /**
- * Performance Monitor Service
- * 性能监控服务 — 测量渲染帧率、执行时间
- *
- * Features:
- *   - measureFrame() — 测量单帧渲染时间
- *   - startMonitoring() / stopMonitoring() — 实时 FPS 监控
- *   - benchmark() — 性能基准测试
+ * 性能监控服务
+ * 监控渲染性能、帧率、DOM 节点数等
+ * 
+ * AG Grid 对应：Performance Monitor / Debug Panel
  */
 
-import { Injectable } from '@angular/core';
-
-export interface FrameStats {
-  frameTime: number; // ms
+export interface PerformanceMetrics {
+  /** 当前 FPS */
   fps: number;
+  /** 平均 FPS */
+  avgFps: number;
+  /** 最低 FPS */
+  minFps: number;
+  /** 渲染时间（ms） */
+  renderTime: number;
+  /** 平均渲染时间（ms） */
+  avgRenderTime: number;
+  /** DOM 节点数 */
+  domNodes: number;
+  /** 可见行数 */
+  visibleRows: number;
+  /** 内存使用（MB） */
+  memoryUsage: number | null;
+  /** 时间戳 */
   timestamp: number;
 }
 
-export interface BenchmarkResult {
-  name: string;
-  iterations: number;
-  totalTime: number; // ms
-  avgTime: number; // ms
-  minTime: number; // ms
-  maxTime: number; // ms
-  opsPerSecond: number;
+export interface RenderProfile {
+  /** 操作类型 */
+  type: 'scroll' | 'sort' | 'filter' | 'add' | 'remove' | 'update' | 'render';
+  /** 开始时间 */
+  startTime: number;
+  /** 结束时间 */
+  endTime: number;
+  /** 耗时（ms） */
+  duration: number;
+  /** 附加数据 */
+  metadata?: Record<string, any>;
 }
 
-@Injectable()
+@Injectable({ providedIn: 'root' })
 export class PerformanceMonitorService {
-  private frameStart = 0;
-  private frameCount = 0;
+  /** FPS 计算配置 */
+  private fpsHistory: number[] = [];
+  private maxFpsHistory = 60;
   private lastFrameTime = 0;
-  private isMonitoring = false;
-  private frameCallback?: (stats: FrameStats) => void;
-  private rafId: number | null = null;
+  private frameCount = 0;
+  
+  /** 渲染时间统计 */
+  private renderTimeHistory: number[] = [];
+  private maxRenderHistory = 100;
+  
+  /** 性能指标信号 */
+  metrics = signal<PerformanceMetrics>({
+    fps: 60,
+    avgFps: 60,
+    minFps: 60,
+    renderTime: 0,
+    avgRenderTime: 0,
+    domNodes: 0,
+    visibleRows: 0,
+    memoryUsage: null,
+    timestamp: Date.now(),
+  });
+  
+  /** 是否启用监控 */
+  private enabled = false;
+  private animationFrameId: number | null = null;
+  
+  /** 性能日志 */
+  private profiles: RenderProfile[] = [];
+  private maxProfiles = 50;
+  
+  /** 性能阈值 */
+  private thresholds = {
+    minFps: 30,
+    maxRenderTime: 16, // 60fps = 16.67ms
+    maxDomNodes: 10000,
+  };
 
-  /** 帧历史记录 */
-  private frameHistory: FrameStats[] = [];
-  private maxHistoryLength = 100;
-
-  // ========== 帧时间测量 ==========
+  /** 慢操作回调 */
+  private slowOperationCallbacks: Array<(profile: RenderProfile) => void> = [];
 
   /**
-   * 开始测量一帧
+   * 启用性能监控
    */
-  beginFrame(): void {
-    this.frameStart = performance.now();
+  enable(): void {
+    if (this.enabled) return;
+    this.enabled = true;
+    this.startFpsMonitor();
   }
 
   /**
-   * 结束测量一帧
+   * 禁用性能监控
    */
-  endFrame(): FrameStats | null {
-    if (this.frameStart === 0) return null;
-
-    const now = performance.now();
-    const frameTime = now - this.frameStart;
-    const fps = 1000 / frameTime;
-
-    const stats: FrameStats = {
-      frameTime,
-      fps,
-      timestamp: now,
-    };
-
-    this.frameHistory.push(stats);
-    if (this.frameHistory.length > this.maxHistoryLength) {
-      this.frameHistory.shift();
+  disable(): void {
+    this.enabled = false;
+    if (this.animationFrameId !== null) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
     }
-
-    this.frameStart = 0;
-    this.lastFrameTime = frameTime;
-    this.frameCount++;
-
-    return stats;
   }
 
   /**
-   * 测量一个函数的执行时间
+   * 开始 FPS 监控
    */
-  measure<T>(fn: () => T): { result: T; time: number } {
-    const start = performance.now();
-    const result = fn();
-    const time = performance.now() - start;
-    return { result, time };
-  }
-
-  /**
-   * 异步测量
-   */
-  async measureAsync<T>(fn: () => Promise<T>): Promise<{ result: T; time: number }> {
-    const start = performance.now();
-    const result = await fn();
-    const time = performance.now() - start;
-    return { result, time };
-  }
-
-  // ========== FPS 监控 ==========
-
-  /**
-   * 开始实时 FPS 监控
-   */
-  startMonitoring(callback?: (stats: FrameStats) => void): void {
-    if (this.isMonitoring) return;
-    this.isMonitoring = true;
-    this.frameCallback = callback;
-
-    const measureLoop = () => {
-      if (!this.isMonitoring) return;
-
-      const stats = this.endFrame();
-      if (stats && this.frameCallback) {
-        this.frameCallback(stats);
+  private startFpsMonitor(): void {
+    if (!this.enabled) return;
+    
+    const measureFrame = (timestamp: number) => {
+      if (!this.enabled) return;
+      
+      this.frameCount++;
+      
+      if (this.lastFrameTime === 0) {
+        this.lastFrameTime = timestamp;
       }
-
-      this.beginFrame();
-      this.rafId = requestAnimationFrame(measureLoop);
+      
+      const delta = timestamp - this.lastFrameTime;
+      
+      if (delta >= 1000) {
+        // 一秒计算一次 FPS
+        const fps = Math.round((this.frameCount * 1000) / delta);
+        this.updateFps(fps);
+        this.frameCount = 0;
+        this.lastFrameTime = timestamp;
+        
+        // 更新 DOM 节点数
+        this.updateDomNodes();
+        this.updateMemory();
+        
+        // 更新信号
+        this.metrics.update(m => ({
+          ...m,
+          fps,
+          avgFps: this.calculateAvgFps(),
+          minFps: Math.min(this.metrics().minFps, fps),
+          domNodes: this.countDomNodes(),
+          timestamp: Date.now(),
+        }));
+      }
+      
+      this.animationFrameId = requestAnimationFrame(measureFrame);
     };
-
-    this.beginFrame();
-    this.rafId = requestAnimationFrame(measureLoop);
+    
+    this.animationFrameId = requestAnimationFrame(measureFrame);
   }
 
   /**
-   * 停止监控
+   * 更新 FPS
    */
-  stopMonitoring(): void {
-    this.isMonitoring = false;
-    if (this.rafId !== null) {
-      cancelAnimationFrame(this.rafId);
-      this.rafId = null;
+  private updateFps(fps: number): void {
+    this.fpsHistory.push(fps);
+    if (this.fpsHistory.length > this.maxFpsHistory) {
+      this.fpsHistory.shift();
     }
-    this.frameCallback = undefined;
   }
 
   /**
-   * 获取当前 FPS
+   * 计算平均 FPS
    */
-  getCurrentFps(): number {
-    const stats = this.frameHistory[this.frameHistory.length - 1];
-    return stats?.fps ?? 0;
+  private calculateAvgFps(): number {
+    if (this.fpsHistory.length === 0) return 60;
+    const sum = this.fpsHistory.reduce((a, b) => a + b, 0);
+    return Math.round(sum / this.fpsHistory.length);
   }
 
   /**
-   * 获取平均 FPS
+   * 更新 DOM 节点数
    */
-  getAverageFps(): number {
-    if (this.frameHistory.length === 0) return 0;
-    const sum = this.frameHistory.reduce((acc, s) => acc + s.fps, 0);
-    return sum / this.frameHistory.length;
+  private updateDomNodes(): void {
+    this.metrics.update(m => ({
+      ...m,
+      domNodes: this.countDomNodes(),
+    }));
   }
 
   /**
-   * 获取帧时间历史
+   * 统计 DOM 节点数
    */
-  getFrameHistory(): FrameStats[] {
-    return [...this.frameHistory];
-  }
-
-  // ========== 性能基准测试 ==========
-
-  /**
-   * 运行基准测试
-   */
-  async benchmark(
-    name: string,
-    fn: () => void | Promise<void>,
-    options: { iterations?: number; warmup?: number } = {}
-  ): Promise<BenchmarkResult> {
-    const { iterations = 100, warmup = 10 } = options;
-    const times: number[] = [];
-
-    // 预热
-    for (let i = 0; i < warmup; i++) {
-      await fn();
+  private countDomNodes(): number {
+    if (typeof document !== 'undefined') {
+      return document.querySelectorAll('.db-grid-body-container *').length;
     }
+    return 0;
+  }
 
-    // 正式测试
-    for (let i = 0; i < iterations; i++) {
-      const start = performance.now();
-      await fn();
-      const time = performance.now() - start;
-      times.push(time);
+  /**
+   * 更新内存使用
+   */
+  private updateMemory(): void {
+    if (typeof performance !== 'undefined' && 'memory' in performance) {
+      const memory = (performance as any).memory;
+      this.metrics.update(m => ({
+        ...m,
+        memoryUsage: Math.round(memory.usedJSHeapSize / (1024 * 1024)),
+      }));
     }
+  }
 
-    const totalTime = times.reduce((a, b) => a + b, 0);
-    const avgTime = totalTime / iterations;
-    const minTime = Math.min(...times);
-    const maxTime = Math.max(...times);
-    const opsPerSecond = 1000 / avgTime;
+  /**
+   * 记录渲染操作
+   */
+  startProfile(type: RenderProfile['type'], metadata?: Record<string, any>): number {
+    return Date.now();
+  }
 
+  /**
+   * 结束渲染操作
+   */
+  endProfile(startTime: number, type: RenderProfile['type'], metadata?: Record<string, any>): void {
+    const duration = Date.now() - startTime;
+    
+    const profile: RenderProfile = {
+      type,
+      startTime,
+      endTime: Date.now(),
+      duration,
+      metadata,
+    };
+    
+    // 添加到日志
+    this.profiles.push(profile);
+    if (this.profiles.length > this.maxProfiles) {
+      this.profiles.shift();
+    }
+    
+    // 更新渲染时间统计
+    this.renderTimeHistory.push(duration);
+    if (this.renderTimeHistory.length > this.maxRenderHistory) {
+      this.renderTimeHistory.shift();
+    }
+    
+    // 更新信号
+    this.metrics.update(m => ({
+      ...m,
+      renderTime: duration,
+      avgRenderTime: this.calculateAvgRenderTime(),
+    }));
+    
+    // 检查慢操作
+    if (duration > 50) {
+      this.slowOperationCallbacks.forEach(cb => cb(profile));
+    }
+  }
+
+  /**
+   * 计算平均渲染时间
+   */
+  private calculateAvgRenderTime(): number {
+    if (this.renderTimeHistory.length === 0) return 0;
+    const sum = this.renderTimeHistory.reduce((a, b) => a + b, 0);
+    return Math.round(sum / this.renderTimeHistory.length);
+  }
+
+  /**
+   * 注册慢操作回调
+   */
+  onSlowOperation(callback: (profile: RenderProfile) => void): () => void {
+    this.slowOperationCallbacks.push(callback);
+    return () => {
+      const index = this.slowOperationCallbacks.indexOf(callback);
+      if (index >= 0) {
+        this.slowOperationCallbacks.splice(index, 1);
+      }
+    };
+  }
+
+  /**
+   * 设置可见行数
+   */
+  setVisibleRows(count: number): void {
+    this.metrics.update(m => ({
+      ...m,
+      visibleRows: count,
+    }));
+  }
+
+  /**
+   * 获取性能报告
+   */
+  getReport(): PerformanceMetrics & { slowProfiles: RenderProfile[] } {
     return {
-      name,
-      iterations,
-      totalTime,
-      avgTime,
-      minTime,
-      maxTime,
-      opsPerSecond,
+      ...this.metrics(),
+      slowProfiles: this.profiles.filter(p => p.duration > 50),
     };
   }
 
   /**
-   * 格式化基准测试结果
+   * 获取性能日志
    */
-  formatBenchmarkResult(result: BenchmarkResult): string {
-    return [
-      `=== ${result.name} ===`,
-      `Iterations: ${result.iterations}`,
-      `Total Time: ${result.totalTime.toFixed(2)}ms`,
-      `Average: ${result.avgTime.toFixed(3)}ms`,
-      `Min/Max: ${result.minTime.toFixed(3)}ms / ${result.maxTime.toFixed(3)}ms`,
-      `Ops/sec: ${result.opsPerSecond.toFixed(0)}`,
-    ].join('\n');
+  getProfiles(): RenderProfile[] {
+    return [...this.profiles];
   }
 
-  // ========== 清理 ==========
-
-  clearHistory(): void {
-    this.frameHistory = [];
-    this.frameCount = 0;
+  /**
+   * 清空日志
+   */
+  clearProfiles(): void {
+    this.profiles = [];
   }
 
+  /**
+   * 检查性能是否正常
+   */
+  isHealthy(): boolean {
+    const m = this.metrics();
+    return (
+      m.fps >= this.thresholds.minFps &&
+      m.renderTime <= this.thresholds.maxRenderTime * 3
+    );
+  }
+
+  /**
+   * 获取警告信息
+   */
+  getWarnings(): string[] {
+    const warnings: string[] = [];
+    const m = this.metrics();
+    
+    if (m.fps < this.thresholds.minFps) {
+      warnings.push(`FPS 过低: ${m.fps} < ${this.thresholds.minFps}`);
+    }
+    
+    if (m.renderTime > this.thresholds.maxRenderTime * 3) {
+      warnings.push(`渲染时间过长: ${m.renderTime}ms > ${this.thresholds.maxRenderTime * 3}ms`);
+    }
+    
+    if (m.domNodes > this.thresholds.maxDomNodes) {
+      warnings.push(`DOM 节点过多: ${m.domNodes} > ${this.thresholds.maxDomNodes}`);
+    }
+    
+    return warnings;
+  }
+
+  /**
+   * 销毁
+   */
   destroy(): void {
-    this.stopMonitoring();
-    this.clearHistory();
+    this.disable();
+    this.fpsHistory = [];
+    this.renderTimeHistory = [];
+    this.profiles = [];
+    this.slowOperationCallbacks = [];
   }
 }

@@ -49,3 +49,7 @@ export * from './advanced-filter.service';
 export * from './cross-grid-drag.service';
 export * from './render-batch.service';
 export * from './performance-monitor.service';
+export * from './transaction.service';
+export * from './angular-component-renderer.service';
+export * from './event-bus.service';
+export * from './viewport-row-model.service';

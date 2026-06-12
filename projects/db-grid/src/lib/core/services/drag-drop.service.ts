@@ -34,6 +34,39 @@ export interface ColDragEvent {
   targetIndex: number;
 }
 
+/**
+ * 列拖拽重排序配置（Phase 6.5 增强）
+ */
+export interface ColumnReorderConfig {
+  /** 是否启用列拖拽重排序 */
+  enabled?: boolean;
+  /** 单列禁用拖拽（覆盖 colDef.suppressMovable） */
+  suppressMovable?: string[];
+  /** 拖拽到边缘时隐藏列 */
+  suppressDragLeaveHidesColumns?: boolean;
+  /** 列组整体拖拽 */
+  dragGroupColumns?: boolean;
+  /** 拖拽可视化类型：'column' | 'ghost' */
+  dragType?: 'column' | 'ghost';
+}
+
+
+/**
+ * 列拖拽状态
+ */
+export interface ColumnDragState {
+  /** 正在拖拽的列 */
+  draggingCol: ColDef | null;
+  /** 拖拽起始位置 */
+  startIndex: number;
+  /** 当前目标位置 */
+  targetIndex: number;
+  /** 拖拽指示器位置 */
+  indicatorPosition: number;
+  /** 是否显示插入指示器 */
+  showIndicator: boolean;
+}
+
 export class DragDropService {
   private rowDragEnabled = false;
   private colDragEnabled = false;
@@ -44,6 +77,18 @@ export class DragDropService {
   private dragStartIndex = -1;
   private dragStartPos = { x: 0, y: 0 };
 
+
+  // Column drag state (Phase 6.5)
+  private colDragState: ColumnDragState = {
+    draggingCol: null,
+    startIndex: -1,
+    targetIndex: -1,
+    indicatorPosition: 0,
+    showIndicator: false,
+  };
+  private colReorderConfig: ColumnReorderConfig = {};
+  private suppressMovableCols = new Set<string>();
+
   private onDragStarted$ = new Subject<DragStartedEvent>();
   private onDragEnded$ = new Subject<DragEndedEvent>();
   private onRowDragEnter$ = new Subject<number>();
@@ -51,6 +96,8 @@ export class DragDropService {
   private onRowDrop$ = new Subject<{ fromIndex: number; toIndex: number }>();
 
   private onColDragStart$ = new Subject<ColDragEvent>();
+  private onColDragMove$ = new Subject<ColumnDragState>();
+  private onColumnMoved$ = new Subject<{ fromIndex: number; toIndex: number }>();
   private onColDragEnd$ = new Subject<ColDragEvent>();
 
   initialize(config?: DragDropConfig): void {
@@ -165,6 +212,111 @@ export class DragDropService {
     });
   }
 
+
+  // ========== Column Drag 重构（Phase 6.5）============
+  
+  /**
+   * 配置列拖拽重排序
+   */
+  configureColReorder(config: ColumnReorderConfig): void {
+    this.colReorderConfig = config;
+    this.suppressMovableCols.clear();
+    if (config.suppressMovable?.length) {
+      config.suppressMovable.forEach(colId => this.suppressMovableCols.add(colId));
+    }
+  }
+
+  /**
+   * 检查列是否可以拖拽
+   */
+  canMoveColumn(colDef: ColDef): boolean {
+    if (!this.colDragEnabled) return false;
+    if (colDef.suppressMovable) return false;
+    if (this.suppressMovableCols.has(colDef.colId || colDef.field || '')) return false;
+    return true;
+  }
+
+  /**
+   * 开始列拖拽
+   */
+  beginColumnDrag(colDef: ColDef, startIndex: number): void {
+    if (!this.canMoveColumn(colDef)) return;
+    
+    this.colDragState = {
+      draggingCol: colDef,
+      startIndex,
+      targetIndex: startIndex,
+      indicatorPosition: 0,
+      showIndicator: true,
+    };
+    
+    this.onColDragStart$.next({
+      type: 'colDragStart',
+      colDef,
+      targetIndex: startIndex,
+    });
+  }
+
+  /**
+   * 更新列拖拽目标位置
+   */
+  updateColumnDragTarget(targetIndex: number, indicatorPosition: number): void {
+    if (!this.colDragState.draggingCol) return;
+    
+    this.colDragState.targetIndex = targetIndex;
+    this.colDragState.indicatorPosition = indicatorPosition;
+    this.colDragState.showIndicator = true;
+  }
+
+  /**
+   * 结束列拖拽并执行重排序
+   */
+  finishColumnDrag(): { fromIndex: number; toIndex: number } | null {
+    if (!this.colDragState.draggingCol) return null;
+    
+    const result = {
+      fromIndex: this.colDragState.startIndex,
+      toIndex: this.colDragState.targetIndex,
+    };
+    
+    this.onColDragEnd$.next({
+      type: 'colDragEnd',
+      colDef: this.colDragState.draggingCol,
+      targetIndex: this.colDragState.targetIndex,
+    });
+    
+    this.resetColumnDragState();
+    return result;
+  }
+  /**
+   * 取消列拖拽
+   */
+  cancelColumnDrag(): void {
+    this.resetColumnDragState();
+  }
+  /**
+   * 获取列拖拽状态
+   */
+  getColumnDragState(): ColumnDragState {
+    return { ...this.colDragState };
+  }
+  /**
+   * 检查是否正在拖拽列
+   */
+  isDraggingColumn(): boolean {
+    return this.colDragState.draggingCol !== null;
+  }
+
+  private resetColumnDragState(): void {
+    this.colDragState = {
+      draggingCol: null,
+      startIndex: -1,
+      targetIndex: -1,
+      indicatorPosition: 0,
+      showIndicator: false,
+    };
+  }
+
   // Event listeners
   onDragStarted(callback: (event: DragStartedEvent) => void): void {
     this.onDragStarted$.subscribe(callback);
@@ -192,6 +344,12 @@ export class DragDropService {
 
   onColDragEnd(callback: (event: ColDragEvent) => void): void {
     this.onColDragEnd$.subscribe(callback);
+  }
+  onColDragMove(callback: (state: ColumnDragState) => void): void {
+    this.onColDragMove$.subscribe(callback);
+  }
+  onColumnMoved(callback: (params: { fromIndex: number; toIndex: number }) => void): void {
+    this.onColumnMoved$.subscribe(callback);
   }
 
   destroy(): void {

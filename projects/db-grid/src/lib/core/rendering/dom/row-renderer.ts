@@ -298,6 +298,38 @@ export class RowRendererService {
     }, 300);
   }
 
+  /** 行动画：行添加动画 */
+  animateRowAdd(rowElement: HTMLElement): void {
+    rowElement.classList.add('db-grid-row-anim-add');
+    setTimeout(() => {
+      rowElement.classList.remove('db-grid-row-anim-add');
+    }, 400);
+  }
+
+  /** 行动画：行删除动画 */
+  animateRowRemove(rowElement: HTMLElement): void {
+    rowElement.classList.add('db-grid-row-anim-remove');
+    setTimeout(() => {
+      rowElement.classList.remove('db-grid-row-anim-remove');
+    }, 300);
+  }
+
+  /** 行动画：行更新闪烁动画 */
+  animateRowUpdate(rowElement: HTMLElement): void {
+    rowElement.classList.add('db-grid-row-anim-update');
+    setTimeout(() => {
+      rowElement.classList.remove('db-grid-row-anim-update');
+    }, 500);
+  }
+
+  /** 行动画：行闪烁动画（通用） */
+  animateRowFlash(rowElement: HTMLElement): void {
+    rowElement.classList.add('db-grid-row-anim-flash');
+    setTimeout(() => {
+      rowElement.classList.remove('db-grid-row-anim-flash');
+    }, 500);
+  }
+
   /** 设置行样式 */
   setRowStyle(rowElement: HTMLElement, styles: Record<string, string>): void {
     Object.assign(rowElement.style, styles);

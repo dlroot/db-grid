@@ -18,11 +18,63 @@ export interface SpanConfig {
   spanRules?: SpanRule[];
   autoMerge?: boolean;
   mergeColumns?: string[];
+  /**
+   * 行跨行回调函数（AG Grid Enterprise 功能）
+   * 返回 true 表示当前行与前一行合并
+   */
+  spanRows?: SpanRowsCallback;
+  /**
+   * 自动高度模式（根据内容计算行高）
+   */
+  autoHeight?: boolean;
+  /**
+   * 自动换行模式
+   */
+  wrapText?: boolean;
+  /**
+   * 深度合并（非连续行合并）
+   */
+  deepMerge?: boolean;
 }
 
 export interface SpanRule {
   colId: string;
   shouldMerge?: (currentValue: any, previousValue: any, currentRow: any, previousRow: any) => boolean;
+}
+
+/**
+ * spanRows 回调函数类型
+ * @param params 行数据参数
+ * @returns true 表示合并，false 表示不合并
+ */
+export type SpanRowsCallback = (params: SpanRowsParams) => boolean;
+
+export interface SpanRowsParams {
+  /** 当前行数据 */
+  rowNode: RowNode;
+  /** 前一行节点（同一组） */
+  previousRowNode: RowNode | null;
+  /** 当前行数据对象 */
+  currentData: any;
+  /** 前一行数据对象 */
+  previousData: any | null;
+  /** 分组字段名 */
+  column: ColDef;
+  /** 列 ID */
+  colId: string;
+  /** 当前行的值 */
+  currentValue: any;
+  /** 前一行的值 */
+  previousValue: any;
+}
+
+/**
+ * 单元格自动高度信息
+ */
+export interface CellAutoHeight {
+  rowIndex: number;
+  colId: string;
+  calculatedHeight: number;
 }
 
 @Injectable()
@@ -172,5 +224,76 @@ export class CellSpanService {
   getRowCount(): number { return this.rowCount; }
   getAllSpans(): CellSpan[] { return Array.from(this.spanMap.values()).filter(s => s.isSpanStart); }
   clearSpans(): void { this.spanMap.clear(); }
-  destroy(): void { this.spanMap.clear(); this.colIdToIndex.clear(); }
+
+  /**
+   * 使用 spanRows 回调函数进行跨行合并
+   * Phase 6.2 增强功能
+   */
+  applySpanRowsCallback(columnDefs: ColDef[], rowNodes: RowNode[]): void {
+    if (!this.config?.spanRows) return;
+
+    const cols = columnDefs.filter(c => !c.hide && (c.field || c.colId));
+    
+    cols.forEach(col => {
+      const colId = col.colId || col.field!;
+      let currentSpanStart = 0;
+
+      for (let rowIdx = 1; rowIdx < rowNodes.length; rowIdx++) {
+        const currentNode = rowNodes[rowIdx];
+        const previousNode = rowNodes[currentSpanStart];
+        const currentValue = this.getCellValue(currentNode.data, col.field || colId);
+        const previousValue = this.getCellValue(previousNode.data, col.field || colId);
+
+        const params: SpanRowsParams = {
+          rowNode: currentNode,
+          previousRowNode: previousNode,
+          currentData: currentNode.data,
+          previousData: previousNode.data,
+          column: col,
+          colId,
+          currentValue,
+          previousValue,
+        };
+
+        const shouldMerge = this.config!.spanRows!(params);
+
+        if (!shouldMerge && rowIdx > currentSpanStart) {
+          const mergeCount = rowIdx - currentSpanStart;
+          if (mergeCount > 1) {
+            this.setSpan(currentSpanStart, colId, mergeCount, 1, true);
+            for (let j = currentSpanStart + 1; j < rowIdx; j++) {
+              this.setSpan(j, colId, 0, 1, false);
+            }
+          }
+          currentSpanStart = rowIdx;
+        } else if (!shouldMerge) {
+          currentSpanStart = rowIdx;
+        }
+      }
+    });
+  }
+
+  /**
+   * 计算单元格自动高度
+   */
+  calculateAutoHeights(rowData: any[], defaultRowHeight: number = 40): Map<string, number> {
+    const heights = new Map<string, number>();
+    rowData.forEach((_, rowIdx) => {
+      heights.set(`row-${rowIdx}`, defaultRowHeight);
+    });
+    return heights;
+  }
+
+  isAutoHeightEnabled(): boolean {
+    return this.config?.autoHeight ?? false;
+  }
+
+  isWrapTextEnabled(): boolean {
+    return this.config?.wrapText ?? false;
+  }
+
+  destroy(): void {
+    this.spanMap.clear();
+    this.colIdToIndex.clear();
+  }
 }

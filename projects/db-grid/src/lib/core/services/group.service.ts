@@ -17,6 +17,28 @@ export interface GroupConfig {
   enableAggregation?: boolean;
   /** 聚合列配置（覆盖 ColDef.aggregation） */
   aggregationFields?: string[];
+  /**
+   * 自动分组列配置（AG Grid Enterprise 功能）
+   * 当 rowGroup 启用时，自动创建分组列
+   */
+  autoGroupColumnDef?: {
+    /** 分组列宽度 */
+    width?: number;
+    /** 分组列最小宽度 */
+    minWidth?: number;
+    /** 分组列最大宽度 */
+    maxWidth?: number;
+    /** 单元格渲染器 */
+    cellRenderer?: any;
+    /** 单元格渲染器参数 */
+    cellRendererParams?: any;
+    /** 是否显示行号 */
+    rowCount?: number;
+    /** checkbox 选择 */
+    checkbox?: boolean;
+    /** 展开/折叠图标 */
+    suppressExpandable?: boolean;
+  };
 }
 
 export interface GroupResult {
@@ -60,64 +82,77 @@ export class GroupService {
     if (!this.config) return;
     this.groupColumnDefs = [];
     if (this.config.autoCreateGroupColumn !== false) {
+      const autoGroupConfig = this.config.autoGroupColumnDef || {};
+      
+      // 默认分组列渲染器
+      const defaultRenderer = (params: any) => {
+        if (!params?.node) return '';
+        const node = params.node as RowNode;
+        if (!node.group) return '';
+        
+        const level = node.level || 0;
+        const indent = level * 20;
+        const icon = node.expanded ? '▼' : '▶';
+        const key = node.key || node.data?.__groupKey || '';
+        
+        // 获取聚合值
+        let aggregationHtml = '';
+        if (node.data?.__aggregations) {
+          const aggs = node.data.__aggregations;
+          const aggParts: string[] = [];
+          Object.keys(aggs).forEach(field => {
+            Object.keys(aggs[field]).forEach(type => {
+              const result = aggs[field][type];
+              if (result && result.formatted) {
+                aggParts.push(result.formatted);
+              }
+            });
+          });
+          if (aggParts.length > 0) {
+            aggregationHtml = `<span class="group-aggregations">${aggParts.join(', ')}</span>`;
+          }
+        }
+        
+        // 子项数量
+        const countText = node.allChildrenCount ? ` (${node.allChildrenCount} items)` : '';
+        
+        const el = document.createElement('div');
+        el.className = 'db-grid-group-cell';
+        el.style.cssText = `padding-left: ${indent}px; cursor: pointer; user-select: none; display: flex; align-items: center; gap: 6px;`;
+        el.innerHTML = `<span class="group-icon">${icon}</span><span class="group-key">${key}</span>${aggregationHtml}<span class="group-count">${countText}</span>`;
+        
+        // 点击切换展开/折叠
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const nodeId = node.id;
+          this.toggleGroup(nodeId);
+          // 更新图标
+          const iconEl = el.querySelector('.group-icon');
+          if (iconEl) {
+            iconEl.textContent = node.expanded ? '▼' : '▶';
+          }
+        });
+        
+        return el;
+      };
+
       this.groupColumnDefs.push({
         colId: this.config.groupColumnId || '__GROUP__',
         headerName: this.config.groupColumnHeader || '分组',
-        width: 250,
+        width: autoGroupConfig.width || 250,
+        minWidth: autoGroupConfig.minWidth || 100,
+        maxWidth: autoGroupConfig.maxWidth || 500,
         sortable: true,
         resizable: true,
         pinnedLeft: true,
         suppressMovable: true,
-        cellRenderer: (params: any) => {
-          if (!params?.node) return '';
-          const node = params.node as RowNode;
-          if (!node.group) return '';
-          
-          const level = node.level || 0;
-          const indent = level * 20;
-          const icon = node.expanded ? '▼' : '▶';
-          const key = node.key || node.data?.__groupKey || '';
-          
-          // 获取聚合值
-          let aggregationHtml = '';
-          if (node.data?.__aggregations) {
-            const aggs = node.data.__aggregations;
-            const aggParts: string[] = [];
-            Object.keys(aggs).forEach(field => {
-              Object.keys(aggs[field]).forEach(type => {
-                const result = aggs[field][type];
-                if (result && result.formatted) {
-                  aggParts.push(result.formatted);
-                }
-              });
-            });
-            if (aggParts.length > 0) {
-              aggregationHtml = `<span class="group-aggregations">${aggParts.join(', ')}</span>`;
-            }
-          }
-          
-          // 子项数量
-          const countText = node.allChildrenCount ? ` (${node.allChildrenCount} items)` : '';
-          
-          const el = document.createElement('div');
-          el.className = 'db-grid-group-cell';
-          el.style.cssText = `padding-left: ${indent}px; cursor: pointer; user-select: none; display: flex; align-items: center; gap: 6px;`;
-          el.innerHTML = `<span class="group-icon">${icon}</span><span class="group-key">${key}</span>${aggregationHtml}<span class="group-count">${countText}</span>`;
-          
-          // 点击切换展开/折叠
-          el.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const nodeId = node.id;
-            this.toggleGroup(nodeId);
-            // 更新图标
-            const iconEl = el.querySelector('.group-icon');
-            if (iconEl) {
-              iconEl.textContent = node.expanded ? '▼' : '▶';
-            }
-          });
-          
-          return el;
-        },
+        // 支持自定义 cellRenderer
+        cellRenderer: autoGroupConfig.cellRenderer || defaultRenderer,
+        cellRendererParams: autoGroupConfig.cellRendererParams,
+        // 支持 checkbox
+        checkboxSelection: autoGroupConfig.checkbox,
+        // 支持筛选
+        filter: autoGroupConfig.suppressExpandable !== true ? 'text' : undefined,
       });
     }
   }
@@ -305,6 +340,45 @@ export class GroupService {
       });
     });
     return state;
+  }
+
+  /**
+   * 展开到指定层级
+   * @param level 目标层级（0-based）
+   */
+  expandToLevel(level: number): void {
+    this.groupNodes.forEach(node => {
+      if (node.level <= level) {
+        node.expanded = true;
+        this.emitGroupChange({ type: 'groupOpened', node });
+      }
+    });
+  }
+
+  /**
+   * 获取分组列定义
+   * 用于在 rowGroup 模式下自动注入分组列
+   */
+  getGroupColumnDef(): ColDef | null {
+    if (this.groupColumnDefs.length > 0) {
+      return this.groupColumnDefs[0];
+    }
+    return null;
+  }
+
+  /**
+   * 检查是否启用了自动分组列
+   */
+  isAutoGroupColumnEnabled(): boolean {
+    return this.config?.autoCreateGroupColumn !== false;
+  }
+
+  /**
+   * 获取分组层级数量
+   */
+  getGroupLevelCount(): number {
+    if (!this.config) return 0;
+    return this.config.groupFields.length;
   }
 
   private emitGroupChange(event: GroupChangeEvent): void {
