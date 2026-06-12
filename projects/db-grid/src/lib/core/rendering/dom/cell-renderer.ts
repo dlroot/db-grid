@@ -1,12 +1,19 @@
 /**
  * 单元格渲染器
  * 处理单元格内容渲染和编辑
+ * 
+ * 支持的渲染器类型：
+ * - string: 简单文本
+ * - function: 自定义渲染函数
+ * - Angular Component: Angular 原生组件（ICellRendererAngularComp）
  */
 
-import { Injectable } from '@angular/core';
-import { ColDef, CellRendererParams, ValueFormatterParams, CellStyle, RowNode, ChartCellRendererConfig } from '../../models';
+import { Injectable, ComponentRef, Injector } from '@angular/core';
+import { ColDef, CellRendererParams, ValueFormatterParams, CellStyle, RowNode, ChartCellRendererConfig, ICellRendererAngularComp, CellRendererAngularParams } from '../../models';
 import { ColumnService } from '../../services/column.service';
 import { ChartsService } from '../../services/charts.service';
+import { AngularComponentRendererService, AngularCompUtils } from '../../services/angular-component-renderer.service';
+import { AngularComponentWrapper } from '../../../angular/services/angular-component-wrapper.service';
 
 export interface CellRenderResult {
   value: any;
@@ -24,7 +31,54 @@ export class CellRendererService {
   /** Quick Filter 文本（用于高亮匹配） */
   private _quickFilterText: string = '';
 
-  constructor(private columnService: ColumnService, private chartsService?: ChartsService) {}
+  /** Angular 组件渲染器服务 */
+  private angularRendererService: AngularComponentRendererService | null = null;
+
+  /** Angular 组件缓存 */
+  private angularComponentCache: Map<string, { ref: ComponentRef<any>; instance: any }> = new Map();
+
+  /** 模块引用（用于动态组件创建） */
+  private _moduleRef: any = null;
+
+  constructor(
+    private columnService: ColumnService, 
+    private chartsService?: ChartsService,
+    private injector?: Injector
+  ) {
+    // 初始化 Angular 组件渲染器服务
+    this.angularRendererService = new AngularComponentRendererService();
+  }
+
+  /**
+   * 设置模块引用（用于动态组件创建）
+   */
+  setModuleRef(moduleRef: any): void {
+    this._moduleRef = moduleRef;
+  }
+
+  /**
+   * 检查是否是 Angular 组件渲染器
+   */
+  isAngularComponentRenderer(rendererRef: any): boolean {
+    if (!rendererRef) return false;
+    
+    // 检查是否是 Angular 组件类（有 @Component 装饰器或实现了 ICellRendererAngularComp）
+    if (typeof rendererRef === 'function') {
+      // 函数类型，可能是组件类
+      if (rendererRef.prototype?.agInit || rendererRef.prototype?.refresh || rendererRef.prototype?.getGui) {
+        return true;
+      }
+    }
+    
+    // 检查是否是对象实例
+    if (typeof rendererRef === 'object') {
+      if (typeof rendererRef.agInit === 'function' || typeof rendererRef.getGui === 'function') {
+        return true;
+      }
+    }
+    
+    return false;
+  }
 
   /** 设置 Quick Filter 文本 */
   setQuickFilterText(text: string): void {
@@ -203,7 +257,7 @@ export class CellRendererService {
     }
 
     // 渲染内容
-    const content = this.renderContent(cell, rowIndex, colDef, value, data, rowNode);
+    const content = this.renderContent(cell, rowIndex, colDef, value, data, rowNode, {});
 
     // 添加tooltip
     if (colDef.tooltipField || colDef.tooltipValueGetter) {
@@ -223,7 +277,8 @@ export class CellRendererService {
     colDef: ColDef,
     value: any,
     data: any,
-    rowNode?: RowNode
+    rowNode?: RowNode,
+    params?: { api?: any; context?: any }
   ): void {
     const displayValue = this.getDisplayValue(value, colDef, data);
     const formattedValue = this.formatValue(colDef, displayValue, data);
@@ -244,6 +299,8 @@ export class CellRendererService {
     if (colDef.cellRenderer) {
       this.renderCustomCellRenderer(container, colDef, displayValue, data, rowNode, {
         rowIndex,
+        api: params?.api,
+        context: params?.context,
       });
       return;
     }
@@ -311,43 +368,218 @@ export class CellRendererService {
     }
   }
 
-  /** 渲染自定义单元格渲染器 */
+  /**
+   * 渲染自定义单元格渲染器
+   * 支持：
+   * - string: 简单文本
+   * - function: 自定义渲染函数
+   * - Angular Component: Angular 原生组件（实现 ICellRendererAngularComp）
+   */
   private renderCustomCellRenderer(
     container: HTMLElement,
     colDef: ColDef,
     value: any,
     data: any,
     rowNode: RowNode | undefined,
-    extra: { rowIndex: number }
+    extra: { rowIndex: number; api?: any; context?: any }
   ): void {
-    const renderer = this.getRenderer(colDef.cellRenderer);
+    const rendererRef = colDef.cellRenderer;
+    const cacheKey = `${extra.rowIndex}-${colDef.field || colDef.colId}`;
 
+    // 构建渲染器参数
+    const params: CellRendererParams = {
+      value,
+      data,
+      node: rowNode as any,
+      colDef,
+      column: colDef,
+      $scope: null,
+      rowIndex: extra.rowIndex,
+      api: extra.api || null,
+      columnApi: null,
+      context: extra.context || {},
+      rowId: data?.id,
+    };
+
+    // 1. 检查是否是 Angular 组件
+    if (this.isAngularComponentRenderer(rendererRef)) {
+      this.renderAngularComponent(container, rendererRef, params, cacheKey, extra);
+      return;
+    }
+
+    // 2. 函数渲染器
+    const renderer = this.getRenderer(rendererRef);
     if (typeof renderer === 'function') {
-      const params: any = {
-        value,
-        data,
-        colDef,
-        column: colDef,
-        context: {},
-        node: rowNode || null,
-        api: null,
-        rowIndex: extra.rowIndex,
-        $scope: null,
-        rowId: data?.id,
-        columnApi: null,
-      };
-
       const result = renderer(params);
 
       if (result instanceof HTMLElement) {
         container.appendChild(result);
       } else if (typeof result === 'string') {
         container.innerHTML = result;
-      } else if (result && typeof result === 'object' && 'destroy' in result) {
-        // Angular 组件返回
-        this.rendererCache.set(`${extra.rowIndex}-${colDef.field}`, result);
+      } else if (result && typeof result === 'object') {
+        // Angular 组件返回（已废弃，直接使用 Angular 组件检测）
+        this.rendererCache.set(cacheKey, result);
+      }
+      return;
+    }
+
+    // 3. 字符串渲染器（内联 HTML）
+    if (typeof rendererRef === 'string') {
+      // 安全处理：只允许基本 HTML
+      container.innerHTML = this.sanitizeHtml(rendererRef);
+      return;
+    }
+
+    // 4. 对象配置渲染器
+    if (typeof rendererRef === 'object' && rendererRef !== null) {
+      if (rendererRef.component) {
+        // cellRendererFramework 格式
+        this.renderAngularComponent(container, rendererRef.component, { ...params, ...rendererRef.params }, cacheKey, extra);
+      } else if (rendererRef.renderer) {
+        // 函数式
+        const result = rendererRef.renderer(params);
+        if (result instanceof HTMLElement) {
+          container.appendChild(result);
+        }
       }
     }
+  }
+
+  /**
+   * 渲染 Angular 组件
+   */
+  private renderAngularComponent(
+    container: HTMLElement,
+    component: any,
+    params: CellRendererParams,
+    cacheKey: string,
+    extra: { rowIndex: number }
+  ): void {
+    // 清理旧的组件
+    this.destroyAngularComponent(cacheKey);
+
+    try {
+      // 方式 1：使用 injector 创建组件
+      if (this.injector) {
+        const componentRef = this.createAngularComponent(component, params, container, cacheKey);
+        if (componentRef) {
+          return;
+        }
+      }
+
+      // 方式 2：直接调用 agInit（用于纯渲染，无 Angular 上下文）
+      this.renderAngularComponentLegacy(component, params, container, cacheKey);
+    } catch (e) {
+      console.warn('[CellRenderer] Failed to render Angular component:', e);
+      container.textContent = String(params.value ?? '');
+    }
+  }
+
+  /**
+   * 创建 Angular 组件（使用 Injector）
+   */
+  private createAngularComponent(
+    component: any,
+    params: CellRendererParams,
+    container: HTMLElement,
+    cacheKey: string
+  ): ComponentRef<any> | null {
+    if (!this.injector) return null;
+
+    try {
+      // 使用动态组件创建
+      // 注意：这里需要 ViewContainerRef，在实际 Angular 上下文中会被替换
+      const wrapper = this.injector.get(AngularComponentWrapper, null);
+      if (wrapper) {
+        return wrapper.createComponent(component, params, container, cacheKey);
+      }
+    } catch (e) {
+      // 没有 AngularComponentWrapper，继续使用 legacy 方式
+    }
+
+    return null;
+  }
+
+  /**
+   * 渲染 Angular 组件（Legacy 方式）
+   * 用于无 Angular 上下文的情况
+   */
+  private renderAngularComponentLegacy(
+    component: any,
+    params: CellRendererParams,
+    container: HTMLElement,
+    cacheKey: string
+  ): void {
+    // 创建组件实例
+    let instance: any;
+    if (typeof component === 'function') {
+      instance = new component();
+    } else {
+      instance = component;
+    }
+
+    // 调用 agInit
+    if (typeof instance.agInit === 'function') {
+      instance.agInit(params);
+    }
+
+    // 尝试获取 GUI
+    let gui: HTMLElement;
+    if (typeof instance.getGui === 'function') {
+      gui = instance.getGui();
+    } else if (instance.element) {
+      gui = instance.element;
+    } else if (instance.nativeElement) {
+      gui = instance.nativeElement;
+    } else {
+      // 回退：创建一个容器
+      gui = document.createElement('span');
+      gui.textContent = String(params.value ?? '');
+    }
+
+    // 缓存实例
+    this.angularComponentCache.set(cacheKey, { ref: null, instance });
+
+    // 添加到容器
+    if (gui.parentElement !== container) {
+      container.appendChild(gui);
+    }
+  }
+
+  /**
+   * 销毁 Angular 组件
+   */
+  private destroyAngularComponent(cacheKey: string): void {
+    const cached = this.angularComponentCache.get(cacheKey);
+    if (cached) {
+      if (typeof cached.instance.destroy === 'function') {
+        cached.instance.destroy();
+      }
+      this.angularComponentCache.delete(cacheKey);
+    }
+  }
+
+  /**
+   * 销毁所有 Angular 组件
+   */
+  destroyAllAngularComponents(): void {
+    this.angularComponentCache.forEach((cached) => {
+      if (typeof cached.instance.destroy === 'function') {
+        cached.instance.destroy();
+      }
+    });
+    this.angularComponentCache.clear();
+  }
+
+  /**
+   * HTML 安全处理
+   */
+  private sanitizeHtml(html: string): string {
+    // 移除 script、onclick 等危险属性
+    return html
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+      .replace(/\son\w+="[^"]*"/gi, '')
+      .replace(/\son\w+='[^']*'/gi, '');
   }
 
   /** 获取渲染器实例 */
@@ -762,6 +994,7 @@ export class CellRendererService {
     });
     this.editingCells.clear();
     this.rendererCache.clear();
+    this.destroyAllAngularComponents();
   }
 
   /** 渲染图表单元格 */

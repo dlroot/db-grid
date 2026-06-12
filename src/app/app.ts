@@ -87,7 +87,7 @@ export class AppComponent implements OnInit {
   ];
 
   groupRowData = this.generateEmployeeData(200);
-  groupConfig = { 
+  groupConfig: any = { 
     groupFields: ['department'], 
     autoCreateGroupColumn: true, 
     groupColumnHeader: '部门分组',

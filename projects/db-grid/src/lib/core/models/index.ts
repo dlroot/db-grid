@@ -163,7 +163,7 @@ export interface CellRendererParams {
   node: IRowNode;
   colDef: ColDef;
   column: ColDef;
-  $scope: any;
+  $scope?: any;
   rowIndex: number;
   api: any;
   columnApi: any;
@@ -478,16 +478,49 @@ export interface GridApi {
   pasteToGrid(text?: string): Promise<void>;
 }
 
+/**
+ * RowDataTransaction — 增量数据操作接口
+ * 用于 api.applyTransaction() 增量添加/删除/更新行
+ * 
+ * AG Grid 兼容接口
+ */
 export interface RowDataTransaction {
+  /** 要添加的行数据（自动追加到末尾） */
   add?: any[];
+  /** 要删除的行数据（根据 getRowId 匹配） */
   remove?: any[];
+  /** 要更新的行数据（根据 getRowId 匹配） */
   update?: any[];
+  /** 
+   * 添加到指定索引位置（AG Grid Enterprise）
+   * @default 末尾
+   */
+  addIndex?: number;
 }
 
+/**
+ * RowNodeTransaction — 基于 RowNode 的增量操作接口
+ * 直接操作 RowNode 对象而非行数据
+ */
 export interface RowNodeTransaction {
+  /** 要添加的 RowNode */
   add?: IRowNode[];
+  /** 要删除的 RowNode */
   remove?: IRowNode[];
+  /** 要更新的 RowNode */
   update?: IRowNode[];
+}
+
+/**
+ * Transaction 更新结果
+ */
+export interface RowNodeTransactionUpdateResult {
+  /** 实际添加的节点 */
+  add: IRowNode[];
+  /** 实际删除的节点 */
+  remove: IRowNode[];
+  /** 实际更新的节点 */
+  update: IRowNode[];
 }
 
 export interface RefreshCellsParams {
@@ -653,6 +686,73 @@ export interface RowDragEvent extends RowEvent {
 
 export interface GridEvent extends BaseEvent {}
 
+// ============ 增强事件（Phase 5.4 补齐）============
+
+/** 单元格编辑开始事件 */
+export interface CellEditingStartedEvent extends CellEvent {
+  /** 编辑器类型 */
+  editorType?: string;
+  /** 编辑器参数 */
+  editorParams?: any;
+}
+
+/** 单元格编辑结束事件 */
+export interface CellEditingStoppedEvent extends CellEvent {
+  /** 是否取消了编辑 */
+  canceled: boolean;
+  /** 新值 */
+  newValue?: any;
+  /** 旧值 */
+  oldValue?: any;
+}
+
+/** 行编辑开始事件 */
+export interface RowEditingStartedEvent extends RowEvent {}
+
+/** 行编辑结束事件 */
+export interface RowEditingStoppedEvent extends RowEvent {
+  /** 是否取消了编辑 */
+  canceled: boolean;
+}
+
+/** 列固定事件 */
+export interface ColumnPinnedEvent extends ColumnEvent {
+  /** 固定位置 */
+  pinned: 'left' | 'right' | null;
+  /** 所有被固定的列 */
+  columns: ColDef[];
+}
+
+/** 网格尺寸变化事件 */
+export interface GridSizeChangedEvent extends BaseEvent {
+  /** 新宽度 */
+  newWidth: number;
+  /** 新高度 */
+  newHeight: number;
+  /** 旧宽度 */
+  oldWidth: number;
+  /** 旧高度 */
+  oldHeight: number;
+}
+
+/** 首次数据渲染完成事件 */
+export interface FirstDataRenderedEvent extends BaseEvent {
+  /** 第一行索引 */
+  firstRow: number;
+  /** 最后一行索引 */
+  lastRow: number;
+}
+
+/** 显示列变化事件 */
+export interface DisplayedColumnsChangedEvent extends ColumnEvent {
+   /** 可见列 */
+  visibleColumns: ColDef[];
+  /** 左侧固定列 */
+  leftPinnedColumns: ColDef[];
+  /** 右侧固定列 */
+  rightPinnedColumns: ColDef[];
+}
+
 // ============ 行节点 ============
 
 export interface IRowNode {
@@ -739,6 +839,7 @@ export interface DetailChartConfig {
 }
 
 export { RowNode, createEmptyRowNode } from './row-node';
+export * from './angular-component.model';
 
 // ============ 泛型类型（TypeScript 类型安全升级） ============
 //
