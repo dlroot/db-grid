@@ -3867,8 +3867,11 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     // 触发事件
     this.colDragMoved.emit({ fromIndex: fromIdx, toIndex: insertIdx, column: moved });
 
-    // 重新渲染
-    this.refreshView();
+    // 重新初始化列服务（同步 columnDefs 顺序到 columnService）
+    this.initializeColumns();
+    // 重新渲染表头和行
+    this.refreshHeader();
+    this.renderRows();
   }
 
   private renderHeader(): void {
