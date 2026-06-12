@@ -44,6 +44,15 @@ import {
   RowNode,
   GridApi,
   DetailChartConfig,
+  CellEditingStartedEvent,
+  CellEditingStoppedEvent,
+  RowEditingStartedEvent,
+  RowEditingStoppedEvent,
+  ColumnPinnedEvent,
+  GridSizeChangedEvent,
+  FirstDataRenderedEvent,
+  DisplayedColumnsChangedEvent,
+  CellValueChangedEvent,
 } from '../../../core/models';
 import { PdfExportService, ExcelImportService, ImportResult } from '../../../core/services';
 
@@ -92,6 +101,9 @@ import {
   ValueMappingService,
   AdvancedFilterService,
   RowPinningService,
+  TransactionService,
+  TransactionResult,
+  RowDataTransaction,
 } from '../../../core/services';
 
 import { DbCellEditorComponent } from '../cell-editor/db-cell-editor.component';
@@ -250,15 +262,13 @@ import {
       }
 
       <!-- 填充手柄 (Fill Handle) -->
-      @if (fillHandleVisible() && enableFillHandle) {
-        <div #fillHandle 
-             class="db-grid-fill-handle" 
-             [style.left.px]="fillHandlePosition().x"
-             [style.top.px]="fillHandlePosition().y"
-             (mousedown)="onFillHandleMouseDown($event)"
-             (mousemove)="onFillHandleMouseMove($event)">
-        </div>
-      }
+      <div #fillHandle 
+           class="db-grid-fill-handle"
+           [class.visible]="fillHandleVisible() && enableFillHandle"
+           [style.left.px]="fillHandlePosition().x"
+           [style.top.px]="fillHandlePosition().y"
+           (mousedown)="onFillHandleMouseDown($event)">
+      </div>
     </div>
   `,
   styles: [`
@@ -444,6 +454,44 @@ import {
     /* 粘贴动画类 */
     .db-grid-cell-anim-paste {
       animation: paste-pulse 0.4s ease-out forwards;
+    }
+
+    /* ========== Transaction Row Animation ========== */
+    /* 行添加动画 */
+    @keyframes db-grid-row-add {
+      0% { background: rgba(76,175,80,0.3); transform: translateX(-8px); opacity: 0.7; }
+      100% { background: transparent; transform: translateX(0); opacity: 1; }
+    }
+    /* 行删除动画 */
+    @keyframes db-grid-row-remove {
+      0% { background: rgba(244,67,54,0.3); opacity: 1; }
+      50% { background: rgba(244,67,54,0.2); opacity: 0.5; }
+      100% { background: transparent; opacity: 0; }
+    }
+    /* 行更新闪烁动画（绿色高亮） */
+    @keyframes db-grid-row-update {
+      0% { background: rgba(76,175,80,0.25); }
+      50% { background: rgba(76,175,80,0.15); }
+      100% { background: transparent; }
+    }
+    /* 行更新闪烁动画（蓝色高亮 - 用于更新） */
+    @keyframes db-grid-row-flash {
+      0% { background: rgba(33,150,243,0.35); }
+      50% { background: rgba(33,150,243,0.15); }
+      100% { background: transparent; }
+    }
+    /* Transaction 行动画类 */
+    .db-grid-row-anim-add {
+      animation: db-grid-row-add 0.4s ease-out forwards;
+    }
+    .db-grid-row-anim-remove {
+      animation: db-grid-row-remove 0.3s ease-out forwards;
+    }
+    .db-grid-row-anim-update {
+      animation: db-grid-row-update 0.5s ease-out forwards;
+    }
+    .db-grid-row-anim-flash {
+      animation: db-grid-row-flash 0.5s ease-out forwards;
     }
 
     /* ========== 分组行样式 ========== */
@@ -730,6 +778,21 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   @Output() groupCollapsed = new EventEmitter<any>();
   @Output() viewportChanged = new EventEmitter<{ startIndex: number; endIndex: number; offsetY: number }>();
   @Output() externalFilterChanged = new EventEmitter<void>();
+  
+  // ============ 增强事件（Phase 5.4 补齐）============
+  @Output() cellEditingStarted = new EventEmitter<CellEditingStartedEvent>();
+  @Output() cellEditingStopped = new EventEmitter<CellEditingStoppedEvent>();
+  @Output() rowEditingStarted = new EventEmitter<RowEditingStartedEvent>();
+  @Output() rowEditingStopped = new EventEmitter<RowEditingStoppedEvent>();
+  @Output() columnPinned = new EventEmitter<ColumnPinnedEvent>();
+  @Output() gridSizeChanged = new EventEmitter<GridSizeChangedEvent>();
+  @Output() firstDataRendered = new EventEmitter<FirstDataRenderedEvent>();
+  @Output() displayedColumnsChanged = new EventEmitter<DisplayedColumnsChangedEvent>();
+  @Output() cellValueChanged = new EventEmitter<CellValueChangedEvent>();
+  @Output() rowAction = new EventEmitter<{ action: string; data: any; node: any }>();
+  @Output() columnMoved = new EventEmitter<any>();
+  @Output() columnVisible = new EventEmitter<any>();
+  @Output() rowGroupOpened = new EventEmitter<any>();
 
   // ============ 编辑 Inputs ============
   @Input() enableCellEdit: boolean = false;
@@ -872,6 +935,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   private advancedFilterService: AdvancedFilterService;
   private valueMappingService: ValueMappingService;
   private rowPinningService: RowPinningService;
+  private transactionService: TransactionService;
   private _dataTypesApplied = false;
 
   // ============ State ============
@@ -976,6 +1040,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.valueMappingService = new ValueMappingService();
     this.advancedFilterService = new AdvancedFilterService();
     this.rowPinningService = new RowPinningService();
+    this.transactionService = new TransactionService();
     // 初始化行固定数据（从 @Input）
     if (this.pinnedTopRowData.length > 0 || this.pinnedBottomRowData.length > 0) {
       this.rowPinningService.initialize({
@@ -1483,12 +1548,52 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.gridApi = {
       // ========== 通用事件 ==========
       addEventListener: (eventType: string, handler: (event: any) => void) => {
-        if (eventType === 'viewportChanged') {
-          this.viewportChanged.subscribe((e) => handler(e));
+        // 尝试通过 @Output 事件订阅
+        const outputMap: Record<string, any> = {
+          'gridReady': this.gridReady,
+          'rowDataUpdated': this.rowDataUpdated,
+          'modelUpdated': this.modelUpdated,
+          'rowClicked': this.rowClicked,
+          'rowDoubleClicked': this.rowDoubleClicked,
+          'cellClicked': this.cellClicked,
+          'cellDoubleClicked': this.cellDoubleClicked,
+          'sortChanged': this.sortChanged,
+          'filterChanged': this.filterChanged,
+          'selectionChanged': this.selectionChanged,
+          'columnResized': this.columnResized,
+          'columnPinned': this.columnPinned,
+          'viewportChanged': this.viewportChanged,
+          'cellEditingStarted': this.cellEditingStarted,
+          'cellEditingStopped': this.cellEditingStopped,
+          'rowEditingStarted': this.rowEditingStarted,
+          'rowEditingStopped': this.rowEditingStopped,
+          'cellValueChanged': this.cellValueChanged,
+          'gridSizeChanged': this.gridSizeChanged,
+          'firstDataRendered': this.firstDataRendered,
+          'displayedColumnsChanged': this.displayedColumnsChanged,
+          'rowAction': this.rowAction,
+          'columnMoved': this.columnMoved,
+          'columnVisible': this.columnVisible,
+          'rowGroupOpened': this.rowGroupOpened,
+          'nodeExpanded': this.nodeExpanded,
+          'nodeCollapsed': this.nodeCollapsed,
+          'groupExpanded': this.groupExpanded,
+          'groupCollapsed': this.groupCollapsed,
+        };
+        const output = outputMap[eventType];
+        if (output) {
+          output.subscribe(handler);
         }
+      },
+      removeEventListener: (eventType: string, handler: (event: any) => void) => {
+        // Angular EventEmitter 不支持取消订阅单个 handler
+        // 只能通过 unsubscribe 方法
+        console.warn('[GridApi] removeEventListener: Angular EventEmitter 不支持单handler取消，请使用 unsubscribe()');
       },
       setRowData: (rowData: any[]) => this.setRowData(rowData),
       getRowData: () => this.getRowData(),
+      applyTransaction: (transaction: RowDataTransaction) => this.applyTransaction(transaction),
+      applyTransactionAsync: (transaction: RowDataTransaction, callback?: (result: TransactionResult) => void) => this.applyTransactionAsync(transaction, callback),
       setGridOption: (key: string, value: any) => this.setGridOption(key, value),
       getGridOption: (key: string) => this.getGridOption(key),
 
@@ -1879,6 +1984,133 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     return rows;
   }
 
+  // ============ Transaction API（增量更新）============
+  
+  /**
+   * 同步执行 Transaction — 增量添加/删除/更新行
+   * 
+   * AG Grid 兼容接口：api.applyTransaction(transaction)
+   * 
+   * @param transaction 增量操作对象
+   * - add: 要添加的行数据（自动追加到末尾或指定 addIndex）
+   * - remove: 要删除的行数据（根据 getRowId 匹配）
+   * - update: 要更新的行数据（根据 getRowId 匹配）
+   * @returns TransactionResult 实际变更结果
+   */
+  applyTransaction(transaction: RowDataTransaction): TransactionResult {
+    const result: TransactionResult = {
+      added: [],
+      removed: [],
+      updated: [],
+      addedNodes: [],
+      removedNodes: [],
+      updatedNodes: [],
+    };
+
+    const getRowId = (data: any, index: number): string => {
+      if (this.gridOptions?.getRowId) {
+        return this.gridOptions.getRowId({ data, index });
+      }
+      return data.id !== undefined ? String(data.id) : `row-${index}`;
+    };
+
+    // 1. 处理删除
+    if (transaction.remove?.length) {
+      for (const data of transaction.remove) {
+        const id = data.id !== undefined ? String(data.id) : this.findRowIdByData(data);
+        if (id) {
+          const node = this.dataService.getRowNode(id);
+          if (node) {
+            this.dataService.removeRow(id);
+            result.removed.push(data);
+            result.removedNodes.push(node);
+          }
+        }
+      }
+    }
+
+    // 2. 处理添加
+    if (transaction.add?.length) {
+      const addIndex = transaction.addIndex ?? this.dataService.getRowCount();
+      for (let i = 0; i < transaction.add.length; i++) {
+        const data = transaction.add[i];
+        this.dataService.addRow(data, addIndex + i);
+        result.added.push(data);
+        const id = getRowId(data, addIndex + i);
+        const node = this.dataService.getRowNode(id);
+        if (node) result.addedNodes.push(node);
+      }
+    }
+
+    // 3. 处理更新
+    if (transaction.update?.length) {
+      for (const data of transaction.update) {
+        const id = data.id !== undefined ? String(data.id) : this.findRowIdByData(data);
+        if (id) {
+          const node = this.dataService.getRowNode(id);
+          if (node) {
+            node.data = data;
+            result.updated.push(data);
+            result.updatedNodes.push(node);
+          }
+        }
+      }
+    }
+
+    // 更新分页服务的总行数
+    if (this.pagination) {
+      this.paginationService.setTotalRows(this.dataService.getRowCount());
+    }
+
+    // 更新行数信号
+    this.rowCount.set(this.dataService.getRowCount());
+
+    // Delta 渲染：只刷新变化的行（而非全表重绘）
+    if (result.addedNodes.length > 0 || result.removedNodes.length > 0 || result.updatedNodes.length > 0) {
+      this.refreshView();
+      // 触发 rowDataUpdated 事件
+      this.rowDataUpdated.emit({ type: 'rowDataUpdated', api: this.gridApi });
+    }
+
+    return result;
+  }
+
+  /**
+   * 异步批量执行 Transaction
+   * 
+   * AG Grid 兼容接口：api.applyTransactionAsync(transaction, callback)
+   * 
+   * 支持批量缓冲，减少重绘次数
+   * 
+   * @param transaction 增量操作对象
+   * @param callback 完成后的回调函数
+   */
+  applyTransactionAsync(
+    transaction: RowDataTransaction,
+    callback?: (result: TransactionResult) => void
+  ): void {
+    // 委托给 TransactionService 处理批量缓冲
+    this.transactionService.applyTransactionAsync(transaction, (result) => {
+      // 实际执行仍然在 DbGrid 内部
+      const syncResult = this.applyTransaction(transaction);
+      callback?.(syncResult);
+    });
+  }
+
+  /**
+   * 查找行 ID（通过数据引用匹配）
+   */
+  private findRowIdByData(data: any): string | null {
+    const count = this.dataService.getRowCount();
+    for (let i = 0; i < count; i++) {
+      const node = this.dataService.getRowNode(`row-${i}`);
+      if (node?.data === data) {
+        return node.id;
+      }
+    }
+    return null;
+  }
+
   // --- 排序 ---
   sortByColumn(colDef: ColDef, sortDirection?: 'asc' | 'desc'): void {
     const direction = sortDirection || (colDef.sort === 'asc' ? 'desc' : 'asc');
@@ -2155,17 +2387,46 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   // ========== Excel 导出 API ==========
 
+
   exportDataAsCsv(params?: any): string {
-    return this.excelExportService.exportAsCsv(this.columnDefs, this.getDisplayedRows(), params);
+    const rows = params?.onlySelected ? this.getSelectedRows() : this.getDisplayedRows();
+    return this.excelExportService.exportAsCsv(this.columnDefs, rows, params);
+  }
+
+
+  getDataAsCsv(params?: any): string {
+    return this.exportDataAsCsv(params);
   }
 
   downloadExcel(options?: any): void {
     const exportMode = options?.exportMode || 'csv';
     if (exportMode === 'csv') {
-      this.excelExportService.downloadAsCsv(this.columnDefs, this.getDisplayedRows(), options);
+      const rows = options?.onlySelected ? this.getSelectedRows() : this.getDisplayedRows();
+      this.excelExportService.downloadAsCsv(this.columnDefs, rows, options);
     } else {
       this.excelExportService.downloadAsXlsx(this.columnDefs, this.getDisplayedRows(), options);
     }
+  }
+
+
+  // ========== HTML 导出 API (Phase 6.4) ==========
+
+
+  /** 导出为 HTML 表格 */
+  exportDataAsHtml(options?: any): string {
+    const rows = options?.onlySelected ? this.getSelectedRows() : this.getDisplayedRows();
+    return this.excelExportService.exportAsHtml(this.columnDefs, rows, options);
+  }
+
+  /** 下载为 HTML 文件 */
+  downloadAsHtml(options?: any): void {
+    const rows = options?.onlySelected ? this.getSelectedRows() : this.getDisplayedRows();
+    this.excelExportService.downloadAsHtml(this.columnDefs, rows, options);
+  }
+
+  /** 获取纯文本 */
+  getDataAsText(): string {
+    return this.excelExportService.getDataAsText(this.columnDefs, this.getDisplayedRows());
   }
 
   importCsv(csvText: string, options?: any): any[] {

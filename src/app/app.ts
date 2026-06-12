@@ -1665,7 +1665,7 @@ export class AppComponent implements OnInit {
     { field: "formula", headerName: "公式", width: 120, sortable: true, editable: true },
   ];
   fillHandleRowData = this.generateFillHandleData();
-  fillHandleOptions = { rowSelection: "multiple" };
+  fillHandleOptions = { rowSelection: "multiple", enableCellSelection: true };
 
   /** 生成填充手柄演示数据 */
   private generateFillHandleData(): any[] {
