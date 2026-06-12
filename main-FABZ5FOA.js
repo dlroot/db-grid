@@ -128,7 +128,8 @@ npm install jspdf jspdf-autotable`)})}exportToPdfBlob(e,t,i={}){return new Promi
       box-sizing: border-box;
       user-select: none;
       position: relative;
-      border-bottom: 1px solid var(--db-grid-border-color, #ddd);
+      border-bottom: 1px solid #e2e2e2;
+      border-right: 1px solid #e2e2e2;
     `;let s=document.createElement("div");return s.style.cssText=`
       position: absolute;
       right: 0;
@@ -140,14 +141,14 @@ npm install jspdf jspdf-autotable`)})}exportToPdfBlob(e,t,i={}){return new Promi
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      background: var(--db-grid-header-bg, #f5f5f5);
-      border-bottom: 2px solid var(--db-grid-border-color, #ddd);
+      background: #f8f8f8;
+      border-bottom: 1px solid #e2e2e2;
       height: ${this.headerHeight}px;
     `,e}createHeaderRow(){let e=document.createElement("div");return e.className="db-grid-header-row",e.setAttribute("role","row"),e.style.cssText=`
       display: flex;
       align-items: center;
       flex: 1;
-    `,e}createColumnHeader(e){let t=document.createElement("div");t.className=this.getHeaderClass(e);let i=e.colId||e.field||"";if(t.dataset.colId=i,t.style.cssText=this.getHeaderStyle(e),t.setAttribute("role","columnheader"),t.setAttribute("aria-colindex",String(this.columnService.getVisibleColumns().findIndex(c=>(c.colId||c.field)===i)+1)),t.setAttribute("aria-label",e.headerName||e.field||""),t.setAttribute("aria-sort",e.sort==="asc"?"ascending":e.sort==="desc"?"descending":"none"),t.setAttribute("tabindex","-1"),e.headerCheckboxSelection===!0){console.log("[HeaderRenderer] Creating selectAllCheckbox for col:",i);let c=this.createSelectAllCheckbox();t.appendChild(c)}let o=document.createElement("span");if(o.className="db-grid-header-label",o.textContent=e.headerName||e.field||"",t.appendChild(o),e.sortable){let c=this.createSortIcon(e);t.appendChild(c)}if(e.filter){let c=this.createFilterIcon(e);t.appendChild(c)}let s=this.createDragHandle();this.setupColumnDrag(s,e,i),t.appendChild(s);let a=this.createMenuButton(e,i);t.appendChild(a);let l=this.createResizeHandle(e,i);return t.appendChild(l),this.setupHeaderEvents(t,e),t}getHeaderClass(e){let t=["db-grid-header-cell"];return e.sortable&&t.push("db-grid-header-sortable"),e.resizable&&t.push("db-grid-header-resizable"),e.pinnedLeft&&t.push("db-grid-header-pinned-left"),e.pinnedRight&&t.push("db-grid-header-pinned-right"),e.sort==="asc"?t.push("db-grid-header-sorted-asc"):e.sort==="desc"&&t.push("db-grid-header-sorted-desc"),e.filterActive&&t.push("db-grid-header-filtered"),t.join(" ")}getHeaderStyle(e){let i=this.columnService.getColumnState(e)?.width||e.width||200,o=[`width: ${i}px`,`min-width: ${i}px`,`max-width: ${i}px`,"display: flex","align-items: center","padding: 0 8px","box-sizing: border-box","user-select: none","position: relative"];return e.headerAlign&&o.push(`justify-content: ${this.getFlexAlign(e.headerAlign)}`),e.pinnedLeft?(o.push("left: 0"),o.push("z-index: 1")):e.pinnedRight&&(o.push("right: 0"),o.push("z-index: 1")),o.join("; ")}getFlexAlign(e){switch(e){case"left":return"flex-start";case"right":return"flex-end";case"center":return"center";default:return"flex-start"}}createSelectAllCheckbox(){console.log("[HeaderRenderer] createSelectAllCheckbox called");let e=document.createElement("label");e.className="db-grid-select-all-container",e.style.cssText=`
+    `,e}createColumnHeader(e){let t=document.createElement("div");t.className=this.getHeaderClass(e);let i=e.colId||e.field||"";if(t.dataset.colId=i,t.style.cssText=this.getHeaderStyle(e),t.setAttribute("role","columnheader"),t.setAttribute("aria-colindex",String(this.columnService.getVisibleColumns().findIndex(c=>(c.colId||c.field)===i)+1)),t.setAttribute("aria-label",e.headerName||e.field||""),t.setAttribute("aria-sort",e.sort==="asc"?"ascending":e.sort==="desc"?"descending":"none"),t.setAttribute("tabindex","-1"),e.headerCheckboxSelection===!0){console.log("[HeaderRenderer] Creating selectAllCheckbox for col:",i);let c=this.createSelectAllCheckbox();t.appendChild(c)}let o=document.createElement("span");if(o.className="db-grid-header-label",o.textContent=e.headerName||e.field||"",o.style.fontWeight="600",o.style.fontSize="13px",o.style.color="#181d1d",t.appendChild(o),e.sortable){let c=this.createSortIcon(e);t.appendChild(c)}if(e.filter){let c=this.createFilterIcon(e);t.appendChild(c)}let s=this.createDragHandle();this.setupColumnDrag(s,e,i),t.appendChild(s);let a=this.createMenuButton(e,i);t.appendChild(a);let l=this.createResizeHandle(e,i);return t.appendChild(l),this.setupHeaderEvents(t,e),t}getHeaderClass(e){let t=["db-grid-header-cell"];return e.sortable&&t.push("db-grid-header-sortable"),e.resizable&&t.push("db-grid-header-resizable"),e.pinnedLeft&&t.push("db-grid-header-pinned-left"),e.pinnedRight&&t.push("db-grid-header-pinned-right"),e.sort==="asc"?t.push("db-grid-header-sorted-asc"):e.sort==="desc"&&t.push("db-grid-header-sorted-desc"),e.filterActive&&t.push("db-grid-header-filtered"),t.join(" ")}getHeaderStyle(e){let i=this.columnService.getColumnState(e)?.width||e.width||200,o=[`width: ${i}px`,`min-width: ${i}px`,`max-width: ${i}px`,"display: flex","align-items: center","padding: 0 8px","box-sizing: border-box","user-select: none","position: relative"];return e.headerAlign&&o.push(`justify-content: ${this.getFlexAlign(e.headerAlign)}`),e.pinnedLeft?(o.push("left: 0"),o.push("z-index: 1")):e.pinnedRight&&(o.push("right: 0"),o.push("z-index: 1")),o.join("; ")}getFlexAlign(e){switch(e){case"left":return"flex-start";case"right":return"flex-end";case"center":return"center";default:return"flex-start"}}createSelectAllCheckbox(){console.log("[HeaderRenderer] createSelectAllCheckbox called");let e=document.createElement("label");e.className="db-grid-select-all-container",e.style.cssText=`
       display: flex;
       align-items: center;
       justify-content: center;
@@ -181,7 +182,8 @@ npm install jspdf jspdf-autotable`)})}exportToPdfBlob(e,t,i={}){return new Promi
       box-sizing: border-box;
       user-select: none;
       position: relative;
-      border-bottom: 1px solid var(--db-grid-border-color, #ddd);
+      border-bottom: 1px solid #e2e2e2;
+      border-right: 1px solid #e2e2e2;
     `;let l=document.createElement("div");return l.style.cssText=`
       position: absolute;
       right: 0;
