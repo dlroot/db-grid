@@ -202,7 +202,8 @@ export class HeaderRendererService {
       box-sizing: border-box;
       user-select: none;
       position: relative;
-      border-bottom: 1px solid var(--db-grid-border-color, #ddd);
+      border-bottom: 1px solid #e2e2e2;
+      border-right: 1px solid #e2e2e2;
     `;
 
     // 分组分隔线
@@ -259,8 +260,8 @@ export class HeaderRendererService {
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      background: var(--db-grid-header-bg, #f5f5f5);
-      border-bottom: 2px solid var(--db-grid-border-color, #ddd);
+      background: #f8f8f8;
+      border-bottom: 1px solid #e2e2e2;
       height: ${this.headerHeight}px;
     `;
     return container;
@@ -305,6 +306,9 @@ export class HeaderRendererService {
     const label = document.createElement('span');
     label.className = 'db-grid-header-label';
     label.textContent = colDef.headerName || colDef.field || '';
+    label.style.fontWeight = '600';
+    label.style.fontSize = '13px';
+    label.style.color = '#181d1d';
     header.appendChild(label);
 
     // 排序图标
@@ -1057,7 +1061,8 @@ export class HeaderRendererService {
       box-sizing: border-box;
       user-select: none;
       position: relative;
-      border-bottom: 1px solid var(--db-grid-border-color, #ddd);
+      border-bottom: 1px solid #e2e2e2;
+      border-right: 1px solid #e2e2e2;
     `;
 
     // 分隔线
