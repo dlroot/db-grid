@@ -202,17 +202,16 @@ export class HeaderRendererService {
       box-sizing: border-box;
       user-select: none;
       position: relative;
-      border-bottom: 1px solid #e2e2e2;
-      border-right: 1px solid #e2e2e2;
+      border-bottom: 1px solid var(--db-grid-header-border-color, #d9d9d9);
     `;
 
-    // 分组分隔线
+    // 分组分隔线 - 使用部分高度竖线，匹配 AG Grid 风格
     const separator = document.createElement('div');
     separator.style.cssText = `
       position: absolute;
       right: 0;
-      top: 10%;
-      height: 80%;
+      top: 20%;
+      height: 60%;
       width: 1px;
       background: var(--db-grid-border-color, #ddd);
     `;
@@ -260,8 +259,8 @@ export class HeaderRendererService {
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      background: #f8f8f8;
-      border-bottom: 1px solid #e2e2e2;
+      background: var(--db-grid-header-bg, #f8f9fa);
+      border-bottom: 2px solid var(--db-grid-header-border-color, #d9d9d9);
       height: ${this.headerHeight}px;
     `;
     return container;
@@ -274,7 +273,7 @@ export class HeaderRendererService {
     row.setAttribute('role', 'row');
     row.style.cssText = `
       display: flex;
-      align-items: center;
+      align-items: stretch;
       flex: 1;
     `;
     return row;
@@ -307,8 +306,14 @@ export class HeaderRendererService {
     label.className = 'db-grid-header-label';
     label.textContent = colDef.headerName || colDef.field || '';
     label.style.fontWeight = '600';
-    label.style.fontSize = '13px';
-    label.style.color = '#181d1d';
+    label.style.fontSize = '12px';
+    label.style.color = 'var(--db-grid-header-text-color, #181d1d)';
+    label.style.letterSpacing = '0.02em';
+    label.style.flex = '1';
+    label.style.overflow = 'hidden';
+    label.style.textOverflow = 'ellipsis';
+    label.style.whiteSpace = 'nowrap';
+    label.style.lineHeight = 'normal';
     header.appendChild(label);
 
     // 排序图标
@@ -338,6 +343,20 @@ export class HeaderRendererService {
 
     // 设置交互事件
     this.setupHeaderEvents(header, colDef);
+
+    // 表头悬停时显示拖拽手柄和菜单按钮
+    header.addEventListener('mouseenter', () => {
+      const drag = header.querySelector('.db-grid-drag-handle') as HTMLElement;
+      const menu = header.querySelector('.db-grid-header-menu-button') as HTMLElement;
+      if (drag) drag.style.opacity = '0.5';
+      if (menu) menu.style.opacity = '0.5';
+    });
+    header.addEventListener('mouseleave', () => {
+      const drag = header.querySelector('.db-grid-drag-handle') as HTMLElement;
+      const menu = header.querySelector('.db-grid-header-menu-button') as HTMLElement;
+      if (drag) drag.style.opacity = '0';
+      if (menu) menu.style.opacity = '0';
+    });
 
     return header;
   }
@@ -387,7 +406,7 @@ export class HeaderRendererService {
       `max-width: ${width}px`,
       `display: flex`,
       `align-items: center`,
-      `padding: 0 8px`,
+      `padding: 0 12px`,
       `box-sizing: border-box`,
       `user-select: none`,
       `position: relative`,
@@ -524,8 +543,15 @@ export class HeaderRendererService {
   private createDragHandle(): HTMLElement {
     const handle = document.createElement('div');
     handle.className = 'db-grid-drag-handle';
-    handle.innerHTML = '⋮⋮';
+    handle.innerHTML = '⠿';
     handle.title = `${this.i18n?.t('col.drag') ?? 'Drag to Move Column'}`;
+    handle.style.cssText = `
+      display: flex; align-items: center; justify-content: center;
+      width: 16px; height: 16px;
+      cursor: grab; font-size: 10px;
+      opacity: 0; transition: opacity 0.15s;
+      border-radius: 3px; flex-shrink: 0;
+    `;
     return handle;
   }
 
@@ -538,14 +564,14 @@ export class HeaderRendererService {
     btn.style.cssText = `
       display: flex; align-items: center; justify-content: center;
       width: 20px; height: 20px;
-      cursor: pointer; font-size: 12px;
-      opacity: 0.4; transition: opacity 0.15s;
-      border-radius: 3px;
+      cursor: pointer; font-size: 11px;
+      opacity: 0; transition: opacity 0.15s;
+      border-radius: 3px; flex-shrink: 0;
     `;
 
     // 鼠标悬停时显示
     btn.addEventListener('mouseenter', () => { btn.style.opacity = '1'; btn.style.background = 'rgba(0,0,0,0.06)'; });
-    btn.addEventListener('mouseleave', () => { btn.style.opacity = '0.4'; btn.style.background = ''; });
+    btn.addEventListener('mouseleave', () => { btn.style.opacity = '0'; btn.style.background = ''; });
 
     // 点击触发列菜单事件
     btn.addEventListener('click', (e: MouseEvent) => {
@@ -1061,17 +1087,16 @@ export class HeaderRendererService {
       box-sizing: border-box;
       user-select: none;
       position: relative;
-      border-bottom: 1px solid #e2e2e2;
-      border-right: 1px solid #e2e2e2;
+      border-bottom: 1px solid var(--db-grid-header-border-color, #d9d9d9);
     `;
 
-    // 分隔线
+    // 分隔线 - 使用部分高度竖线，匹配 AG Grid 风格
     const separator = document.createElement('div');
     separator.style.cssText = `
       position: absolute;
       right: 0;
-      top: 10%;
-      height: 80%;
+      top: 20%;
+      height: 60%;
       width: 1px;
       background: var(--db-grid-border-color, #ddd);
     `;

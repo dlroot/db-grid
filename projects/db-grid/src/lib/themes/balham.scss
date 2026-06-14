@@ -55,11 +55,24 @@
       text-transform: uppercase;
       letter-spacing: 0.05em;
       color: var(--db-grid-balham-header-text-color);
-      border-right: 1px solid var(--db-grid-balham-border-color);
+      border-right: none;
       background: linear-gradient(to bottom, #f0f0f0, #e0e0e0);
+      position: relative;
+      transition: background 0.15s ease;
 
-      &:last-child {
-        border-right: none;
+      // 列分隔线
+      &::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 20%;
+        height: 60%;
+        width: 1px;
+        background: var(--db-grid-balham-border-color);
+      }
+
+      &:last-child::after {
+        display: none;
       }
 
       &:hover {
@@ -297,15 +310,19 @@
   // 拖拽和调整大小
   .db-grid-resize-handle {
     position: absolute;
-    right: 0;
+    right: -2px;
     top: 0;
     bottom: 0;
     width: 5px;
     cursor: col-resize;
     background: transparent;
+    z-index: 2;
 
     &:hover {
       background: #333;
+    }
+    &:active {
+      background: #000;
     }
   }
 

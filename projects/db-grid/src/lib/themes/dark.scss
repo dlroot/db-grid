@@ -102,11 +102,23 @@
       color: var(--db-grid-dark-text-secondary);
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      border-right: 1px solid var(--db-grid-dark-cell-border-color);
+      border-right: none;
+      position: relative;
       transition: background 0.2s ease, color 0.2s ease;
 
-      &:last-child {
-        border-right: none;
+      // 列分隔线
+      &::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 20%;
+        height: 60%;
+        width: 1px;
+        background: var(--db-grid-dark-cell-border-color);
+      }
+
+      &:last-child::after {
+        display: none;
       }
 
       &:hover {
@@ -372,16 +384,20 @@
   // 拖拽和调整大小
   .db-grid-resize-handle {
     position: absolute;
-    right: 0;
+    right: -2px;
     top: 0;
     bottom: 0;
-    width: 4px;
+    width: 5px;
     cursor: col-resize;
     background: transparent;
     transition: background 0.2s ease;
+    z-index: 2;
 
     &:hover {
       background: var(--db-grid-dark-primary);
+    }
+    &:active {
+      background: var(--db-grid-dark-primary-variant);
     }
   }
 
