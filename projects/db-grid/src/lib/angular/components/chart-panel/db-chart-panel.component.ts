@@ -38,14 +38,26 @@ export type ChartType = 'bar' | 'line' | 'pie' | 'doughnut' | 'area';
         </button>
       </div>
       <div class="db-chart-type-btns">
-        @for (btn of chartTypeButtons; track btn.type) {
-          <button
-            [class.active]="currentType() === btn.type"
-            (click)="onTypeChange.emit(btn.type)">
-            <span class="chart-btn-icon" [innerHTML]="getChartIcon(btn.type)"></span>
-            {{ btn.label }}
-          </button>
-        }
+        <button class="db-chart-type-btn" [class.active]="currentType() === 'bar'" (click)="onTypeChange.emit('bar')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          柱状图
+        </button>
+        <button class="db-chart-type-btn" [class.active]="currentType() === 'line'" (click)="onTypeChange.emit('line')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          折线图
+        </button>
+        <button class="db-chart-type-btn" [class.active]="currentType() === 'area'" (click)="onTypeChange.emit('area')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M3 20l4-10 4 4 5-8 4 14"/></svg>
+          面积图
+        </button>
+        <button class="db-chart-type-btn" [class.active]="currentType() === 'pie'" (click)="onTypeChange.emit('pie')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg>
+          饼图
+        </button>
+        <button class="db-chart-type-btn" [class.active]="currentType() === 'doughnut'" (click)="onTypeChange.emit('doughnut')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>
+          环形图
+        </button>
       </div>
       <div class="db-chart-canvas-container" #canvasContainer></div>
       <div class="db-chart-panel-footer">
@@ -101,8 +113,8 @@ export type ChartType = 'bar' | 'line' | 'pie' | 'doughnut' | 'area';
       display: flex; gap: 4px; padding: 8px 12px;
       border-bottom: 1px solid var(--db-grid-border-color, #ddd);
     }
-    .db-chart-type-btns button {
-      flex: 1; padding: 5px 8px;
+    .db-chart-type-btn {
+      flex: 1; padding: 5px 4px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;
       border: 1px solid var(--db-grid-border-color, #ddd);
       border-radius: 4px; cursor: pointer;
       background: var(--db-grid-bg, #fff);
@@ -110,17 +122,15 @@ export type ChartType = 'bar' | 'line' | 'pie' | 'doughnut' | 'area';
       transition: all 0.15s;
       color: var(--db-grid-text-secondary, #333);
     }
-    .db-chart-type-btns button:hover {
+    .db-chart-type-btn:hover {
       border-color: var(--db-grid-accent, #2196f3);
       color: var(--db-grid-accent, #2196f3);
     }
-    .db-chart-type-btns button.active {
+    .db-chart-type-btn.active {
       background: var(--db-grid-accent, #2196f3);
       color: #fff; border-color: var(--db-grid-accent, #2196f3);
     }
-    .chart-btn-icon {
-      display: inline-flex; align-items: center; vertical-align: middle;
-    }
+    .chart-btn-icon { display: inline-flex; align-items: center; vertical-align: middle; }
     .db-chart-canvas-container {
       flex: 1; padding: 12px; overflow: hidden;
       min-height: 200px;
@@ -155,25 +165,6 @@ export class DbChartPanelComponent implements OnDestroy {
   @Output() onClose = new EventEmitter<void>();
   @Output() onTypeChange = new EventEmitter<ChartType>();
   @Output() onExport = new EventEmitter<'png' | 'svg'>();
-
-  chartTypeButtons: { type: ChartType; label: string }[] = [
-    { type: 'bar', label: '柱状图' },
-    { type: 'line', label: '折线图' },
-    { type: 'area', label: '面积图' },
-    { type: 'pie', label: '饼图' },
-    { type: 'doughnut', label: '环形图' },
-  ];
-
-  getChartIcon(type: ChartType): string {
-    const map: Record<ChartType, string> = {
-      bar: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`,
-      line: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`,
-      area: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M3 20l4-10 4 4 5-8 4 14"/></svg>`,
-      pie: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg>`,
-      doughnut: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>`,
-    };
-    return map[type] || '';
-  }
 
   private chartsService = inject(ChartsService);
   private currentChartInstance: ChartInstance | null = null;

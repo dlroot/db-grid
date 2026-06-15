@@ -481,9 +481,9 @@ export class AppComponent implements OnInit {
       cellRendererFramework: 'ActionRendererComponent',
       cellRendererParams: {
         actions: [
-          { label: '查看', icon: '👁️', action: 'view' },
-          { label: '编辑', icon: '✏️', action: 'edit' },
-          { label: '删除', icon: '🗑️', action: 'delete', danger: true },
+          { label: '查看', icon: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`, action: 'view' },
+          { label: '编辑', icon: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>`, action: 'edit' },
+          { label: '删除', icon: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>`, action: 'delete', danger: true },
         ]
       }
     },
@@ -1985,11 +1985,11 @@ export class AppComponent implements OnInit {
   /** 获取图表类型按钮配置 */
   getChartTypeButtons() {
     return [
-      { type: 'bar' as const, label: '柱状图', icon: '📊' },
-      { type: 'line' as const, label: '折线图', icon: '📈' },
-      { type: 'area' as const, label: '面积图', icon: '📉' },
-      { type: 'pie' as const, label: '饼图', icon: '🥧' },
-      { type: 'doughnut' as const, label: '环形图', icon: '🍩' },
+      { type: 'bar' as const, label: '柱状图', icon: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>` },
+      { type: 'line' as const, label: '折线图', icon: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>` },
+      { type: 'area' as const, label: '面积图', icon: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M3 20l4-10 4 4 5-8 4 14"/></svg>` },
+      { type: 'pie' as const, label: '饼图', icon: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg>` },
+      { type: 'doughnut' as const, label: '环形图', icon: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>` },
     ];
   }
 

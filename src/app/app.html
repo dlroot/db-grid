@@ -884,16 +884,28 @@
   @if (currentDemo() === 'charts') {
     <div class="demo-panel">
       <div class="demo-header">
-        <h2>📈 集成图表</h2>
+        <h2>
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          集成图表
+        </h2>
         <p class="demo-desc">
           1. 拖拽选择数据范围 → 右键 → 选择图表类型<br>
           2. 或使用下方按钮显示/隐藏图表面板<br>
           3. 在面板中切换图表类型，支持：柱状图、折线图、面积图、饼图、环形图
         </p>
         <div class="demo-actions">
-          <button class="btn" (click)="showChart()">📈 显示图表面板</button>
-          <button class="btn" (click)="hideChart()">✖ 隐藏图表面板</button>
-          <span class="chart-hint">💡 先选择数据范围，再点击"显示图表面板"</span>
+          <button class="btn" (click)="showChart()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            显示图表面板
+          </button>
+          <button class="btn" (click)="hideChart()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            隐藏图表面板
+          </button>
+          <span class="chart-hint">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            先选择数据范围，再点击"显示图表面板"
+          </span>
         </div>
       </div>
       <div style="position: relative; height: 500px;">
@@ -912,7 +924,10 @@
       </div>
       <!-- 独立图表演示（不使用图表面板） -->
       <div class="standalone-chart" style="margin-top: 20px; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-        <h3>📊 独立图表（编辑数据查看联动）</h3>
+        <h3>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          独立图表（编辑数据查看联动）
+        </h3>
         <p class="demo-desc">修改下方数据，图表会自动更新</p>
         <div style="display: flex; gap: 20px;">
           <div style="flex: 1;">
@@ -945,7 +960,7 @@
               class="btn" 
               [class.active]="chartsType() === btn.type"
               (click)="chartsType.set(btn.type); renderChart();">
-              {{ btn.icon }} {{ btn.label }}
+              <span [innerHTML]="btn.icon" style="display:inline-flex;align-items:center;"></span> {{ btn.label }}
             </button>
           }
         </div>

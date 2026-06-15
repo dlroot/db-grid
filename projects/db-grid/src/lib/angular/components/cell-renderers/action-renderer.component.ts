@@ -32,7 +32,7 @@ import { Component, Input, Output, EventEmitter } from '@angular/core';
           (click)="onActionClick(action, $event)"
           [title]="action.label">
           @if (action.icon) {
-            <span class="action-icon">{{ action.icon }}</span>
+            <span class="action-icon" [innerHTML]="action.icon"></span>
           }
           @if (action.showLabel) {
             <span class="action-label">{{ action.label }}</span>
@@ -75,7 +75,8 @@ import { Component, Input, Output, EventEmitter } from '@angular/core';
       background: #fdd;
     }
     .action-icon {
-      font-size: 14px;
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 16px; height: 16px; flex-shrink: 0;
     }
   `]
 })
