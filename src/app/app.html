@@ -1,115 +1,158 @@
 <div class="demo-container">
-  <!-- 工具栏 -->
-  <div class="toolbar">
-    <h1>DB Grid Demo <span class="version">v1.0</span></h1>
-    <p class="subtitle">开源 Angular 数据表格库 · AG Grid API 兼容 · MIT 协议</p>
-  </div>
+  <!-- 左侧导航菜单 -->
+  <aside class="demo-sidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-logo">DG</span>
+      <span class="sidebar-title">DB Grid</span>
+    </div>
 
-  <!-- Tab 切换按钮 -->
-  <div class="demo-tabs">
-    <button [class.active]="currentDemo() === 'basic'" (click)="switchDemo('basic')">
-      📊 基础表格
-    </button>
-    <button [class.active]="currentDemo() === 'tree'" (click)="switchDemo('tree')">
-      🌲 树形数据
-    </button>
-    <button [class.active]="currentDemo() === 'group'" (click)="switchDemo('group')">
-      📁 行分组
-    </button>
-    <button [class.active]="currentDemo() === 'excel'" (click)="switchDemo('excel')">
-      📥 Excel导出
-    </button>
-    <button [class.active]="currentDemo() === 'excel-import'" (click)="switchDemo('excel-import')">
-      📥 Excel 导入
-    </button>
-    <button [class.active]="currentDemo() === 'server'" (click)="switchDemo('server')">
-      🌐 服务端
-    </button>
-    <button [class.active]="currentDemo() === 'infinite'" (click)="switchDemo('infinite')">
-      ♾️ 无限
-    </button>
-    <button [class.active]="currentDemo() === 'master'" (click)="switchDemo('master')">
-      📋 主从表
-    </button>
-    <button [class.active]="currentDemo() === 'undo'" (click)="switchDemo('undo')">
-      ↩️ 撤销重做
-    </button>
-    <button [class.active]="currentDemo() === 'transaction'" (click)="switchDemo('transaction')">
-      🔄 增量更新
-    </button>
-    <button [class.active]="currentDemo() === 'keyboard'" (click)="switchDemo('keyboard')">
-      ⌨️ 键盘导航
-    </button>
-    <button [class.active]="currentDemo() === 'agg'" (click)="switchDemo('agg')">
-      ➕ 聚合统计
-    </button>
-    <button [class.active]="currentDemo() === 'span'" (click)="switchDemo('span')">
-      🔲 单元格合并
-    </button>
-    <button [class.active]="currentDemo() === 'drag'" (click)="switchDemo('drag')">
-      ✋ 行拖拽
-    </button>
-    <button [class.active]="currentDemo() === 'pivot'" (click)="switchDemo('pivot')">
-      📊 数据透视
-    </button>
-    <button [class.active]="currentDemo() === 'colgroup'" (click)="switchDemo('colgroup')">
-      📑 列组表头
-    </button>
-    <button [class.active]="currentDemo() === 'angular-renderer'" (click)="switchDemo('angular-renderer')">
-      🧩 自定义组件
-    </button>
-    <button [class.active]="currentDemo() === 'performance'" (click)="switchDemo('performance')">
-      ⚡ 性能测试
-    </button>
-    <button [class.active]="currentDemo() === 'colvirtual'" (click)="switchDemo('colvirtual')">
-      🏗️ 列虚拟化
-    </button>
-    <button [class.active]="currentDemo() === 'rowvirtual'" (click)="switchDemo('rowvirtual')">
-      ⚡ 行虚拟化
-    </button>
-    <button [class.active]="currentDemo() === 'i18n'" (click)="switchDemo('i18n')">
-      🌐 国际化
-    </button>
-    <button [class.active]="currentDemo() === 'pdf'" (click)="switchDemo('pdf')">
-      📄 PDF导出
-    </button>
-    <button [class.active]="currentDemo() === 'range'" (click)="switchDemo('range')">
-      📋 区域选择
-    </button>
-    <button [class.active]="currentDemo() === 'charts'" (click)="switchDemo('charts')">
-      📈 图表
-    </button>
-    <button [class.active]="currentDemo() === 'fillhandle'" (click)="switchDemo('fillhandle')">
-      ✋ 填充手柄
-    </button>
-    <button [class.active]="currentDemo() === 'coltypes'" (click)="switchDemo('coltypes')">
-      📋 列类型
-    </button>
-    <button [class.active]="currentDemo() === 'rowpin'" (click)="switchDemo('rowpin')">
-      📌 行固定
-    </button>
-    <button [class.active]="currentDemo() === 'sparkline'" (click)="switchDemo('sparkline')">
-      📊 迷你图
-    </button>
-    <button [class.active]="currentDemo() === 'centerpin'" (click)="switchDemo('centerpin')">
-      📌 中间列固定
-    </button>
-    <button [class.active]="currentDemo() === 'accessibility'" (click)="switchDemo('accessibility')">
-      ♿ 无障碍 (ARIA)
-    </button>
-    <a href="storybook/" target="_blank" class="btn" style="text-decoration:none; margin-left:8px;">
-      📚 Storybook 文档
-    </a>
-    <span class="theme-selector">
-      <label>主题:</label>
-      <select [value]="currentTheme()" (change)="switchTheme($event)">
-        <option value="alpine">Alpine</option>
-        <option value="balham">Balham</option>
-        <option value="material">Material</option>
-        <option value="dark">Dark</option>
-      </select>
-    </span>
-  </div>
+    <nav class="sidebar-nav">
+      <button [class.active]="currentDemo() === 'basic'" (click)="switchDemo('basic')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+        基础表格
+      </button>
+      <button [class.active]="currentDemo() === 'tree'" (click)="switchDemo('tree')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8C8 10 5.9 16.17 3.82 22H9.5c.5-2.4 2.5-4.5 5.5-4.5"/><path d="M21 3c0 2.76-2.24 5-5 5s-5-2.24-5-5 2.24-5 5-5c1.12 0 2.15.38 3 1"/><path d="M22 22H2"/><path d="M22 22l-4-7 4-7"/></svg>
+        树形数据
+      </button>
+      <button [class.active]="currentDemo() === 'group'" (click)="switchDemo('group')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v18H3zM3 9h18M3 15h18M9 3v18"/></svg>
+        行分组
+      </button>
+      <button [class.active]="currentDemo() === 'excel'" (click)="switchDemo('excel')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Excel导出
+      </button>
+      <button [class.active]="currentDemo() === 'excel-import'" (click)="switchDemo('excel-import')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Excel导入
+      </button>
+      <button [class.active]="currentDemo() === 'server'" (click)="switchDemo('server')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="6" rx="2"/><rect x="2" y="15" width="20" height="6" rx="2"/><line x1="6" y1="12" x2="6.01" y2="12"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+        服务端
+      </button>
+      <button [class.active]="currentDemo() === 'infinite'" (click)="switchDemo('infinite')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+        无限滚动
+      </button>
+      <button [class.active]="currentDemo() === 'master'" (click)="switchDemo('master')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="10" height="10" rx="1"/><rect x="11" y="11" width="10" height="10" rx="1"/><path d="M8 13v-2M16 8h2M8 21H6M18 13v2"/></svg>
+        主从表
+      </button>
+      <button [class.active]="currentDemo() === 'undo'" (click)="switchDemo('undo')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+        撤销重做
+      </button>
+      <button [class.active]="currentDemo() === 'transaction'" (click)="switchDemo('transaction')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+        增量更新
+      </button>
+      <button [class.active]="currentDemo() === 'keyboard'" (click)="switchDemo('keyboard')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/></svg>
+        键盘导航
+      </button>
+      <button [class.active]="currentDemo() === 'agg'" (click)="switchDemo('agg')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        聚合统计
+      </button>
+      <button [class.active]="currentDemo() === 'span'" (click)="switchDemo('span')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+        单元格合并
+      </button>
+      <button [class.active]="currentDemo() === 'drag'" (click)="switchDemo('drag')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
+        行拖拽
+      </button>
+      <button [class.active]="currentDemo() === 'pivot'" (click)="switchDemo('pivot')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+        数据透视
+      </button>
+      <button [class.active]="currentDemo() === 'colgroup'" (click)="switchDemo('colgroup')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18"/></svg>
+        列组表头
+      </button>
+      <button [class.active]="currentDemo() === 'angular-renderer'" (click)="switchDemo('angular-renderer')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="3"/></svg>
+        自定义组件
+      </button>
+      <button [class.active]="currentDemo() === 'performance'" (click)="switchDemo('performance')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        性能测试
+      </button>
+      <button [class.active]="currentDemo() === 'colvirtual'" (click)="switchDemo('colvirtual')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v18H3zM9 3v18M15 3v18"/><path d="M3 9h18M3 15h18"/></svg>
+        列虚拟化
+      </button>
+      <button [class.active]="currentDemo() === 'rowvirtual'" (click)="switchDemo('rowvirtual')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v18H3zM3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+        行虚拟化
+      </button>
+      <button [class.active]="currentDemo() === 'i18n'" (click)="switchDemo('i18n')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+        国际化
+      </button>
+      <button [class.active]="currentDemo() === 'pdf'" (click)="switchDemo('pdf')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        PDF导出
+      </button>
+      <button [class.active]="currentDemo() === 'range'" (click)="switchDemo('range')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M3 9h18"/></svg>
+        区域选择
+      </button>
+      <button [class.active]="currentDemo() === 'charts'" (click)="switchDemo('charts')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        图表
+      </button>
+      <button [class.active]="currentDemo() === 'fillhandle'" (click)="switchDemo('fillhandle')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
+        填充手柄
+      </button>
+      <button [class.active]="currentDemo() === 'coltypes'" (click)="switchDemo('coltypes')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+        列类型
+      </button>
+      <button [class.active]="currentDemo() === 'rowpin'" (click)="switchDemo('rowpin')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 00-1.11-1.79l-1.78-.9A2 2 0 0115 10.76V6h1a2 2 0 000-4H8a2 2 0 000 4h1v4.76a2 2 0 01-1.11 1.79l-1.78.9A2 2 0 005 15.24V17z"/></svg>
+        行固定
+      </button>
+      <button [class.active]="currentDemo() === 'sparkline'" (click)="switchDemo('sparkline')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        迷你图
+      </button>
+      <button [class.active]="currentDemo() === 'centerpin'" (click)="switchDemo('centerpin')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18"/></svg>
+        中间列固定
+      </button>
+      <button [class.active]="currentDemo() === 'accessibility'" (click)="switchDemo('accessibility')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+        无障碍
+      </button>
+      <a href="storybook/" target="_blank" class="sidebar-link">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+        Storybook
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <span class="sidebar-version">v1.0</span>
+      <span class="theme-selector">
+        <select [value]="currentTheme()" (change)="switchTheme($event)">
+          <option value="alpine">Alpine</option>
+          <option value="balham">Balham</option>
+          <option value="material">Material</option>
+          <option value="dark">Dark</option>
+        </select>
+      </span>
+    </div>
+  </aside>
+
+  <!-- 主内容区 -->
+  <main class="demo-main">
+    <!-- 工具栏 -->
+    <div class="toolbar">
+      <h1>DB Grid <span class="version">v1.0</span></h1>
+      <p class="subtitle">开源 Angular 数据表格库 · AG Grid API 兼容 · MIT 协议</p>
+    </div>
 
   <!-- 基础表格演示 -->
   @if (currentDemo() === 'basic') {
@@ -1164,4 +1207,5 @@
     <span class="status-item" [class.success]="apiStatus() === '已连接'">API: {{ apiStatus() }}</span>
     <span class="status-item version">v1.0.0</span>
   </div>
+</main>
 </div>
