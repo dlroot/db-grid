@@ -15,12 +15,12 @@ import { Component, Input } from '@angular/core';
   template: `
     <span class="star-rating">
       @for (star of stars; track star) {
-        <span 
-          class="star" 
+        <span
+          class="star"
           [class.filled]="star <= value"
           [style.color]="star <= value ? '#ffc107' : '#ddd'"
           (click)="onStarClick(star)">
-          ★
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" [attr.fill]="star <= value ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
         </span>
       }
       @if (showValue) {

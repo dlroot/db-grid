@@ -14,8 +14,17 @@ import { PerformanceMonitorService, PerformanceMetrics } from '../../../core/ser
   template: `
     <div class="performance-panel" [class.collapsed]="collapsed()">
       <div class="panel-header" (click)="toggle()">
-        <span class="panel-title">⚡ 性能监控</span>
-        <span class="panel-toggle">{{ collapsed() ? '▼' : '▲' }}</span>
+        <span class="panel-title">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          性能监控
+        </span>
+        <span class="panel-toggle">
+          @if (collapsed()) {
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          } @else {
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+          }
+        </span>
       </div>
       
       @if (!collapsed()) {
@@ -81,14 +90,23 @@ import { PerformanceMonitorService, PerformanceMetrics } from '../../../core/ser
           @if (warnings().length > 0) {
             <div class="warnings">
               @for (warning of warnings(); track warning) {
-                <div class="warning-item">⚠️ {{ warning }}</div>
+                <div class="warning-item">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                {{ warning }}
+              </div>
               }
             </div>
           }
           
           <!-- 健康状态 -->
           <div class="health-status" [class.healthy]="isHealthy()" [class.unhealthy]="!isHealthy()">
-            {{ isHealthy() ? '✅ 健康' : '⚠️ 需要优化' }}
+            @if (isHealthy()) {
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              健康
+            } @else {
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              需要优化
+            }
           </div>
         </div>
       }

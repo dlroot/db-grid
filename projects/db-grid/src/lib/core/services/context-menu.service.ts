@@ -151,37 +151,37 @@ export class ContextMenuService {
     switch (type) {
       case 'grid':
         return [
-          { id: 'export-csv', label: '导出 CSV', icon: '📥', action: (p) => console.log('Export CSV', p) },
-          { id: 'export-excel', label: '导出 Excel', icon: '📊', action: (p) => console.log('Export Excel', p) },
+          { id: 'export-csv', label: '导出 CSV', icon: 'file-spreadsheet', action: (p) => console.log('Export CSV', p) },
+          { id: 'export-excel', label: '导出 Excel', icon: 'file-spreadsheet', action: (p) => console.log('Export Excel', p) },
           { id: 'sep1', label: '', separator: true },
-          { id: 'refresh', label: '刷新', icon: '🔄', action: (p) => console.log('Refresh', p) },
-          { id: 'reset-columns', label: '重置列', icon: '↩️', action: (p) => console.log('Reset columns', p) },
+          { id: 'refresh', label: '刷新', icon: 'refresh-cw', action: (p) => console.log('Refresh', p) },
+          { id: 'reset-columns', label: '重置列', icon: 'rotate-ccw', action: (p) => console.log('Reset columns', p) },
         ];
       case 'row':
         return [
-          { id: 'copy-row', label: '复制行', icon: '📋', shortcut: 'Ctrl+C', action: (p) => console.log('Copy row', p) },
-          { id: 'delete-row', label: '删除行', icon: '🗑️', action: (p) => console.log('Delete row', p) },
+          { id: 'copy-row', label: '复制行', icon: 'clipboard', shortcut: 'Ctrl+C', action: (p) => console.log('Copy row', p) },
+          { id: 'delete-row', label: '删除行', icon: 'trash-2', action: (p) => console.log('Delete row', p) },
           { id: 'sep1', label: '', separator: true },
-          { id: 'select-row', label: '选择行', icon: '✓', action: (p) => console.log('Select row', p) },
-          { id: 'expand-row', label: '展开行详情', icon: '▶️', action: (p) => console.log('Expand row', p) },
+          { id: 'select-row', label: '选择行', icon: 'check-square', action: (p) => console.log('Select row', p) },
+          { id: 'expand-row', label: '展开行详情', icon: 'chevrons-right', action: (p) => console.log('Expand row', p) },
         ];
       case 'cell':
         return [
-          { id: 'copy-cell', label: '复制单元格', icon: '📋', shortcut: 'Ctrl+C', action: (p) => console.log('Copy cell', p) },
-          { id: 'copy-value', label: '仅复制值', icon: '📄', action: (p) => console.log('Copy value', p) },
+          { id: 'copy-cell', label: '复制单元格', icon: 'clipboard', shortcut: 'Ctrl+C', action: (p) => console.log('Copy cell', p) },
+          { id: 'copy-value', label: '仅复制值', icon: 'file', action: (p) => console.log('Copy value', p) },
           { id: 'sep1', label: '', separator: true },
-          { id: 'edit-cell', label: '编辑', icon: '✏️', shortcut: 'Enter', action: (p) => console.log('Edit cell', p) },
+          { id: 'edit-cell', label: '编辑', icon: 'pencil', shortcut: 'Enter', action: (p) => console.log('Edit cell', p) },
         ];
       case 'column':
         return [
-          { id: 'sort-asc', label: '升序', icon: '⬆️', action: (p) => console.log('Sort asc', p) },
-          { id: 'sort-desc', label: '降序', icon: '⬇️', action: (p) => console.log('Sort desc', p) },
-          { id: 'clear-sort', label: '清除排序', icon: '↩️', action: (p) => console.log('Clear sort', p) },
+          { id: 'sort-asc', label: '升序', icon: 'arrow-up', action: (p) => console.log('Sort asc', p) },
+          { id: 'sort-desc', label: '降序', icon: 'arrow-down', action: (p) => console.log('Sort desc', p) },
+          { id: 'clear-sort', label: '清除排序', icon: 'rotate-ccw', action: (p) => console.log('Clear sort', p) },
           { id: 'sep1', label: '', separator: true },
-          { id: 'filter', label: '筛选', icon: '🔍', action: (p) => console.log('Filter', p) },
-          { id: 'pin-left', label: '固定到左侧', icon: '📌', action: (p) => console.log('Pin left', p) },
-          { id: 'pin-right', label: '固定到右侧', icon: '📌', action: (p) => console.log('Pin right', p) },
-          { id: 'unpin', label: '取消固定', icon: '📌', action: (p) => console.log('Unpin', p) },
+          { id: 'filter', label: '筛选', icon: 'filter', action: (p) => console.log('Filter', p) },
+          { id: 'pin-left', label: '固定到左侧', icon: 'pin', action: (p) => console.log('Pin left', p) },
+          { id: 'pin-right', label: '固定到右侧', icon: 'pin', action: (p) => console.log('Pin right', p) },
+          { id: 'unpin', label: '取消固定', icon: 'pin-off', action: (p) => console.log('Unpin', p) },
         ];
       default:
         return [];

@@ -89,9 +89,9 @@ export class ColumnMenuService {
     // 排序
     if (col?.sortable !== false) {
       items.push(
-        { id: 'sortAsc', label: '升序排列', icon: '↑', action: 'sortAsc' },
-        { id: 'sortDesc', label: '降序排列', icon: '↓', action: 'sortDesc' },
-        { id: 'clearSort', label: '取消排序', icon: '↕', action: 'clearSort' },
+        { id: 'sortAsc', label: '升序排列', icon: 'arrow-up', action: 'sortAsc' },
+        { id: 'sortDesc', label: '降序排列', icon: 'arrow-down', action: 'sortDesc' },
+        { id: 'clearSort', label: '取消排序', icon: 'arrow-up-down', action: 'clearSort' },
         { id: 'separator1', type: 'separator' }
       );
     }
@@ -99,24 +99,24 @@ export class ColumnMenuService {
     // 固定列
     if (col?.lockPinned !== true) {
       items.push(
-        { id: 'pinLeft', label: '固定到左侧', icon: '◀', action: 'pinLeft' },
-        { id: 'pinRight', label: '固定到右侧', icon: '▶', action: 'pinRight' },
-        { id: 'clearPinned', label: '取消固定', icon: '◇', action: 'clearPinned' },
+        { id: 'pinLeft', label: '固定到左侧', icon: 'arrow-left', action: 'pinLeft' },
+        { id: 'pinRight', label: '固定到右侧', icon: 'arrow-right', action: 'pinRight' },
+        { id: 'clearPinned', label: '取消固定', icon: 'corner-down-left', action: 'clearPinned' },
         { id: 'separator2', type: 'separator' }
       );
     }
 
     // 列宽
     items.push(
-      { id: 'autoSizeThis', label: '自适应此列', icon: '↔', action: 'autoSizeThis' },
-      { id: 'autoSizeAll', label: '自适应所有列', icon: '⇔', action: 'autoSizeAll' }
+      { id: 'autoSizeThis', label: '自适应此列', icon: 'minimize-2', action: 'autoSizeThis' },
+      { id: 'autoSizeAll', label: '自适应所有列', icon: 'minimize-2', action: 'autoSizeAll' }
     );
 
     // 隐藏列
     if (col?.lockVisible !== true) {
       items.push(
         { id: 'separator3', type: 'separator' },
-        { id: 'hideColumn', label: '隐藏此列', icon: '✕', action: 'hideColumn' }
+        { id: 'hideColumn', label: '隐藏此列', icon: 'eye-off', action: 'hideColumn' }
       );
     }
 

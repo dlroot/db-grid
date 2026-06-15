@@ -181,7 +181,7 @@ import {
           @if (false && overlayNoRowsComponent) {
             <!-- 自定义无数据 overlay 组件 (TODO: 需要 import NgComponentOutlet) -->
           } @else {
-            <div class="db-grid-no-rows-icon">📭</div>
+            <div class="db-grid-no-rows-icon"><svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg></div>
             <div class="db-grid-no-rows-text">{{ overlayNoRowsMessage() }}</div>
           }
         </div>
@@ -226,16 +226,16 @@ import {
               <div class="db-grid-menu-sep"></div>
             } @else if (item.type === 'submenu') {
               <div class="db-grid-menu-item db-grid-menu-submenu" (mouseenter)="openSubmenu(item)" (click)="$event.stopPropagation()">
-                <span class="db-grid-menu-icon">{{ item.icon || '' }}</span>
+                <span class="db-grid-menu-icon" [innerHTML]="getMenuIconSvg(item.icon || '')"></span>
                 <span class="db-grid-menu-label">{{ item.label }}</span>
-                <span class="db-grid-menu-arrow">▸</span>
+                <span class="db-grid-menu-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
               </div>
             } @else {
               <div class="db-grid-menu-item" [class.db-grid-menu-item-disabled]="item.disabled" (click)="onGridMenuItemClick(item)">
-                <span class="db-grid-menu-icon">{{ item.icon || '' }}</span>
+                <span class="db-grid-menu-icon" [innerHTML]="getMenuIconSvg(item.icon || '')"></span>
                 <span class="db-grid-menu-label">{{ item.label }}</span>
                 @if (item.checked !== undefined) {
-                  <span class="db-grid-menu-check">{{ item.checked ? '✓' : '' }}</span>
+                  <span class="db-grid-menu-check"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
                 }
                 @if (item.shortcut) {
                   <span class="db-grid-menu-shortcut">{{ item.shortcut }}</span>
@@ -257,7 +257,7 @@ import {
       @if (enableExcelImport) {
         <input #fileInput type="file" accept=".xlsx,.xls" style="display:none" (change)="onFileSelected($event)" />
         <div #dragOverlay class="db-grid-drag-import-overlay">
-          <span class="db-grid-drag-import-text">📥 释放导入 Excel 文件</span>
+          <span class="db-grid-drag-import-text"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> 释放导入 Excel 文件</span>
         </div>
       }
 
@@ -2588,6 +2588,42 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.pdfExportService.exportToPdf(colDefs, rowData, options);
   }
 
+  /** 获取菜单图标的 SVG HTML */
+  getMenuIconSvg(iconName: string): string {
+    const icons: Record<string, string> = {
+      clipboard: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="4" rx="2"/><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><path d="M9 12h6"/><path d="M9 16h6"/></svg>`,
+      file: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`,
+      pencil: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>`,
+      'check-square': `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>`,
+      'x-square': `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9l6 6M15 9l-6 6"/></svg>`,
+      square: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>`,
+      columns: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18"/></svg>`,
+      'chart-bar': `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`,
+      'chart-line': `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="12" x2="2" y2="12"/><polyline points="22 6 12 18 2 6"/></svg>`,
+      'chart-area': `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M3 20l4-10 4 4 5-8 4 14"/></svg>`,
+      'pie-chart': `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg>`,
+      // 列菜单图标
+      'arrow-up': `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>`,
+      'arrow-down': `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>`,
+      'arrow-up-down': `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="5 12 12 5 19 12"/><polyline points="19 12 12 19 5 12"/></svg>`,
+      'arrow-left': `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>`,
+      'arrow-right': `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`,
+      'corner-down-left': `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 01-4 4H4"/></svg>`,
+      'minimize-2': `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="10" y1="14" x2="3" y2="21"/><line x1="21" y1="3" x2="14" y2="10"/></svg>`,
+      'eye-off': `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`,
+      // 右键菜单图标
+      'file-spreadsheet': `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`,
+      'refresh-cw': `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>`,
+      'rotate-ccw': `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>`,
+      'trash-2': `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>`,
+      'chevrons-right': `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>`,
+      'filter': `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>`,
+      'pin': `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 00-1.11-1.79l-1.78-.9A2 2 0 0115 10.76V6h1a2 2 0 000-4H8a2 2 0 000 4h1v4.76a2 2 0 01-1.11 1.79l-1.78.9A2 2 0 005 15.24V17z"/></svg>`,
+      'pin-off': `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="2" x2="22" y2="22"/><path d="M12 10.76V6H8v4.76a2 2 0 01-1.11 1.79l-1.78.9A2 2 0 003 15.24V17h18v-1.76a2 2 0 00-1.11-1.79l-1.78-.9A2 2 0 0115 10.76V10H9v.76a2 2 0 01-1.11 1.79l-1.78.9A2 2 0 004.11 15.24z"/></svg>`,
+    };
+    return icons[iconName] || '';
+  }
+
   /** 获取当前所有行数据（用于导出） */
   // ========== 右键菜单 API ==========
 
@@ -2619,7 +2655,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     const colVisibilityItems = this.getColumnVisibilityItems();
     items.push(
       { id: 'sepCols', type: 'separator' },
-      { id: 'columnsMenu', label: `${this.i18nService.t('menu.columns')}`, icon: '🔲', type: 'submenu', subItems: colVisibilityItems }
+      { id: 'columnsMenu', label: `${this.i18nService.t('menu.columns')}`, icon: 'columns', type: 'submenu', subItems: colVisibilityItems }
     );
 
     this.gridMenuPosition.set({ x, y });
@@ -2637,28 +2673,28 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     const y = event.clientY - gridRect.top;
 
     const items: ColumnMenuItemType[] = [
-      { id: 'copyCell', label: `${this.i18nService.t('menu.copyCell')}`, icon: '📋', action: 'copyCell', shortcut: 'Ctrl+C' },
-      { id: 'copyRow', label: `${this.i18nService.t('menu.copyRow')}`, icon: '📄', action: 'copyRow' },
+      { id: 'copyCell', label: `${this.i18nService.t('menu.copyCell')}`, icon: 'clipboard', action: 'copyCell', shortcut: 'Ctrl+C' },
+      { id: 'copyRow', label: `${this.i18nService.t('menu.copyRow')}`, icon: 'file', action: 'copyRow' },
       { id: 'sep1', type: 'separator' },
     ];
     if (context.colDef?.editable !== false) {
-      items.push({ id: 'editCell', label: `${this.i18nService.t('menu.editCell')}`, icon: '✏️', action: 'editCell', shortcut: 'Enter' });
+      items.push({ id: 'editCell', label: `${this.i18nService.t('menu.editCell')}`, icon: 'pencil', action: 'editCell', shortcut: 'Enter' });
     }
     items.push(
       { id: 'sep2', type: 'separator' },
-      { id: 'selectRow', label: `${this.i18nService.t('menu.selectRow')}`, icon: '✓', action: 'selectRow' },
-      { id: 'clearSelection', label: `${this.i18nService.t('menu.clearSelection')}`, icon: '✕', action: 'clearSelection' }
+      { id: 'selectRow', label: `${this.i18nService.t('menu.selectRow')}`, icon: 'check-square', action: 'selectRow' },
+      { id: 'clearSelection', label: `${this.i18nService.t('menu.clearSelection')}`, icon: 'x-square', action: 'clearSelection' }
     );
 
     // 图表子菜单（当选中范围且启用图表功能时）
     if (this.enableCharts && this.rangeSelectionService.getRanges().length > 0) {
       items.push(
         { id: 'sep-chart', type: 'separator' },
-        { id: 'chartBar', label: '📊 柱状图', icon: '📊', action: 'chartBar' },
-        { id: 'chartLine', label: '📈 折线图', icon: '📈', action: 'chartLine' },
-        { id: 'chartArea', label: '📉 面积图', icon: '📉', action: 'chartArea' },
-        { id: 'chartPie', label: '🥧 饼图', icon: '🥧', action: 'chartPie' },
-        { id: 'chartDoughnut', label: '🍩 环形图', icon: '🍩', action: 'chartDoughnut' }
+        { id: 'chartBar', label: '柱状图', icon: 'chart-bar', action: 'chartBar' },
+        { id: 'chartLine', label: '折线图', icon: 'chart-line', action: 'chartLine' },
+        { id: 'chartArea', label: '面积图', icon: 'chart-area', action: 'chartArea' },
+        { id: 'chartPie', label: '饼图', icon: 'pie-chart', action: 'chartPie' },
+        { id: 'chartDoughnut', label: '环形图', icon: 'pie-chart', action: 'chartDoughnut' }
       );
     }
 
@@ -2776,7 +2812,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       return {
         id: colId,
         label: col.headerName || col.field || colId,
-        icon: state?.hide ? '☐' : '☑',
+        icon: state?.hide ? 'square' : 'check-square',
         action: 'toggleColumn',
         checked: !state?.hide,
         disabled: col.lockVisible === true,

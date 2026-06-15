@@ -92,7 +92,9 @@ export class GroupService {
         
         const level = node.level || 0;
         const indent = level * 20;
-        const icon = node.expanded ? '▼' : '▶';
+        const icon = node.expanded
+          ? `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`
+          : `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
         const key = node.key || node.data?.__groupKey || '';
         
         // 获取聚合值
@@ -129,7 +131,9 @@ export class GroupService {
           // 更新图标
           const iconEl = el.querySelector('.group-icon');
           if (iconEl) {
-            iconEl.textContent = node.expanded ? '▼' : '▶';
+            iconEl.innerHTML = node.expanded
+            ? `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`
+            : `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
           }
         });
         

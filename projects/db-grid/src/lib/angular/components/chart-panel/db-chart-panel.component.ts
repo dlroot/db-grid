@@ -29,22 +29,34 @@ export type ChartType = 'bar' | 'line' | 'pie' | 'doughnut' | 'area';
   template: `
     <div class="db-chart-panel" (keydown.escape)="onClose.emit()">
       <div class="db-chart-panel-header">
-        <span class="db-chart-panel-title">📈 数据图表</span>
-        <button class="db-chart-panel-close" (click)="onClose.emit()" title="关闭">✕</button>
+        <span class="db-chart-panel-title">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          数据图表
+        </span>
+        <button class="db-chart-panel-close" (click)="onClose.emit()" title="关闭">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
       </div>
       <div class="db-chart-type-btns">
         @for (btn of chartTypeButtons; track btn.type) {
           <button
             [class.active]="currentType() === btn.type"
             (click)="onTypeChange.emit(btn.type)">
-            {{ btn.icon }} {{ btn.label }}
+            <span class="chart-btn-icon" [innerHTML]="getChartIcon(btn.type)"></span>
+            {{ btn.label }}
           </button>
         }
       </div>
       <div class="db-chart-canvas-container" #canvasContainer></div>
       <div class="db-chart-panel-footer">
-        <button class="db-chart-export-btn" (click)="onExport.emit('png')">📥 导出 PNG</button>
-        <button class="db-chart-export-btn" (click)="onExport.emit('svg')">📥 导出 SVG</button>
+        <button class="db-chart-export-btn" (click)="onExport.emit('png')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          导出 PNG
+        </button>
+        <button class="db-chart-export-btn" (click)="onExport.emit('svg')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          导出 SVG
+        </button>
       </div>
     </div>
   `,
@@ -106,6 +118,9 @@ export type ChartType = 'bar' | 'line' | 'pie' | 'doughnut' | 'area';
       background: var(--db-grid-accent, #2196f3);
       color: #fff; border-color: var(--db-grid-accent, #2196f3);
     }
+    .chart-btn-icon {
+      display: inline-flex; align-items: center; vertical-align: middle;
+    }
     .db-chart-canvas-container {
       flex: 1; padding: 12px; overflow: hidden;
       min-height: 200px;
@@ -141,13 +156,24 @@ export class DbChartPanelComponent implements OnDestroy {
   @Output() onTypeChange = new EventEmitter<ChartType>();
   @Output() onExport = new EventEmitter<'png' | 'svg'>();
 
-  chartTypeButtons: { type: ChartType; label: string; icon: string }[] = [
-    { type: 'bar', label: '柱状图', icon: '📊' },
-    { type: 'line', label: '折线图', icon: '📈' },
-    { type: 'area', label: '面积图', icon: '📉' },
-    { type: 'pie', label: '饼图', icon: '🥧' },
-    { type: 'doughnut', label: '环形图', icon: '🍩' },
+  chartTypeButtons: { type: ChartType; label: string }[] = [
+    { type: 'bar', label: '柱状图' },
+    { type: 'line', label: '折线图' },
+    { type: 'area', label: '面积图' },
+    { type: 'pie', label: '饼图' },
+    { type: 'doughnut', label: '环形图' },
   ];
+
+  getChartIcon(type: ChartType): string {
+    const map: Record<ChartType, string> = {
+      bar: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`,
+      line: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`,
+      area: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M3 20l4-10 4 4 5-8 4 14"/></svg>`,
+      pie: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg>`,
+      doughnut: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>`,
+    };
+    return map[type] || '';
+  }
 
   private chartsService = inject(ChartsService);
   private currentChartInstance: ChartInstance | null = null;
