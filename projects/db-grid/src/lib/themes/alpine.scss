@@ -494,9 +494,12 @@
 }
 
 .db-grid-pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: 28px;
   height: 28px;
-  padding: 0 8px;
+  padding: 0 6px;
   border: 1px solid #ddd;
   border-radius: 4px;
   background: #fff;
@@ -504,6 +507,14 @@
   cursor: pointer;
   font-size: 13px;
   transition: all 0.2s;
+
+  svg {
+    display: block;
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+    flex-shrink: 0;
+  }
 
   &:hover:not(:disabled) {
     background: #e3f2fd;

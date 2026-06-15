@@ -553,9 +553,20 @@
     }
 
     .db-grid-pagination-controls button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       background: var(--db-grid-dark-surface);
       border: 1px solid var(--db-grid-dark-border-color);
       color: var(--db-grid-dark-text-primary);
+
+      svg {
+        display: block;
+        width: 14px;
+        height: 14px;
+        stroke: currentColor;
+        flex-shrink: 0;
+      }
 
       &:hover:not(:disabled) {
         background: var(--db-grid-dark-hover-row-bg);

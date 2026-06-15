@@ -3959,11 +3959,11 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
           显示 ${startRow}-${endRow} 条，共 ${totalRows} 条
         </span>
         <div class="db-grid-pagination-controls">
-          <button class="db-grid-pagination-btn" data-action="first" ${currentPage <= 1 ? 'disabled' : ''}>|&lt;</button>
-          <button class="db-grid-pagination-btn" data-action="prev" ${currentPage <= 1 ? 'disabled' : ''}>&lt;</button>
+          <button class="db-grid-pagination-btn" data-action="first" ${currentPage <= 1 ? 'disabled' : ''} title="首页"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg></button>
+          <button class="db-grid-pagination-btn" data-action="prev" ${currentPage <= 1 ? 'disabled' : ''} title="上一页"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
           ${this.renderPageButtons(currentPage, totalPages)}
-          <button class="db-grid-pagination-btn" data-action="next" ${currentPage >= totalPages ? 'disabled' : ''}>&gt;</button>
-          <button class="db-grid-pagination-btn" data-action="last" ${currentPage >= totalPages ? 'disabled' : ''}>&gt;|</button>
+          <button class="db-grid-pagination-btn" data-action="next" ${currentPage >= totalPages ? 'disabled' : ''} title="下一页"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+          <button class="db-grid-pagination-btn" data-action="last" ${currentPage >= totalPages ? 'disabled' : ''} title="末页"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 18 11 13 6 8"/><polyline points="13 18 18 13 13 8"/></svg></button>
         </div>
         <select class="db-grid-pagination-size">
           <option value="10" ${pageSize === 10 ? 'selected' : ''}>10条/页</option>
