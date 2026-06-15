@@ -60,3 +60,4 @@ coverage/
 *.tgz
 .angular/.npm-cache/
 package-lock.json
+.gh-pages/
