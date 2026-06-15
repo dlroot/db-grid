@@ -344,18 +344,18 @@ export class HeaderRendererService {
     // 设置交互事件
     this.setupHeaderEvents(header, colDef);
 
-    // 表头悬停时显示拖拽手柄和菜单按钮
+    // 表头悬停时增强拖拽手柄和菜单按钮的可见度
     header.addEventListener('mouseenter', () => {
       const drag = header.querySelector('.db-grid-drag-handle') as HTMLElement;
       const menu = header.querySelector('.db-grid-header-menu-button') as HTMLElement;
-      if (drag) drag.style.opacity = '0.5';
-      if (menu) menu.style.opacity = '0.5';
+      if (drag) drag.style.opacity = '0.7';
+      if (menu) menu.style.opacity = '0.8';
     });
     header.addEventListener('mouseleave', () => {
       const drag = header.querySelector('.db-grid-drag-handle') as HTMLElement;
       const menu = header.querySelector('.db-grid-header-menu-button') as HTMLElement;
-      if (drag) drag.style.opacity = '0';
-      if (menu) menu.style.opacity = '0';
+      if (drag) drag.style.opacity = '0.15';
+      if (menu) menu.style.opacity = '0.15';
     });
 
     return header;
@@ -507,6 +507,39 @@ export class HeaderRendererService {
       icon.classList.add('db-grid-sort-icon-inactive');
     }
 
+    // 排序图标可点击，hover 时有明显的交互提示
+    icon.style.cssText = `
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 3px;
+      transition: background 0.1s ease, color 0.1s ease;
+    `;
+    icon.addEventListener('mouseenter', () => {
+      icon.style.background = 'rgba(0,0,0,0.06)';
+      if (!icon.classList.contains('db-grid-sort-icon-inactive')) {
+        icon.style.color = 'var(--db-grid-accent, #2196f3)';
+      }
+    });
+    icon.addEventListener('mouseleave', () => {
+      icon.style.background = '';
+      icon.style.color = '';
+    });
+
+    // 点击排序图标直接触发排序切换
+    icon.addEventListener('click', (e: MouseEvent) => {
+      e.stopPropagation();
+      const event = new CustomEvent('headerClick', {
+        bubbles: true,
+        detail: {
+          colDef,
+          colId: colDef.colId || colDef.field || '',
+          column: colDef,
+          shiftKey: e.shiftKey,
+        },
+      });
+      icon.dispatchEvent(event);
+    });
+
     return icon;
   }
 
@@ -520,6 +553,28 @@ export class HeaderRendererService {
     if (colDef.filterActive) {
       icon.classList.add('db-grid-filter-icon-active');
     }
+
+    icon.style.cssText = `
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 3px;
+      transition: background 0.1s ease, color 0.1s ease;
+      flex-shrink: 0;
+    `;
+
+    // Hover 时增强可见度
+    icon.addEventListener('mouseenter', () => {
+      icon.style.background = 'rgba(0,0,0,0.06)';
+      if (!icon.classList.contains('db-grid-filter-icon-active')) {
+        icon.style.color = 'var(--db-grid-text-color, #333)';
+      }
+    });
+    icon.addEventListener('mouseleave', () => {
+      icon.style.background = ''; 
+      if (!icon.classList.contains('db-grid-filter-icon-active')) {
+        icon.style.color = ''; 
+      }
+    });
 
     // 绑定筛选图标点击事件
     icon.addEventListener('click', (e: MouseEvent) => {
@@ -539,7 +594,6 @@ export class HeaderRendererService {
   }
 
   /** 创建拖拽手柄 */
-  /** 创建拖拽手柄 */
   private createDragHandle(): HTMLElement {
     const handle = document.createElement('div');
     handle.className = 'db-grid-drag-handle';
@@ -547,10 +601,11 @@ export class HeaderRendererService {
     handle.title = `${this.i18n?.t('col.drag') ?? 'Drag to Move Column'}`;
     handle.style.cssText = `
       display: flex; align-items: center; justify-content: center;
-      width: 16px; height: 16px;
-      cursor: grab; font-size: 10px;
-      opacity: 0; transition: opacity 0.15s;
-      border-radius: 3px; flex-shrink: 0;
+      width: 20px; height: 20px;
+      cursor: grab; font-size: 11px;
+      opacity: 0.15; transition: opacity 0.15s ease;
+      border-radius: 4px; flex-shrink: 0;
+      color: var(--db-grid-header-text-color, #666);
     `;
     return handle;
   }
@@ -563,15 +618,16 @@ export class HeaderRendererService {
     btn.title = `${this.i18n?.t('col.menu') ?? 'Column Menu'}`;
     btn.style.cssText = `
       display: flex; align-items: center; justify-content: center;
-      width: 20px; height: 20px;
-      cursor: pointer; font-size: 11px;
-      opacity: 0; transition: opacity 0.15s;
-      border-radius: 3px; flex-shrink: 0;
+      width: 22px; height: 22px;
+      cursor: pointer; font-size: 12px;
+      opacity: 0.15; transition: opacity 0.15s ease, background 0.1s ease;
+      border-radius: 4px; flex-shrink: 0;
+      color: var(--db-grid-header-text-color, #666);
     `;
 
-    // 鼠标悬停时显示
-    btn.addEventListener('mouseenter', () => { btn.style.opacity = '1'; btn.style.background = 'rgba(0,0,0,0.06)'; });
-    btn.addEventListener('mouseleave', () => { btn.style.opacity = '0'; btn.style.background = ''; });
+    // 鼠标悬停时增强可见度
+    btn.addEventListener('mouseenter', () => { btn.style.opacity = '1'; btn.style.background = 'rgba(0,0,0,0.08)'; });
+    btn.addEventListener('mouseleave', () => { btn.style.opacity = '0.15'; btn.style.background = ''; });
 
     // 点击触发列菜单事件
     btn.addEventListener('click', (e: MouseEvent) => {
@@ -591,6 +647,19 @@ export class HeaderRendererService {
   private createResizeHandle(colDef: ColDef, colId: string): HTMLElement {
     const handle = document.createElement('div');
     handle.className = 'db-grid-resize-handle';
+
+    // 基础样式：更大的可命中区域
+    handle.style.cssText = `
+      position: absolute;
+      right: -3px;
+      top: 0;
+      bottom: 0;
+      width: 10px;
+      cursor: col-resize;
+      z-index: 3;
+      background: transparent;
+      transition: background 0.1s ease;
+    `;
 
     if (colDef.resizable !== false) {
       handle.classList.add('db-grid-resize-handle-active');
@@ -889,18 +958,26 @@ export class HeaderRendererService {
       position: 'fixed',
       pointerEvents: 'none',
       zIndex: '10000',
-      opacity: '0.7',
-      width: sourceHeader.offsetWidth + 'px',
-      height: sourceHeader.offsetHeight + 'px',
-      background: getComputedStyle(sourceHeader).background || '#f0f0f0',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-      borderRadius: '4px',
+      opacity: '0.85',
+      width: Math.min(sourceHeader.offsetWidth, 120) + 'px',
+      height: '32px',
+      background: 'var(--db-grid-accent, #2196f3)',
+      boxShadow: '0 6px 16px rgba(24,144,255,0.3)',
+      borderRadius: '6px',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      fontSize: '12px',
+      fontSize: '13px',
+      fontWeight: '600',
+      color: '#fff',
       overflow: 'hidden',
+      padding: '0 12px',
     });
+    // 提取列标题文本作为 ghost 标签
+    const labelEl = sourceHeader.querySelector('.db-grid-header-label');
+    if (labelEl) {
+      this.ghostEl.textContent = labelEl.textContent || '';  
+    }
     document.body.appendChild(this.ghostEl);
   }
 
