@@ -2986,7 +2986,22 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       const rowIndex = parseInt(rowEl.dataset['rowIndex'] || '0', 10);
       const colId = cell.dataset['colId'] || '';
       console.log('[DBGrid] onRangeMouseDown', { rowIndex, colId });
-      this.rangeSelectionService.startRangeSelection(rowIndex, colId, e);
+
+      // 无修饰键：检查是否在已有范围内，避免清空现有选中状态
+      const hasRanges = this.rangeSelectionService.getRanges().length > 0;
+      const inExistingRange = hasRanges && this.rangeSelectionService.isCellInRange(rowIndex, colId);
+      if (!e.shiftKey && !e.ctrlKey && !e.metaKey) {
+        if (hasRanges && !inExistingRange) {
+          // 点击在范围外 → 清空旧范围，开始新范围（当前行为）
+          this.rangeSelectionService.startRangeSelection(rowIndex, colId, e);
+        } else {
+          // 点击在范围内 → 只更新焦点，不清空范围
+          this.rangeSelectionService.setFocusedCell(rowIndex, colId);
+        }
+      } else {
+        // Shift / Ctrl / Meta → 正常走 startRangeSelection 逻辑
+        this.rangeSelectionService.startRangeSelection(rowIndex, colId, e);
+      }
       this.updateRangeStyles();
     } catch (err) {
       console.error('[DBGrid] onRangeMouseDown error:', err);
