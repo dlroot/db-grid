@@ -229,11 +229,11 @@ npm install jspdf jspdf-autotable`)})}exportToPdfBlob(e,t,i={}){return new Promi
           \u663E\u793A ${l}-${c} \u6761\uFF0C\u5171 ${i} \u6761
         </span>
         <div class="db-grid-pagination-controls">
-          <button class="db-grid-pagination-btn" data-action="first" ${s<=1?"disabled":""}>|&lt;</button>
-          <button class="db-grid-pagination-btn" data-action="prev" ${s<=1?"disabled":""}>&lt;</button>
+          <button class="db-grid-pagination-btn" data-action="first" ${s<=1?"disabled":""} title="\u9996\u9875"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg></button>
+          <button class="db-grid-pagination-btn" data-action="prev" ${s<=1?"disabled":""} title="\u4E0A\u4E00\u9875"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
           ${this.renderPageButtons(s,a)}
-          <button class="db-grid-pagination-btn" data-action="next" ${s>=a?"disabled":""}>&gt;</button>
-          <button class="db-grid-pagination-btn" data-action="last" ${s>=a?"disabled":""}>&gt;|</button>
+          <button class="db-grid-pagination-btn" data-action="next" ${s>=a?"disabled":""} title="\u4E0B\u4E00\u9875"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+          <button class="db-grid-pagination-btn" data-action="last" ${s>=a?"disabled":""} title="\u672B\u9875"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 18 11 13 6 8"/><polyline points="13 18 18 13 13 8"/></svg></button>
         </div>
         <select class="db-grid-pagination-size">
           <option value="10" ${o===10?"selected":""}>10\u6761/\u9875</option>
