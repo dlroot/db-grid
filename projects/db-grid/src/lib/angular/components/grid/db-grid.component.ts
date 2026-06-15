@@ -4943,22 +4943,17 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
     // 获取选中范围数据
     const ranges = this.rangeSelectionService.getRanges();
-    if (ranges.length === 0) {
-      alert('请先选择数据范围');
-      return;
+    const hasRange = ranges.length > 0;
+    let rangeData: any[][] | null = null;
+
+    if (hasRange) {
+      const rowData = this.getRowData();
+      const cols = this.columnService.getVisibleColumns();
+      const activeRange = ranges[0];
+      rangeData = this.rangeSelectionService.getRangeValues(activeRange, rowData, cols as any);
     }
 
-    const rowData = this.getRowData();
-    const cols = this.columnService.getVisibleColumns();
-    const activeRange = ranges[0];
-    const rangeData = this.rangeSelectionService.getRangeValues(activeRange, rowData, cols as any);
-
-    if (!rangeData || rangeData.length === 0) {
-      alert('选中范围内没有数据');
-      return;
-    }
-
-    // 保存当前数据
+    // 保存当前数据（可能为 null）
     this.currentChartRangeData = rangeData;
 
     // 销毁旧图表
@@ -4967,13 +4962,13 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       this.currentChartId = null;
     }
 
-    // 显示面板
+    // 先显示面板（即使没有范围也显示，图表面板内会显示占位提示）
     this.chartPanelVisible.set(true);
     this.cdr.detectChanges();
 
     // 延迟创建图表（等待面板 DOM 渲染完成）
     setTimeout(() => {
-      this.createChartInRange(rangeData, cols as any);
+      this.createChartInRange(rangeData, this.columnService.getVisibleColumns() as any);
     }, 50);
   }
 
@@ -5053,47 +5048,17 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     return [this.hexToRgba(color, alpha)];
   }
 
-  /** 创建或重新创建图表 */
-  private createChartInRange(rangeData: any[][], cols: ColDef[]): void {
-    // 查找面板中的 canvas 容器
+  /** 创建或重新创建图表（调用 chart panel 的 updateChart，处理无数据情况） */
+  private createChartInRange(rangeData: any[][] | null, cols: ColDef[]): void {
     const gridContainer = this.gridContainer?.nativeElement;
     if (!gridContainer) return;
 
-    const panel = gridContainer.querySelector('db-chart-panel');
+    const panel = gridContainer.querySelector('db-chart-panel') as any;
     if (!panel) return;
 
-    const canvasContainer = panel.querySelector('.db-chart-canvas-container') as HTMLElement;
-    if (!canvasContainer) return;
-
-    // 销毁旧图表
-    if (this.currentChartId) {
-      this.chartsService.destroyChart(this.currentChartId);
-      this.currentChartId = null;
+    // 调用 chart panel 的 updateChart 处理（支持 null 数据显示占位提示）
+    if (panel.updateChart) {
+      panel.updateChart(rangeData, cols);
     }
-
-    // 创建新图表
-    const chartType = this.currentChartType === 'area' ? 'line' : this.currentChartType;
-    this.chartsService.createChartFromRange(
-      rangeData,
-      cols,
-      chartType as any,
-      canvasContainer
-    ).then(instance => {
-      this.currentChartId = instance.id;
-      
-      // 对于面积图，设置 fill
-      if (this.currentChartType === 'area' && instance.nativeChart) {
-        const chart = instance.nativeChart;
-        if (chart.data?.datasets) {
-          chart.data.datasets.forEach((ds: any) => {
-            ds.fill = true;
-            ds.backgroundColor = this.hexToRgbaArray(ds.borderColor || '#5470c6', 0.2);
-          });
-          chart.update();
-        }
-      }
-    }).catch(err => {
-      console.error('[DBGrid] createChartFromRange error:', err);
-    });
   }
 }
