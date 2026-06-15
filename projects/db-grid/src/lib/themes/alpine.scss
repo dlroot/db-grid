@@ -117,11 +117,18 @@
       }
 
       .db-grid-sort-icon {
-        font-size: 10px;
+        display: flex; align-items: center; justify-content: center;
         color: #666;
         margin-left: 4px;
         flex-shrink: 0;
         transition: opacity 0.15s;
+
+        svg {
+          display: block;
+          width: 10px;
+          height: 10px;
+          stroke: currentColor;
+        }
 
         &.db-grid-sort-icon-inactive {
           opacity: 0.25;
@@ -130,6 +137,8 @@
 
       .db-grid-filter-icon-active {
         color: #2196f3;
+
+        svg { stroke: currentColor; }
       }
 
       // 列选中状态
@@ -364,27 +373,30 @@
     }
   }
 
-  // 排序图标增强
+  // 排序图标增强 (SVG)
   .db-grid-sort-icon {
-    font-size: 11px;
+    display: flex; align-items: center; justify-content: center;
     color: #666;
     margin-left: 4px;
     flex-shrink: 0;
     cursor: pointer;
-    padding: 2px 4px;
+    padding: 2px 3px;
     border-radius: 3px;
     transition: background 0.1s ease, color 0.15s ease;
 
-    &.db-grid-sort-icon-inactive {
-      opacity: 0.35;
-      &:hover {
-        opacity: 0.6;
-      }
+    svg {
+      display: block;
+      width: 12px;
+      height: 12px;
+      stroke: currentColor;
     }
 
-    &:hover {
-      background: rgba(0,0,0,0.06);
+    &.db-grid-sort-icon-inactive {
+      opacity: 0.35;
+      &:hover { opacity: 0.6; }
     }
+
+    &:hover { background: rgba(0,0,0,0.06); }
 
     // 已排序的图标显示蓝色高亮
     &:not(.db-grid-sort-icon-inactive) {
@@ -392,20 +404,25 @@
     }
   }
 
-  // 筛选图标增强
+  // 筛选图标增强 (SVG)
   .db-grid-filter-icon {
-    font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
     color: #999;
     margin-left: 4px;
     cursor: pointer;
-    padding: 2px 4px;
+    padding: 2px 3px;
     border-radius: 3px;
     transition: background 0.1s ease, color 0.15s ease;
     flex-shrink: 0;
 
-    &:hover {
-      background: rgba(0,0,0,0.06);
+    svg {
+      display: block;
+      width: 13px;
+      height: 13px;
+      stroke: currentColor;
     }
+
+    &:hover { background: rgba(0,0,0,0.06); }
 
     &.db-grid-filter-icon-active {
       color: var(--db-grid-accent, #2196f3);

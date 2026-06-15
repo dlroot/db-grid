@@ -489,30 +489,34 @@ export class HeaderRendererService {
   }
 
   /** 创建排序图标 */
+  /** 创建排序图标（SVG） */
   private createSortIcon(colDef: ColDef): HTMLElement {
     const icon = document.createElement('span');
     icon.className = 'db-grid-sort-icon';
 
     const sort = colDef.sort;
 
+    // SVG 图标（Lucide 风格，stroke-based）
     if (sort === 'asc') {
-      icon.innerHTML = '▲';
+      icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l7-7 7 7"/></svg>`;
       icon.title = `${this.i18n?.t('sort.ascending') ?? 'Sort Ascending'}`;
     } else if (sort === 'desc') {
-      icon.innerHTML = '▼';
+      icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l7 7 7-7"/></svg>`;
       icon.title = `${this.i18n?.t('sort.descending') ?? 'Sort Descending'}`;
     } else {
-      icon.innerHTML = '⇅';
+      icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 15l5 5 5-5"/><path d="M7 9l5-5 5 5"/></svg>`;
       icon.title = `${this.i18n?.t('sort.noSort') ?? 'Click to Sort'}`;
       icon.classList.add('db-grid-sort-icon-inactive');
     }
 
     // 排序图标可点击，hover 时有明显的交互提示
     icon.style.cssText = `
+      display: flex; align-items: center; justify-content: center;
       cursor: pointer;
-      padding: 2px 4px;
+      padding: 2px 3px;
       border-radius: 3px;
       transition: background 0.1s ease, color 0.1s ease;
+      line-height: 1;
     `;
     icon.addEventListener('mouseenter', () => {
       icon.style.background = 'rgba(0,0,0,0.06)';
@@ -543,11 +547,12 @@ export class HeaderRendererService {
     return icon;
   }
 
-  /** 创建筛选图标 */
+  /** 创建筛选图标（SVG 漏斗） */
   private createFilterIcon(colDef: ColDef): HTMLElement {
     const icon = document.createElement('span');
     icon.className = 'db-grid-filter-icon';
-    icon.innerHTML = '⫴';
+    // Lucide funnel icon
+    icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>`;
     icon.title = `${this.i18n?.t('filter.click') ?? 'Click to Filter'}`;
 
     if (colDef.filterActive) {
@@ -555,11 +560,13 @@ export class HeaderRendererService {
     }
 
     icon.style.cssText = `
+      display: flex; align-items: center; justify-content: center;
       cursor: pointer;
-      padding: 2px 4px;
+      padding: 2px 3px;
       border-radius: 3px;
       transition: background 0.1s ease, color 0.1s ease;
       flex-shrink: 0;
+      line-height: 1;
     `;
 
     // Hover 时增强可见度
@@ -593,11 +600,12 @@ export class HeaderRendererService {
     return icon;
   }
 
-  /** 创建拖拽手柄 */
+  /** 创建拖拽手柄（SVG 握柄图标） */
   private createDragHandle(): HTMLElement {
     const handle = document.createElement('div');
     handle.className = 'db-grid-drag-handle';
-    handle.innerHTML = '⠿';
+    // Lucide grip-vertical icon: 两条竖线，每条三圆点
+    handle.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="6" r="1.2" fill="currentColor" stroke="none"/><circle cx="9" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="9" cy="18" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="6" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="18" r="1.2" fill="currentColor" stroke="none"/></svg>`;
     handle.title = `${this.i18n?.t('col.drag') ?? 'Drag to Move Column'}`;
     handle.style.cssText = `
       display: flex; align-items: center; justify-content: center;
@@ -605,7 +613,7 @@ export class HeaderRendererService {
       cursor: grab; font-size: 11px;
       opacity: 0.15; transition: opacity 0.15s ease;
       border-radius: 4px; flex-shrink: 0;
-      color: var(--db-grid-header-text-color, #666);
+      color: var(--db-grid-header-text-color, #999);
     `;
     return handle;
   }
@@ -614,7 +622,8 @@ export class HeaderRendererService {
   private createMenuButton(colDef: ColDef, colId: string): HTMLElement {
     const btn = document.createElement('div');
     btn.className = 'db-grid-header-menu-button';
-    btn.innerHTML = '☰';
+    // Lucide ellipsis-vertical (三点菜单)
+    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.2" fill="currentColor" stroke="none"/></svg>`;
     btn.title = `${this.i18n?.t('col.menu') ?? 'Column Menu'}`;
     btn.style.cssText = `
       display: flex; align-items: center; justify-content: center;
@@ -809,15 +818,15 @@ export class HeaderRendererService {
         sortIcon.classList.remove('db-grid-sort-icon-inactive');
 
         if (updates.sort === 'asc') {
-          sortIcon.innerHTML = '▲';
+          sortIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l7-7 7 7"/></svg>`;
           headerCell.classList.add('db-grid-header-sorted-asc');
           headerCell.classList.remove('db-grid-header-sorted-desc');
         } else if (updates.sort === 'desc') {
-          sortIcon.innerHTML = '▼';
+          sortIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l7 7 7-7"/></svg>`;
           headerCell.classList.add('db-grid-header-sorted-desc');
           headerCell.classList.remove('db-grid-header-sorted-asc');
         } else {
-          sortIcon.innerHTML = '⇅';
+          sortIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 15l5 5 5-5"/><path d="M7 9l5-5 5 5"/></svg>`;
           sortIcon.classList.add('db-grid-sort-icon-inactive');
           headerCell.classList.remove('db-grid-header-sorted-asc', 'db-grid-header-sorted-desc');
         }

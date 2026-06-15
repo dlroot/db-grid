@@ -147,10 +147,17 @@
       }
 
       .db-grid-sort-icon {
-        font-size: 14px;
+        display: flex; align-items: center; justify-content: center;
         color: var(--db-grid-dark-text-secondary);
         margin-left: 6px;
         transition: transform 0.2s ease, color 0.2s ease;
+
+        svg {
+          display: block;
+          width: 14px;
+          height: 14px;
+          stroke: currentColor;
+        }
 
         &.db-grid-sort-icon-inactive {
           opacity: 0.4;
@@ -159,6 +166,8 @@
 
       .db-grid-filter-icon-active {
         color: var(--db-grid-dark-primary);
+
+        svg { stroke: currentColor; }
       }
 
       // 列选中状态
@@ -412,27 +421,30 @@
     }
   }
 
-  // 排序图标增强
+  // 排序图标增强 (SVG)
   .db-grid-sort-icon {
-    font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
     color: var(--db-grid-dark-text-secondary);
     margin-left: 6px;
     flex-shrink: 0;
     cursor: pointer;
-    padding: 2px 4px;
+    padding: 2px 3px;
     border-radius: 3px;
     transition: background 0.1s ease, color 0.15s ease;
 
-    &.db-grid-sort-icon-inactive {
-      opacity: 0.4;
-      &:hover {
-        opacity: 0.6;
-      }
+    svg {
+      display: block;
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
     }
 
-    &:hover {
-      background: rgba(255, 255, 255, 0.05);
+    &.db-grid-sort-icon-inactive {
+      opacity: 0.4;
+      &:hover { opacity: 0.6; }
     }
+
+    &:hover { background: rgba(255,255,255,0.05); }
 
     // 已排序图标紫色高亮
     &:not(.db-grid-sort-icon-inactive) {
@@ -440,20 +452,25 @@
     }
   }
 
-  // 筛选图标增强
+  // 筛选图标增强 (SVG)
   .db-grid-filter-icon {
-    font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
     color: var(--db-grid-dark-text-secondary);
     margin-left: 4px;
     cursor: pointer;
-    padding: 2px 4px;
+    padding: 2px 3px;
     border-radius: 3px;
     transition: background 0.1s ease, color 0.15s ease;
     flex-shrink: 0;
 
-    &:hover {
-      background: rgba(255, 255, 255, 0.05);
+    svg {
+      display: block;
+      width: 13px;
+      height: 13px;
+      stroke: currentColor;
     }
+
+    &:hover { background: rgba(255,255,255,0.05); }
 
     &.db-grid-filter-icon-active {
       color: var(--db-grid-dark-primary);
