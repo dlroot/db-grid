@@ -2667,6 +2667,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   showCellContextMenu(event: MouseEvent, context: { rowData?: any; rowIndex?: number; colDef?: any }): void {
     if (!this.enableContextMenu) return;
     event.preventDefault();
+    event.stopPropagation(); // 阻止冒泡，避免影响区域选中状态
 
     const gridRect = this.gridContainer.nativeElement.getBoundingClientRect();
     const x = event.clientX - gridRect.left;
@@ -2975,6 +2976,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   /** 区域选择 mousedown：开始新的区域选择 */
   private onRangeMouseDown = (e: MouseEvent): void => {
+    // 右键不触发区域拖选，避免清空已有选中状态
+    if (e.button !== 0) return;
     try {
       const cell = (e.target as HTMLElement).closest('.db-grid-cell') as HTMLElement;
       if (!cell) return;
