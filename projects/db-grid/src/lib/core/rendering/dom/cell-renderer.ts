@@ -12,6 +12,7 @@ import { Injectable, ComponentRef, Injector } from '@angular/core';
 import { ColDef, CellRendererParams, ValueFormatterParams, CellStyle, RowNode, ChartCellRendererConfig, ICellRendererAngularComp, CellRendererAngularParams } from '../../models';
 import { ColumnService } from '../../services/column.service';
 import { ChartsService } from '../../services/charts.service';
+import { SparklineService, SparklineType } from '../../services/sparkline.service';
 import { AngularComponentRendererService, AngularCompUtils } from '../../services/angular-component-renderer.service';
 import { AngularComponentWrapper } from '../../../angular/services/angular-component-wrapper.service';
 
@@ -43,6 +44,7 @@ export class CellRendererService {
   constructor(
     private columnService: ColumnService, 
     private chartsService?: ChartsService,
+    private sparklineService?: SparklineService,
     private injector?: Injector
   ) {
     // 初始化 Angular 组件渲染器服务
@@ -292,6 +294,12 @@ export class CellRendererService {
     // 如果有图表单元格渲染器
     if (colDef.chartCellRenderer) {
       this.renderChartCell(container, colDef.chartCellRenderer, data);
+      return;
+    }
+
+    // 如果是 sparkline 迷你图渲染器
+    if (colDef.cellRenderer === 'sparkline' || (colDef as any).sparklineType) {
+      this.renderSparklineCell(container, colDef, value, data);
       return;
     }
 
@@ -1038,5 +1046,57 @@ export class CellRendererService {
       'eye': `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`,
     };
     return icons[name] || icons['zap'];
+  }
+
+  /** 渲染 sparkline 迷你图单元格 */
+  private renderSparklineCell(container: HTMLElement, colDef: ColDef, value: any, data: any): void {
+    const service = this.sparklineService || new SparklineService();
+
+    // 获取数据：优先用 value（数组），否则用 colDef.sparklineDataField 从 data 取
+    let sparkData: number[] = [];
+    if (Array.isArray(value)) {
+      sparkData = value;
+    } else if ((colDef as any).sparklineDataField && data) {
+      sparkData = data[(colDef as any).sparklineDataField];
+    } else if (typeof value === 'string') {
+      // 尝试解析逗号分隔的数字
+      sparkData = value.split(',').map(Number).filter(n => !isNaN(n));
+    }
+
+    if (!sparkData || sparkData.length === 0) {
+      container.textContent = value ?? '';
+      return;
+    }
+
+    // 确定类型
+    let sparkType: SparklineType = 'line';
+    if ((colDef as any).sparklineType) {
+      const t = String((colDef as any).sparklineType).toLowerCase();
+      if (t === 'area') sparkType = 'area';
+      else if (t === 'bar') sparkType = 'bar';
+    }
+
+    const color = (colDef as any).sparklineColor || '#2196f3';
+    const width = (colDef as any).sparklineWidth || (colDef.width ? colDef.width - 20 : 120);
+    const height = (colDef as any).sparklineHeight || 28;
+
+    // 创建 canvas 容器
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'display:flex;align-items:center;justify-content:center;width:100%;height:100%;';
+    container.appendChild(wrapper);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    canvas.style.cssText = `display:block;width:${width}px;height:${height}px;`;
+    wrapper.appendChild(canvas);
+
+    service.render(canvas, {
+      type: sparkType,
+      data: sparkData,
+      color,
+      width,
+      height,
+    });
   }
 }

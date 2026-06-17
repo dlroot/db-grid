@@ -115,6 +115,7 @@ import {
   RowRendererService,
   HeaderRendererService,
 } from '../../../core/rendering';
+import { SparklineService } from '../../../core/services/sparkline.service';
 
 @Component({
   selector: 'db-grid',
@@ -973,6 +974,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   private pdfExportService: PdfExportService;
   private cellSpanService: CellSpanService;
   private chartsService: ChartsService;
+  private sparklineService: SparklineService;
   private cellRenderer: CellRendererService;
   private rowRenderer: RowRendererService;
   private headerRenderer: HeaderRendererService;
@@ -1092,7 +1094,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.pdfExportService = new PdfExportService();
     this.cellSpanService = new CellSpanService();
     this.chartsService = new ChartsService();
-    this.cellRenderer = new CellRendererService(this.columnService);
+    this.sparklineService = new SparklineService();
+    this.cellRenderer = new CellRendererService(this.columnService, this.chartsService, this.sparklineService);
     this.rowRenderer = new RowRendererService(this.cellRenderer, this.columnService);
     
     // 设置树形切换回调
