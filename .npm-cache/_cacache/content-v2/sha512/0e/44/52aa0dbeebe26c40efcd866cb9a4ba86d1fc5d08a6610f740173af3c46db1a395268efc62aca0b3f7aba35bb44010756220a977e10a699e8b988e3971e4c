@@ -1,0 +1,1002 @@
+{
+  "name": "he",
+  "dist-tags": {
+    "latest": "1.2.0"
+  },
+  "versions": {
+    "0.1.0": {
+      "name": "he",
+      "version": "0.1.0",
+      "description": "A robust HTML entities encoder/decoder with full Unicode support.",
+      "dist": {
+        "shasum": "ff047a4c4a91ee6be2c1156f177a46e269a35908",
+        "tarball": "http://mirrors.tencent.com/npm/he/-/he-0.1.0.tgz",
+        "integrity": "sha512-QO9z3/LsiBvOxKkY04Ji2vkUxO+OnFN3PlHoGgdZ6cjmFQnUXA6Dwz0Gqvd6prVLqvWO0JTpRHSsUOeyRXbhVQ==",
+        "signatures": [
+          {
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA",
+            "sig": "MEYCIQDoLRsQMqr8eO8HGhUACXnItMkizLyrL03wRCgV2cgC2wIhAMIAdMmWkxFRFT9nyb+O3mfCDn4hSGwKKk9NOI46FuiM"
+          }
+        ]
+      },
+      "directories": {
+        "test": "tests"
+      },
+      "dependencies": {},
+      "devDependencies": {
+        "grunt": "~0.4.1",
+        "grunt-shell": "~0.2.2",
+        "grunt-template": "~0.1.0",
+        "istanbul": "~0.1.37",
+        "qunit-clib": "~1.3.0",
+        "qunitjs": "~1.11.0",
+        "regenerate": "~0.5.1",
+        "requirejs": "~2.1.6",
+        "lodash": "~1.3.1",
+        "string-escape": "~0.1.6",
+        "grunt-curl": "~1.1.1"
+      },
+      "hasInstallScript": false
+    },
+    "0.1.1": {
+      "name": "he",
+      "version": "0.1.1",
+      "description": "A robust HTML entities encoder/decoder with full Unicode support.",
+      "dist": {
+        "shasum": "0938123417e6ada2be2f2b1bb4e3c94313bd1b62",
+        "tarball": "http://mirrors.tencent.com/npm/he/-/he-0.1.1.tgz",
+        "integrity": "sha512-0tl5+djrbtBgw4YU/Zm3O1fq2XistRgrN0mHFUJwU8PIjht9tGgAndx/QQRY7ZDo7OHX9sqLz18vpvUWydnIkg==",
+        "signatures": [
+          {
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA",
+            "sig": "MEUCIQDZyCsWqJuJPkL9XLSVvnCGbHeIMxZUKKyrAJ705wL3VAIgby5iKmLBnFD5kW/Da/AVG0IPQK6/eYKAvEL1kZkHCB8="
+          }
+        ]
+      },
+      "directories": {
+        "test": "tests"
+      },
+      "dependencies": {},
+      "devDependencies": {
+        "grunt": "~0.4.1",
+        "grunt-shell": "~0.2.2",
+        "grunt-template": "~0.1.0",
+        "istanbul": "~0.1.37",
+        "qunit-clib": "~1.3.0",
+        "qunitjs": "~1.11.0",
+        "regenerate": "~0.5.1",
+        "requirejs": "~2.1.6",
+        "lodash": "~1.3.1",
+        "string-escape": "~0.1.6",
+        "grunt-curl": "~1.1.1"
+      },
+      "hasInstallScript": false
+    },
+    "0.1.2": {
+      "name": "he",
+      "version": "0.1.2",
+      "description": "A robust HTML entities encoder/decoder with full Unicode support.",
+      "dist": {
+        "shasum": "031f56851e950bddb110dd958f8592b41acc5ba6",
+        "tarball": "http://mirrors.tencent.com/npm/he/-/he-0.1.2.tgz",
+        "integrity": "sha512-LCorvfowaDPjKXcuHyLhju7oxOSGWNnUUmVcx7l8HoWXvYHAC2SKlmSlFiUDlCxKuTF6iyCfhw178TFiL/jR8A==",
+        "signatures": [
+          {
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA",
+            "sig": "MEQCIANmBGWYxxcqBUcbv8SD8qc0lxdbMfnpxpW4XUoE0ei4AiBMT/8zIFl/ffnyjLUV9TE5OpymAKP2+XCvM/RQILerWQ=="
+          }
+        ]
+      },
+      "directories": {
+        "test": "tests"
+      },
+      "dependencies": {},
+      "devDependencies": {
+        "grunt": "~0.4.1",
+        "grunt-curl": "~1.1.1",
+        "grunt-shell": "~0.3.0",
+        "grunt-template": "~0.1.0",
+        "istanbul": "~0.1.37",
+        "lodash": "~1.3.1",
+        "qunit-clib": "~1.3.0",
+        "qunitjs": "~1.11.0",
+        "regenerate": "~0.5.2",
+        "requirejs": "~2.1.6",
+        "string-escape": "~0.1.6"
+      },
+      "hasInstallScript": false
+    },
+    "0.1.3": {
+      "name": "he",
+      "version": "0.1.3",
+      "description": "A robust HTML entities encoder/decoder with full Unicode support.",
+      "dist": {
+        "shasum": "879aeb954f0846116e58d5694366d95dab6df495",
+        "tarball": "http://mirrors.tencent.com/npm/he/-/he-0.1.3.tgz",
+        "integrity": "sha512-x64go3uJA6sti7LV39GgIcluVrHBvWiwr8vorIwOxYpzNwqL2OhIidofJBKYPOZXoD6aNaXP1L9KMkwhB/XfyQ==",
+        "signatures": [
+          {
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA",
+            "sig": "MEUCIEqKjaaAYKDk7n7ew0Q3R4dDFqfnoKsaFRGzg/tcVMguAiEA/DyOrNc8M4JhRPgpD8dfIx4sHqBoTkpnD+ycmKwgbBA="
+          }
+        ]
+      },
+      "directories": {
+        "test": "tests"
+      },
+      "dependencies": {},
+      "devDependencies": {
+        "grunt": "~0.4.1",
+        "grunt-curl": "~1.1.1",
+        "grunt-shell": "~0.3.0",
+        "grunt-template": "~0.1.0",
+        "istanbul": "~0.1.37",
+        "lodash": "~1.3.1",
+        "qunit-clib": "~1.3.0",
+        "qunitjs": "~1.11.0",
+        "regenerate": "~0.5.2",
+        "requirejs": "~2.1.6",
+        "string-escape": "~0.1.6"
+      },
+      "hasInstallScript": false
+    },
+    "0.1.4": {
+      "name": "he",
+      "version": "0.1.4",
+      "description": "A robust HTML entities encoder/decoder with full Unicode support.",
+      "dist": {
+        "shasum": "b772cb498842d6f6918b0e56079a6df27d966703",
+        "tarball": "http://mirrors.tencent.com/npm/he/-/he-0.1.4.tgz",
+        "integrity": "sha512-5ofbaxInK5DtOvG0R9FQTEuYDVBudiULdezzRE+1YtQpyttmfFwii0VFaeUGJDiKif6jPLAhB4oQUUPVxvDX8g==",
+        "signatures": [
+          {
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA",
+            "sig": "MEUCIQC+XEPDKy1OprO+gqjo3IpxsMLd/xNBKSlbiWYyX1hRtwIgJr/bbXcdC6RUoIZoQLg+MGMou4Si+bF8rAxFinhAAaY="
+          }
+        ]
+      },
+      "directories": {
+        "test": "tests"
+      },
+      "dependencies": {},
+      "devDependencies": {
+        "grunt": "~0.4.1",
+        "grunt-curl": "~1.1.1",
+        "grunt-shell": "~0.3.0",
+        "grunt-template": "~0.1.0",
+        "istanbul": "~0.1.37",
+        "lodash": "~1.3.1",
+        "qunit-clib": "~1.3.0",
+        "qunitjs": "~1.11.0",
+        "regenerate": "~0.5.2",
+        "requirejs": "~2.1.6",
+        "string-escape": "~0.1.6"
+      },
+      "hasInstallScript": false
+    },
+    "0.1.5": {
+      "name": "he",
+      "version": "0.1.5",
+      "description": "A robust HTML entities encoder/decoder with full Unicode support.",
+      "dist": {
+        "shasum": "3b0e16129145e644589e62eec823ff6818fc4645",
+        "tarball": "http://mirrors.tencent.com/npm/he/-/he-0.1.5.tgz",
+        "integrity": "sha512-YuKl1fGB89Kz3LqBks+t5X4VlKvrASXMT8/sXIVU2Cze/tEu6RlBLSUQjgPXvwxS/X9hbqDpxuhv3dbBxk6qGQ==",
+        "signatures": [
+          {
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA",
+            "sig": "MEUCIQCyL9UlBD9fIGF5MFjEiNEnrZ3+xYNIU0XYbT+cO/4ucgIgQuIftCkAJIJQsQEhATk4FWdpHKAKKX9jd0JdOs/YAZQ="
+          }
+        ]
+      },
+      "directories": {
+        "test": "tests"
+      },
+      "dependencies": {},
+      "devDependencies": {
+        "grunt": "~0.4.1",
+        "grunt-curl": "~1.1.1",
+        "grunt-shell": "~0.3.0",
+        "grunt-template": "~0.1.0",
+        "istanbul": "~0.1.37",
+        "lodash": "~1.3.1",
+        "qunit-clib": "~1.3.0",
+        "qunitjs": "~1.11.0",
+        "regenerate": "~0.5.2",
+        "requirejs": "~2.1.6",
+        "string-escape": "~0.1.6"
+      },
+      "hasInstallScript": false
+    },
+    "0.1.6": {
+      "name": "he",
+      "version": "0.1.6",
+      "description": "A robust HTML entities encoder/decoder with full Unicode support.",
+      "dist": {
+        "shasum": "69b020bd6ab6196b42562b1c2192887ece2815f9",
+        "tarball": "http://mirrors.tencent.com/npm/he/-/he-0.1.6.tgz",
+        "integrity": "sha512-tt+1Lc26fxO+u1dQC/w6jHIwsuwviNxcwCCI74UUzgpGwaYy2pCx4ttQKjwOIPSB/+A70eqxyW4IrvrSGSt6mA==",
+        "signatures": [
+          {
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA",
+            "sig": "MEYCIQCSTjuvgxgGjQmkoFof8WR46wd/xn1qC5n6S2X9UhRJWQIhAJKYuH021S81Y88RIkAN+nOWH8mKzxj/Ymk10ULVRzL1"
+          }
+        ]
+      },
+      "directories": {
+        "test": "tests"
+      },
+      "dependencies": {},
+      "devDependencies": {
+        "grunt": "~0.4.1",
+        "grunt-curl": "~1.1.1",
+        "grunt-shell": "~0.3.0",
+        "grunt-template": "~0.1.0",
+        "istanbul": "~0.1.37",
+        "lodash": "~1.3.1",
+        "qunit-clib": "~1.3.0",
+        "qunitjs": "~1.11.0",
+        "regenerate": "~0.5.2",
+        "requirejs": "~2.1.6",
+        "string-escape": "~0.1.6"
+      },
+      "hasInstallScript": false
+    },
+    "0.1.7": {
+      "name": "he",
+      "version": "0.1.7",
+      "description": "A robust HTML entities encoder/decoder with full Unicode support.",
+      "dist": {
+        "shasum": "c5e17c7c61a8a668b249279a9ffe30ca14f3bf64",
+        "tarball": "http://mirrors.tencent.com/npm/he/-/he-0.1.7.tgz",
+        "integrity": "sha512-gZDqPRGZp/MabWo832qO0kWZVCuIXs3GaU9fqbSFAlhilZtyPoMphUHWSHevdBxibK/iHcQAH5FHEEnu00kkBQ==",
+        "signatures": [
+          {
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA",
+            "sig": "MEQCIFewE3OmMZg7v0ExqYImO4VvvB2qHwIOuru+FHxXoZvJAiBMExuLAA9tN6Ppl/Mz55XxRwGcQ8c2km0I+T39T0tPqw=="
+          }
+        ]
+      },
+      "directories": {
+        "test": "tests"
+      },
+      "dependencies": {},
+      "devDependencies": {
+        "grunt": "~0.4.1",
+        "grunt-curl": "~1.1.1",
+        "grunt-shell": "~0.3.0",
+        "grunt-template": "~0.1.0",
+        "istanbul": "~0.1.37",
+        "lodash": "~1.3.1",
+        "qunit-clib": "~1.3.0",
+        "qunitjs": "~1.11.0",
+        "regenerate": "~0.5.2",
+        "requirejs": "~2.1.6",
+        "string-escape": "~0.1.6"
+      },
+      "hasInstallScript": false
+    },
+    "0.1.8": {
+      "name": "he",
+      "version": "0.1.8",
+      "description": "A robust HTML entities encoder/decoder with full Unicode support.",
+      "dist": {
+        "shasum": "4350e7c9506269928f9d84c21a2d49f1ab49d797",
+        "tarball": "http://mirrors.tencent.com/npm/he/-/he-0.1.8.tgz",
+        "integrity": "sha512-Z0e9FEHN2cEULNXAqZCNX+cLIW/pAliisLmgvCOcxGLcBHfVzvTRh62HOQljjzd2GqCjS4BIuobtVgQvqKXM6Q==",
+        "signatures": [
+          {
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA",
+            "sig": "MEQCIBGe9WofZgZpi42TIqWm5mrT29BYf8Zlh0GN0s/hGYe7AiBYTq2pmNJCPRkdyH8Y5XJ7qI/NV6nBMIx4Qkjx4ADIEQ=="
+          }
+        ]
+      },
+      "directories": {
+        "test": "tests"
+      },
+      "dependencies": {},
+      "devDependencies": {
+        "grunt": "~0.4.1",
+        "grunt-curl": "~1.1.1",
+        "grunt-shell": "~0.3.0",
+        "grunt-template": "~0.1.0",
+        "istanbul": "~0.1.37",
+        "lodash": "~1.3.1",
+        "qunit-clib": "~1.3.0",
+        "qunitjs": "~1.11.0",
+        "regenerate": "~0.5.2",
+        "requirejs": "~2.1.6",
+        "string-escape": "~0.1.6"
+      },
+      "hasInstallScript": false
+    },
+    "0.1.9": {
+      "name": "he",
+      "version": "0.1.9",
+      "description": "A robust HTML entities encoder/decoder with full Unicode support.",
+      "dist": {
+        "shasum": "0354548643682c12752c63bc39e7bbbf9df096bf",
+        "tarball": "http://mirrors.tencent.com/npm/he/-/he-0.1.9.tgz",
+        "integrity": "sha512-SBMdmNO2vx9+gFPSBCDTt4H6lDdNEEeg6mKphRj6b8yc6g1E40v6UsIdyzs8o3iHbtv6N6NFFJfp5yZQfxi/eA==",
+        "signatures": [
+          {
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA",
+            "sig": "MEQCIBokflLNqOaHmUGIuJH+uvF4k7lW1yc6CKTKEToE9SVJAiAdc/O7SRqdyB/24d0oQI74jcX7dLTNMIFL1WnI5R10jQ=="
+          }
+        ]
+      },
+      "directories": {
+        "test": "tests"
+      },
+      "dependencies": {},
+      "devDependencies": {
+        "grunt": "~0.4.1",
+        "grunt-shell": "~0.3.0",
+        "grunt-template": "~0.1.0",
+        "istanbul": "~0.1.37",
+        "lodash": "~1.3.1",
+        "qunit-clib": "~1.3.0",
+        "qunitjs": "~1.11.0",
+        "regenerate": "~0.5.2",
+        "requirejs": "~2.1.6",
+        "string-escape": "~0.1.6"
+      },
+      "hasInstallScript": false
+    },
+    "0.1.10": {
+      "name": "he",
+      "version": "0.1.10",
+      "description": "A robust HTML entities encoder/decoder with full Unicode support.",
+      "dist": {
+        "shasum": "183ecc8f277a2a577f5b2b0c2a08eb3fa908cb1f",
+        "tarball": "http://mirrors.tencent.com/npm/he/-/he-0.1.10.tgz",
+        "integrity": "sha512-Rxhekhh5mDW37xKiQXbXPMuUG8NreCn6u3BqCMfLpnXGDyCd50GIuU4fXIZWaQOCS4AkH5APkkzrsdRgnn/dvQ==",
+        "signatures": [
+          {
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA",
+            "sig": "MEQCICp3be82djKfUfHZjEgAdrR9rmn2bPdQyCzQxUqFWpidAiA2EEfXKQXhNEOydjmxAUDEQgLPT75MeGyK+XHgZRQvdQ=="
+          }
+        ]
+      },
+      "directories": {
+        "test": "tests"
+      },
+      "dependencies": {},
+      "devDependencies": {
+        "grunt": "~0.4.1",
+        "grunt-shell": "~0.3.0",
+        "grunt-template": "~0.1.0",
+        "istanbul": "~0.1.37",
+        "lodash": "~1.3.1",
+        "qunit-clib": "~1.3.0",
+        "qunitjs": "~1.11.0",
+        "regenerate": "~0.5.2",
+        "requirejs": "~2.1.6",
+        "string-escape": "~0.1.6"
+      },
+      "hasInstallScript": false
+    },
+    "0.2.0": {
+      "name": "he",
+      "version": "0.2.0",
+      "description": "A robust HTML entities encoder/decoder with full Unicode support.",
+      "dist": {
+        "shasum": "fe1509700c35d4115b715ed80ebd2f5fbbf7d90b",
+        "tarball": "http://mirrors.tencent.com/npm/he/-/he-0.2.0.tgz",
+        "integrity": "sha512-2nWQIdQRU2dFzZaSRamQImIDk2NDt2W+fJy644SH1reK7WJl5GFKYoPmNX3AZOjId7B01wGRJYO2QQhCMN8K+Q==",
+        "signatures": [
+          {
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA",
+            "sig": "MEYCIQDG76rWJ7ZvCXvUvLkB/Cf7vFpsmFOBTD8q2wNthjUWwAIhAJSqvhBimvIfkJ0tb5IQkMgipagx/mAjtJ9sbn4i3ObI"
+          }
+        ]
+      },
+      "directories": {
+        "test": "tests"
+      },
+      "dependencies": {},
+      "devDependencies": {
+        "grunt": "~0.4.1",
+        "grunt-shell": "~0.3.0",
+        "grunt-template": "~0.1.0",
+        "istanbul": "~0.1.37",
+        "lodash": "~1.3.1",
+        "qunit-clib": "~1.3.0",
+        "qunitjs": "~1.11.0",
+        "regenerate": "~0.5.2",
+        "requirejs": "~2.1.6",
+        "string-escape": "~0.1.6"
+      },
+      "hasInstallScript": false
+    },
+    "0.2.1": {
+      "name": "he",
+      "version": "0.2.1",
+      "description": "A robust HTML entities encoder/decoder with full Unicode support.",
+      "dist": {
+        "shasum": "6e97081ab21e8ba6df01d9070b648d6fe7a5da6f",
+        "tarball": "http://mirrors.tencent.com/npm/he/-/he-0.2.1.tgz",
+        "integrity": "sha512-8hKGt6oPq+Nv502kSmk6LqXXcGkRcr4DPNvVgOLdfYn4p6eEXj0dzmOhmlgcnHzc8WpJI229XTZ/igT42mFGwA==",
+        "signatures": [
+          {
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA",
+            "sig": "MEYCIQD6eKKn6vtRVWzD8DUteykg1Y2NmxubjSGvd+RDqjCHawIhAPTB7TvdSHfwmd3HivuU7+cvRQSRdXIshD8JxoaNq/jx"
+          }
+        ]
+      },
+      "directories": {
+        "test": "tests"
+      },
+      "dependencies": {},
+      "devDependencies": {
+        "grunt": "~0.4.1",
+        "grunt-shell": "~0.3.0",
+        "grunt-template": "~0.2.0",
+        "istanbul": "~0.1.37",
+        "lodash": "~1.3.1",
+        "qunit-clib": "~1.3.0",
+        "qunitjs": "~1.11.0",
+        "regenerate": "~0.5.2",
+        "requirejs": "~2.1.6",
+        "string-escape": "~0.2.2"
+      },
+      "hasInstallScript": false
+    },
+    "0.3.0": {
+      "name": "he",
+      "version": "0.3.0",
+      "description": "A robust HTML entities encoder/decoder with full Unicode support.",
+      "dist": {
+        "shasum": "acd9b93774b6c85af4da8aa49f304ef462005aff",
+        "tarball": "http://mirrors.tencent.com/npm/he/-/he-0.3.0.tgz",
+        "integrity": "sha512-RdWJbHKHaDVm6fY/xGs4nLEM6MQ1SMsQsPBFxPwA+gfYPF6qPmR+GLhW6QDSoujbPYTf8/7nthIrstdcSubwQA==",
+        "signatures": [
+          {
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA",
+            "sig": "MEUCIBjpU+nxBhek1AYQF0YZ5E9SIw0IoClwQdVwVBLwLWxqAiEA6IUmNRaVSVJtPAiOiYyS9oLMCnNGwmTRTZaEIvBEQ6k="
+          }
+        ]
+      },
+      "directories": {
+        "test": "tests"
+      },
+      "dependencies": {},
+      "devDependencies": {
+        "grunt": "~0.4.1",
+        "grunt-shell": "~0.3.0",
+        "grunt-template": "~0.2.0",
+        "istanbul": "~0.1.37",
+        "lodash": "~1.3.1",
+        "qunit-clib": "~1.3.0",
+        "qunitjs": "~1.11.0",
+        "regenerate": "~0.5.2",
+        "requirejs": "~2.1.6",
+        "string-escape": "~0.2.2"
+      },
+      "hasInstallScript": false
+    },
+    "0.3.1": {
+      "name": "he",
+      "version": "0.3.1",
+      "description": "A robust HTML entities encoder/decoder with full Unicode support.",
+      "dist": {
+        "shasum": "2a558a6dd2d06163351ba535868051a32749751e",
+        "tarball": "http://mirrors.tencent.com/npm/he/-/he-0.3.1.tgz",
+        "integrity": "sha512-9LzJaVahUSokivRoFkC8Bhy/z9ZFI/wQ8oSy6pXQNwllV86G7KgVDinYFoA1I/ZwWtd9jU3U2whlxGzl14oJSA==",
+        "signatures": [
+          {
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA",
+            "sig": "MEQCIAnRpwTsj71IRkTiB/+fg0+GNdls8yueTAEXVNo5gcEdAiAIZW6MMEFrP2MgsiZyHcfzgf/M7K8aQdLKCLz0tSrIcg=="
+          }
+        ]
+      },
+      "directories": {
+        "test": "tests"
+      },
+      "dependencies": {},
+      "devDependencies": {
+        "grunt": "~0.4.1",
+        "grunt-shell": "~0.3.0",
+        "grunt-template": "~0.2.0",
+        "istanbul": "~0.1.37",
+        "lodash": "~1.3.1",
+        "qunit-clib": "~1.3.0",
+        "qunitjs": "~1.11.0",
+        "regenerate": "~0.5.2",
+        "requirejs": "~2.1.6",
+        "string-escape": "~0.2.2"
+      },
+      "hasInstallScript": false
+    },
+    "0.3.2": {
+      "name": "he",
+      "version": "0.3.2",
+      "description": "A robust HTML entities encoder/decoder with full Unicode support.",
+      "bin": {
+        "he": "bin/he"
+      },
+      "dist": {
+        "shasum": "928e2df76f564a60d51b36825a11c47d5a9e74e2",
+        "tarball": "http://mirrors.tencent.com/npm/he/-/he-0.3.2.tgz",
+        "integrity": "sha512-PWoKTYZ8Xs9rPwmHhHJkvBWJ7sfF1xU6YHohzmmgR8VloqSNQ2Y/fQ/RKdFj/QT/JDxVcgd1mBT6tlBulFPlRQ==",
+        "signatures": [
+          {
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA",
+            "sig": "MEUCIGfLTxIIdaZnhy1BmWXxpWBjs46VFRW07U99ozrw/REQAiEAspuXZjJYdIUFETiiADWv63RS2XKYuqxPuf+IR6D450Y="
+          }
+        ]
+      },
+      "directories": {
+        "test": "tests"
+      },
+      "dependencies": {},
+      "devDependencies": {
+        "grunt": "~0.4.1",
+        "grunt-shell": "~0.3.1",
+        "grunt-template": "~0.2.0",
+        "istanbul": "~0.1.42",
+        "jsesc": "~0.3.0",
+        "lodash": "~1.3.1",
+        "qunit-clib": "~1.3.0",
+        "qunitjs": "~1.11.0",
+        "regenerate": "~0.5.2",
+        "requirejs": "~2.1.8"
+      },
+      "hasInstallScript": false
+    },
+    "0.3.3": {
+      "name": "he",
+      "version": "0.3.3",
+      "description": "A robust HTML entities encoder/decoder with full Unicode support.",
+      "bin": {
+        "he": "bin/he"
+      },
+      "dist": {
+        "shasum": "0aef2ba87ec9ce434c0381f4767f1a3ebe154a45",
+        "tarball": "http://mirrors.tencent.com/npm/he/-/he-0.3.3.tgz",
+        "integrity": "sha512-J6t+t4MARj0mVJzJK5f9F2AR+mNbaEYJisFIrf8/oY2tNAjaClZoumEKJ4UpwzJtKmpGfYWnorTl2OWUrGucqg==",
+        "signatures": [
+          {
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA",
+            "sig": "MEUCIFVoItTQ3lNhcpcg4HDkMVA4QTjUKQlaPjX82vnpN1rDAiEAv0KqT/JRlt49hA8FkI9BtvIvOvG/txnh+ZpPByPTnwU="
+          }
+        ]
+      },
+      "directories": {
+        "test": "tests"
+      },
+      "dependencies": {},
+      "devDependencies": {
+        "grunt": "~0.4.1",
+        "grunt-shell": "~0.3.1",
+        "grunt-template": "~0.2.0",
+        "istanbul": "~0.1.42",
+        "jsesc": "~0.3.0",
+        "lodash": "~1.3.1",
+        "qunit-clib": "~1.3.0",
+        "qunitjs": "~1.11.0",
+        "regenerate": "~0.5.2",
+        "requirejs": "~2.1.8"
+      },
+      "hasInstallScript": false
+    },
+    "0.3.4": {
+      "name": "he",
+      "version": "0.3.4",
+      "description": "A robust HTML entities encoder/decoder with full Unicode support.",
+      "bin": {
+        "he": "bin/he"
+      },
+      "dist": {
+        "shasum": "b9d808667263d003fd00aac92ab57b869957c9d8",
+        "tarball": "http://mirrors.tencent.com/npm/he/-/he-0.3.4.tgz",
+        "integrity": "sha512-nLyOOoxxoYl4j3igIgrt7IuMnFXSUPTMaewDImozd2LjqtUvtc0yfJZ3Acl91MTCS+Ek06NrxC8bzGi+wjOVjQ==",
+        "signatures": [
+          {
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA",
+            "sig": "MEUCIAYoV0FEzqwkJTWOd0gG/GJGUo9nOZzzbh5Ab3oKdb1VAiEAyCB4Pa91GQSjcuvrAIPh5Kp9xqPqLxBuKKE1lgsUnrg="
+          }
+        ]
+      },
+      "directories": {
+        "test": "tests"
+      },
+      "dependencies": {},
+      "devDependencies": {
+        "grunt": "~0.4.1",
+        "grunt-shell": "~0.3.1",
+        "grunt-template": "~0.2.0",
+        "istanbul": "~0.1.42",
+        "jsesc": "~0.3.0",
+        "lodash": "~1.3.1",
+        "qunit-clib": "~1.3.0",
+        "qunitjs": "~1.11.0",
+        "regenerate": "~0.5.2",
+        "requirejs": "~2.1.8"
+      },
+      "hasInstallScript": false
+    },
+    "0.3.5": {
+      "name": "he",
+      "version": "0.3.5",
+      "description": "A robust HTML entities encoder/decoder with full Unicode support.",
+      "bin": {
+        "he": "bin/he"
+      },
+      "dist": {
+        "shasum": "1c2025f18a3bbfcc5f4e0e5db85658b34d2dd619",
+        "tarball": "http://mirrors.tencent.com/npm/he/-/he-0.3.5.tgz",
+        "integrity": "sha512-9YzM3kZvJLYmPaYaIrTo4SQ+67yqLeARfeRDscAaFapXYZkweTiBkNm7AzHJdezCDf49y4x9gNCyEl/yZMod4A==",
+        "signatures": [
+          {
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA",
+            "sig": "MEUCIQCvjYIuUhHRULlwAkcCbB4Cc1XZAGlM4m4tXQigY0cyCgIger+EOEMsMGbf/W5V4OVUbSRbEAyneg3Oxmh6hk71N5s="
+          }
+        ]
+      },
+      "directories": {
+        "test": "tests"
+      },
+      "dependencies": {},
+      "devDependencies": {
+        "grunt": "~0.4.1",
+        "grunt-shell": "~0.3.1",
+        "grunt-template": "~0.2.0",
+        "istanbul": "~0.1.42",
+        "jsesc": "~0.3.0",
+        "lodash": "~1.3.1",
+        "qunit-clib": "~1.3.0",
+        "qunitjs": "~1.11.0",
+        "regenerate": "~0.5.2",
+        "requirejs": "~2.1.8"
+      },
+      "hasInstallScript": false
+    },
+    "0.3.6": {
+      "name": "he",
+      "version": "0.3.6",
+      "description": "A robust HTML entities encoder/decoder with full Unicode support.",
+      "bin": {
+        "he": "bin/he"
+      },
+      "dist": {
+        "shasum": "9d7bc446e77963933301dd602d5731cb861135e0",
+        "tarball": "http://mirrors.tencent.com/npm/he/-/he-0.3.6.tgz",
+        "integrity": "sha512-C5Uq4khZqYh/Nq8YubQGYlsm85bkGeNfUn3BvnRCMuuZXXqM32jyEHBFkTE0NB70mteKI9PsYBXWfIacbluyxA==",
+        "signatures": [
+          {
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA",
+            "sig": "MEUCIQCrSb7FHcG0jJfx+nJabuh6Z3eeJtwht8V6dkMC8e8COQIgDab7J3b9CQsvkPrCmcSBm28vrdmfUPcylPzjedbMIJo="
+          }
+        ]
+      },
+      "directories": {
+        "test": "tests"
+      },
+      "dependencies": {},
+      "devDependencies": {
+        "grunt": "~0.4.1",
+        "grunt-shell": "~0.3.1",
+        "grunt-template": "~0.2.0",
+        "istanbul": "~0.1.43",
+        "jsesc": "~0.4.1",
+        "lodash": "~1.3.1",
+        "qunit-clib": "~1.3.0",
+        "qunitjs": "~1.11.0",
+        "regenerate": "~0.5.2",
+        "requirejs": "~2.1.8"
+      },
+      "hasInstallScript": false
+    },
+    "0.4.0": {
+      "name": "he",
+      "version": "0.4.0",
+      "description": "A robust HTML entities encoder/decoder with full Unicode support.",
+      "bin": {
+        "he": "bin/he"
+      },
+      "dist": {
+        "shasum": "4e3746137f80e084e0b26ea5e14ebb453f937b1a",
+        "tarball": "http://mirrors.tencent.com/npm/he/-/he-0.4.0.tgz",
+        "integrity": "sha512-Zx3CUhsW5ALrXBIhXkfFe1b9K5QUBsy6mtB7Q8+sP0tjJhoYP8qnuAqtprVFdU0JNfYXrtUiRrpgqrQ0pgBp0w==",
+        "signatures": [
+          {
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA",
+            "sig": "MEQCIHhc76K15vkcrq5Mbtg65DDrmhavGHJ70Drmqi4Nn6k0AiBkM8/iLASrsgzC3PgWYegE0MsltUTv2LW2K11OXrLWQA=="
+          }
+        ]
+      },
+      "directories": {
+        "bin": "bin",
+        "man": "man",
+        "test": "tests"
+      },
+      "devDependencies": {
+        "grunt": "~0.4.5",
+        "grunt-shell": "~0.7.0",
+        "grunt-template": "~0.2.3",
+        "istanbul": "~0.2.10",
+        "jsesc": "~0.4.3",
+        "lodash": "~2.4.1",
+        "lodash.difference": "~2.4.1",
+        "qunit-extras": "~1.1.0",
+        "qunitjs": "~1.11.0",
+        "regenerate": "~0.6.1",
+        "requirejs": "~2.1.11"
+      },
+      "hasInstallScript": false
+    },
+    "0.4.1": {
+      "name": "he",
+      "version": "0.4.1",
+      "description": "A robust HTML entities encoder/decoder with full Unicode support.",
+      "bin": {
+        "he": "bin/he"
+      },
+      "dist": {
+        "shasum": "c86667614d2dd71bc737a197c760fb2eec8a1921",
+        "tarball": "http://mirrors.tencent.com/npm/he/-/he-0.4.1.tgz",
+        "integrity": "sha512-wFn1JlcsgbcWEawQ6A1GztgNRRl6UyEtaARIDpAeH3c35T/9id/QQKvap1NAz6Yk2oKrKwXQZZFERS0tl9E0Jg==",
+        "signatures": [
+          {
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA",
+            "sig": "MEYCIQDlizGy5Fc+ozWUcaH9NSE15HwLjP1l7OlrwU4rqFfuiwIhAJVeSr9G+vaj3eyoT4LqNb5M+gkSEyIjfxBEuawgwenr"
+          }
+        ]
+      },
+      "directories": {
+        "bin": "bin",
+        "man": "man",
+        "test": "tests"
+      },
+      "devDependencies": {
+        "grunt": "~0.4.5",
+        "grunt-shell": "~0.7.0",
+        "grunt-template": "~0.2.3",
+        "istanbul": "~0.2.10",
+        "jsesc": "~0.4.3",
+        "lodash": "~2.4.1",
+        "lodash.difference": "~2.4.1",
+        "qunit-extras": "~1.1.0",
+        "qunitjs": "~1.11.0",
+        "regenerate": "~0.6.2",
+        "requirejs": "~2.1.11",
+        "string.fromcodepoint": "~0.2.0"
+      },
+      "hasInstallScript": false
+    },
+    "0.5.0": {
+      "name": "he",
+      "version": "0.5.0",
+      "description": "A robust HTML entities encoder/decoder with full Unicode support.",
+      "bin": {
+        "he": "bin/he"
+      },
+      "dist": {
+        "shasum": "2c05ffaef90b68e860f3fd2b54ef580989277ee2",
+        "tarball": "http://mirrors.tencent.com/npm/he/-/he-0.5.0.tgz",
+        "integrity": "sha512-DoufbNNOFzwRPy8uecq+j+VCPQ+JyDelHTmSgygrA5TsR8Cbw4Qcir5sGtWiusB4BdT89nmlaVDhSJOqC/33vw==",
+        "signatures": [
+          {
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA",
+            "sig": "MEYCIQDqJlkA8AZbl3fzB1fffmwyaCzhRr0nDZdn+osoEFLAiwIhAPVrZ+wJy8wy4SPHC2+9HSKTv672z20GjRc2FQn2A7P9"
+          }
+        ]
+      },
+      "directories": {
+        "bin": "bin",
+        "man": "man",
+        "test": "tests"
+      },
+      "devDependencies": {
+        "coveralls": "^2.11.1",
+        "grunt": "^0.4.5",
+        "grunt-shell": "^1.0.1",
+        "grunt-template": "^0.2.3",
+        "istanbul": "^0.3.0",
+        "jsesc": "^0.5.0",
+        "lodash": "^2.4.1",
+        "qunit-extras": "^1.1.0",
+        "qunitjs": "~1.11.0",
+        "regenerate": "^0.6.2",
+        "requirejs": "^2.1.14",
+        "string.fromcodepoint": "^0.2.1"
+      },
+      "hasInstallScript": false
+    },
+    "1.0.0": {
+      "name": "he",
+      "version": "1.0.0",
+      "description": "A robust HTML entities encoder/decoder with full Unicode support.",
+      "bin": {
+        "he": "bin/he"
+      },
+      "dist": {
+        "shasum": "6da5b265d7f2c3b5e480749168e0e159d05728da",
+        "tarball": "http://mirrors.tencent.com/npm/he/-/he-1.0.0.tgz",
+        "integrity": "sha512-qIpX8c5fJnoHJWgowkrU/5mEUBSbYrFM5ctaAMYKI3pZRwOcchfmbVKe7XNAtyduZ2cmEPwJ9ibdQPmnNVFfDA==",
+        "signatures": [
+          {
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA",
+            "sig": "MEUCIAnY6N9kgTasqUXsvP7sb2yJi6pl0MjXqZQ0MnlN6E6fAiEAqg0rRn/So5MZ3waZaYFY0ew09ACqLu+uNAkldqKjKQA="
+          }
+        ]
+      },
+      "directories": {
+        "bin": "bin",
+        "man": "man",
+        "test": "tests"
+      },
+      "devDependencies": {
+        "codecov.io": "^0.1.6",
+        "grunt": "^0.4.5",
+        "grunt-shell": "^1.1.1",
+        "grunt-template": "^0.2.3",
+        "istanbul": "^0.4.2",
+        "jsesc": "^1.0.0",
+        "lodash": "^4.8.2",
+        "qunit-extras": "^1.4.5",
+        "qunitjs": "~1.11.0",
+        "regenerate": "^1.2.1",
+        "requirejs": "^2.1.22",
+        "sort-object": "^3.0.2"
+      },
+      "hasInstallScript": false
+    },
+    "1.1.0": {
+      "name": "he",
+      "version": "1.1.0",
+      "description": "A robust HTML entities encoder/decoder with full Unicode support.",
+      "bin": {
+        "he": "bin/he"
+      },
+      "dist": {
+        "shasum": "29319d49beec13a9b1f3c4f9b2a6dde4859bb2a7",
+        "tarball": "http://mirrors.tencent.com/npm/he/-/he-1.1.0.tgz",
+        "integrity": "sha512-qbiXpa906Tr8hXFtwm6VPsTXFDdbtOEAOrVs/5uJTW5gCAoHeV89RwiQydSXjICso8E2Z7F/PltIjhw1MQMxRQ==",
+        "signatures": [
+          {
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA",
+            "sig": "MEQCIAR8VYkgciqG9nQkwrio5vMnieYnFShrlzxePfikCb8/AiBWgq6o5V28ttuTQTH7lOPPmBSttJWVqVQuTe2chb7KbA=="
+          }
+        ]
+      },
+      "directories": {
+        "bin": "bin",
+        "man": "man",
+        "test": "tests"
+      },
+      "devDependencies": {
+        "codecov.io": "^0.1.6",
+        "grunt": "^0.4.5",
+        "grunt-shell": "^1.1.1",
+        "grunt-template": "^0.2.3",
+        "istanbul": "^0.4.2",
+        "jsesc": "^1.0.0",
+        "lodash": "^4.8.2",
+        "qunit-extras": "^1.4.5",
+        "qunitjs": "~1.11.0",
+        "regenerate": "^1.2.1",
+        "requirejs": "^2.1.22",
+        "sort-object": "^3.0.2"
+      },
+      "hasInstallScript": false
+    },
+    "1.1.1": {
+      "name": "he",
+      "version": "1.1.1",
+      "description": "A robust HTML entities encoder/decoder with full Unicode support.",
+      "bin": {
+        "he": "bin/he"
+      },
+      "dist": {
+        "shasum": "93410fd21b009735151f8868c2f271f3427e23fd",
+        "tarball": "http://mirrors.tencent.com/npm/he/-/he-1.1.1.tgz",
+        "integrity": "sha512-z/GDPjlRMNOa2XJiB4em8wJpuuBfrFOlYKTZxtpkdr1uPdibHI8rYA3MY0KDObpVyaes0e/aunid/t88ZI2EKA==",
+        "signatures": [
+          {
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA",
+            "sig": "MEYCIQCnDqHEBuN4fT+ZhUXhEBIJSj5Btdc6m1nF7Zn+jgJM3gIhAIflqIe0b/Mdqw1BAkUaelDDn6jKNmPKW6lc7cyJ9QIT"
+          }
+        ]
+      },
+      "directories": {
+        "bin": "bin",
+        "man": "man",
+        "test": "tests"
+      },
+      "devDependencies": {
+        "codecov.io": "^0.1.6",
+        "grunt": "^0.4.5",
+        "grunt-shell": "^1.1.1",
+        "grunt-template": "^0.2.3",
+        "istanbul": "^0.4.2",
+        "jsesc": "^1.0.0",
+        "lodash": "^4.8.2",
+        "qunit-extras": "^1.4.5",
+        "qunitjs": "~1.11.0",
+        "regenerate": "^1.2.1",
+        "requirejs": "^2.1.22",
+        "sort-object": "^3.0.2"
+      },
+      "hasInstallScript": false
+    },
+    "1.2.0": {
+      "name": "he",
+      "version": "1.2.0",
+      "description": "A robust HTML entities encoder/decoder with full Unicode support.",
+      "bin": {
+        "he": "bin/he"
+      },
+      "dist": {
+        "integrity": "sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==",
+        "shasum": "84ae65fa7eafb165fddb61566ae14baf05664f0f",
+        "tarball": "http://mirrors.tencent.com/npm/he/-/he-1.2.0.tgz",
+        "fileCount": 6,
+        "unpackedSize": 124138,
+        "npm-signature": "-----BEGIN PGP SIGNATURE-----\r\nVersion: OpenPGP.js v3.0.4\r\nComment: https://openpgpjs.org\r\n\r\nwsFcBAEBCAAQBQJbp8reCRA9TVsSAnZWagAAaKkQAJw9CB8UB3lCV2TspEiW\nE0WBWPPirKbc/PG2jXhd8DegomLJ1g2vm7fwibStKHG6fOKZqR+4cl3ZqwIV\nMrP7qeMqkrWgi2fHr3gCQmMqscCs7fzt30rVaNIygdJsQ1+j3tuahliNxBQj\nTGpUUyMKmGuPeGy8rn96brsLLS52wO2JTVlwjxHxPTLQvsveAMcq08R1fAgv\nQsTs9b/CkADxVLa9fXcbABzyUq9gdLNFo1mewptCYJYPxLwZ3cVekD01MeNx\nDEJ53zMI+hDZmU0U3Ouref7VRKq3C1x6aVHYz0lBz5BYNeSALe4PkylIvfGV\nhZfXCS9P18rvGrtYPhUC823SldmGTsC4h7xCcOASFtZgK3bs17K46VS/3vjY\naJoLV6s84UuTP2fSmyYWZrammmbRDdQDIgZ/oUbB6x7vawJKxspYHQi6k5cm\nCSzVdS1zJaPdOA2aa/ydXtjHMe1xLSb6p3QwG/qIjXNyaG6hUQFYAIO6Q2UX\n61WtyZOiwW6976HjWXGN9/AUGt6BVIpjTjTDvDyjiOuFn2RHRhZM+zunOh6w\n/tFnC+Xu9uc3/F1KH24NTwv5EThoQC6/Bjt0PjUDo+WHz3s2WoF8pCBdwgm+\nH73MhekvKYBgqQEoViGQpZxD4u+VxV9pI6AAThivOdpUBEaO0MqiP1aplYvQ\nVU8y\r\n=/3Zf\r\n-----END PGP SIGNATURE-----\r\n",
+        "signatures": [
+          {
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA",
+            "sig": "MEQCIFw9hLeVA2/C0P4JKZ6ozNEh2BT3kcQ1yamXVy7QgWwwAiBJar9Qep/BCN5Kjj8TMJWHhi/mMiAkU0nWFow1KcrGNQ=="
+          }
+        ]
+      },
+      "directories": {
+        "bin": "bin",
+        "man": "man",
+        "test": "tests"
+      },
+      "devDependencies": {
+        "codecov.io": "^0.1.6",
+        "grunt": "^0.4.5",
+        "grunt-cli": "^1.3.1",
+        "grunt-shell": "^1.1.1",
+        "grunt-template": "^0.2.3",
+        "istanbul": "^0.4.2",
+        "jsesc": "^1.0.0",
+        "lodash": "^4.8.2",
+        "qunit-extras": "^1.4.5",
+        "qunitjs": "~1.11.0",
+        "regenerate": "^1.2.1",
+        "regexgen": "^1.3.0",
+        "requirejs": "^2.1.22",
+        "sort-object": "^3.0.2"
+      },
+      "_hasShrinkwrap": false,
+      "hasInstallScript": false
+    }
+  },
+  "modified": "2022-07-06T14:43:40.376Z",
+  "time": {
+    "modified": "2022-07-06T14:43:40.376Z",
+    "created": "2013-06-25T07:04:30.073Z",
+    "0.1.0": "2013-06-25T07:04:33.268Z",
+    "0.1.1": "2013-06-25T07:42:07.589Z",
+    "0.1.2": "2013-06-25T10:21:38.795Z",
+    "0.1.3": "2013-06-26T04:49:05.788Z",
+    "0.1.4": "2013-06-26T08:00:02.097Z",
+    "0.1.5": "2013-06-26T09:43:53.310Z",
+    "0.1.6": "2013-06-27T05:20:41.342Z",
+    "0.1.7": "2013-06-27T07:35:03.487Z",
+    "0.1.8": "2013-06-27T07:56:06.990Z",
+    "0.1.9": "2013-06-27T11:36:05.943Z",
+    "0.1.10": "2013-06-27T13:38:44.229Z",
+    "0.2.0": "2013-06-27T15:47:21.538Z",
+    "0.2.1": "2013-06-28T19:58:15.009Z",
+    "0.3.0": "2013-07-01T16:48:42.300Z",
+    "0.3.1": "2013-07-01T16:58:41.074Z",
+    "0.3.2": "2013-07-27T11:26:46.217Z",
+    "0.3.3": "2013-07-30T10:27:19.524Z",
+    "0.3.4": "2013-08-02T22:03:05.837Z",
+    "0.3.5": "2013-08-04T07:47:39.912Z",
+    "0.3.6": "2013-08-07T10:47:20.953Z",
+    "0.4.0": "2014-05-23T08:23:36.693Z",
+    "0.4.1": "2014-05-24T18:58:13.050Z",
+    "0.5.0": "2014-08-24T07:04:48.183Z",
+    "1.0.0": "2016-04-05T19:51:06.638Z",
+    "1.1.0": "2016-05-06T10:35:44.511Z",
+    "1.1.1": "2017-01-23T13:55:43.985Z",
+    "1.2.0": "2018-09-23T17:18:22.163Z"
+  }
+}

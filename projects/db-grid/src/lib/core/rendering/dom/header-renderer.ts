@@ -67,6 +67,10 @@ export class HeaderRendererService {
       const groupHeaders = this.columnService.getGroupHeaders();
       const allColumns = this.columnService.getAllColumns();
       this.renderGroupHeaders(headerElement, groupHeaders, allColumns);
+
+      // 设置分组表头容器总高度 = (最大深度 + 1行子列头) × 行高
+      const totalDepth = this.columnService.getGroupDepth();
+      headerElement.style.height = `${(totalDepth + 1) * this.headerHeight}px`;
     } else {
       // ========== 扁平表头：单行渲染 ==========
       headerElement.style.height = `${this.headerHeight}px`;
