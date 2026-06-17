@@ -418,6 +418,17 @@ import {
       }
     }
 
+    /* ========== Row Drag & Drop ========== */
+    .db-grid-row.dragging {
+      opacity: 0.5;
+    }
+    .db-grid-row.drag-over {
+      box-shadow: inset 0 3px 0 var(--db-grid-accent, #2196f3);
+    }
+    .db-grid-row.drag-over-bottom {
+      box-shadow: inset 0 -3px 0 var(--db-grid-accent, #2196f3);
+    }
+
     /* ========== Range Border Highlight ========== */
     .db-grid-cell-range-border-top {
       border-top: 2px solid var(--db-grid-range-selection-border-color, #2196f3) !important;
@@ -925,6 +936,15 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   private aggregationService: AggregationService;
   private rangeSelectionService: RangeSelectionService;
   private sidebarService: SideBarService;
+
+  /** 行拖拽状态 */
+  private _rowDragState: {
+    isDragging: boolean;
+    startRowIndex: number;
+    startMouseY: number;
+    hoverRowIndex: number;
+    dragNodes: any[];
+  } | null = null;
   private statusBarService: StatusBarService;
   private masterDetailService: MasterDetailService;
   private undoRedoService: UndoRedoService;
@@ -4685,7 +4705,145 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     });
   }
 
+  // ========== 行拖拽事件 ==========
+
+  /** 行拖拽 mousedown：开始拖拽 */
+  private onRowDragMouseDown = (e: MouseEvent, rowIndex: number, data: any, rowNode: any): void => {
+    if (!this.rowDragEnabled) return;
+    if (e.button !== 0) return;
+    // 排除编辑器、checkbox、header
+    const target = e.target as HTMLElement;
+    if (target.closest('.db-grid-cell-editor')) return;
+    if (target.closest('.db-grid-checkbox')) return;
+
+    const selectedNodes = this.selectionService?.getSelectedNodes?.() || [];
+    const dragNodes = selectedNodes.some((n: any) => n.rowIndex === rowIndex)
+      ? selectedNodes
+      : [rowNode];
+
+    this._rowDragState = {
+      isDragging: false,
+      startRowIndex: rowIndex,
+      startMouseY: e.clientY,
+      hoverRowIndex: rowIndex,
+      dragNodes,
+    };
+
+    window.addEventListener('mousemove', this.onRowDragMouseMove);
+    window.addEventListener('mouseup', this.onRowDragMouseUp);
+  };
+
+  /** 行拖拽 mousemove：更新拖拽位置 */
+  private onRowDragMouseMove = (e: MouseEvent): void => {
+    if (!this._rowDragState) return;
+
+    // 移动至少 5px 才真正开始拖拽（避免误触）
+    if (!this._rowDragState.isDragging) {
+      const dy = Math.abs(e.clientY - this._rowDragState.startMouseY);
+      if (dy < 5) return;
+      this._rowDragState.isDragging = true;
+    }
+
+    // 找到鼠标下的行
+    const rowsContainer = this.rowsContainer?.nativeElement;
+    if (!rowsContainer) return;
+
+    // 使用 document.elementsFromPoint 找光标下的 .db-grid-row
+    const elements = document.elementsFromPoint(e.clientX, e.clientY);
+    const rowEl = elements.find(el =>
+      el instanceof HTMLElement && el.closest('.db-grid-row')
+    ) as HTMLElement | undefined;
+
+    if (!rowEl) return;
+    const hoverRowEl = rowEl.closest('.db-grid-row') as HTMLElement;
+    if (!hoverRowEl) return;
+
+    const hoverRowIndex = parseInt(hoverRowEl.dataset['rowIndex'] || '-1', 10);
+    if (hoverRowIndex < 0) return;
+
+    // 判断鼠标在行的上半还是下半
+    const rect = hoverRowEl.getBoundingClientRect();
+    const isBottomHalf = e.clientY - rect.top > rect.height / 2;
+
+    // 更新拖拽位置
+    this._rowDragState.hoverRowIndex = hoverRowIndex;
+    this.updateRowDragStyles(hoverRowIndex, isBottomHalf);
+  };
+
+  /** 行拖拽 mouseup：完成或取消拖拽 */
+  private onRowDragMouseUp = (e: MouseEvent): void => {
+    window.removeEventListener('mousemove', this.onRowDragMouseMove);
+    window.removeEventListener('mouseup', this.onRowDragMouseUp);
+
+    if (!this._rowDragState) return;
+
+    const state = this._rowDragState;
+    this._rowDragState = null;
+
+    // 清除拖拽样式
+    this.clearRowDragStyles();
+
+    // 如果没有真正开始拖拽，不执行
+    if (!state.isDragging) return;
+
+    const targetIndex = state.hoverRowIndex;
+    if (targetIndex < 0 || targetIndex === state.startRowIndex) return;
+
+    // 执行拖拽排序
+    this.dragDropService.endRowDrag(targetIndex, e);
+    this.reorderRows(state.startRowIndex, targetIndex);
+  };
+
+  /** 更新行拖拽视觉样式 */
+  private updateRowDragStyles(hoverRowIndex: number, isBottomHalf: boolean): void {
+    this.clearRowDragStyles();
+    const rowsContainer = this.rowsContainer?.nativeElement;
+    if (!rowsContainer) return;
+    const rows = rowsContainer.querySelectorAll<HTMLElement>('.db-grid-row');
+    rows.forEach(row => {
+      const ri = parseInt(row.dataset['rowIndex'] || '-1', 10);
+      if (ri === hoverRowIndex) {
+        row.classList.add(isBottomHalf ? 'drag-over-bottom' : 'drag-over');
+      }
+      // 被拖拽的行半透明
+      if (this._rowDragState?.dragNodes?.some((n: any) => n.rowIndex === ri)) {
+        row.classList.add('dragging');
+      }
+    });
+  }
+
+  /** 清除行拖拽样式 */
+  private clearRowDragStyles(): void {
+    const rowsContainer = this.rowsContainer?.nativeElement;
+    if (!rowsContainer) return;
+    const rows = rowsContainer.querySelectorAll<HTMLElement>('.db-grid-row');
+    rows.forEach(row => {
+      row.classList.remove('drag-over', 'drag-over-bottom', 'dragging');
+    });
+  }
+
+  /** 执行行重排序 */
+  private reorderRows(fromIndex: number, toIndex: number): void {
+    if (fromIndex === toIndex) return;
+    const data = this.rowData;
+    if (!data || data.length <= 1) return;
+
+    const newData = [...data];
+    const [moved] = newData.splice(fromIndex, 1);
+    const adjustedToIndex = toIndex > fromIndex ? toIndex - 1 : toIndex;
+    newData.splice(adjustedToIndex, 0, moved);
+
+    // 更新 rowData（触发视图刷新）
+    this.rowData = newData;
+    this.setRowData(newData);
+  }
+
   private setupRowEvents(rowElement: HTMLElement, rowIndex: number, data: any, rowNode: any): void {
+
+    // 行拖拽 mousedown（先于 click 触发）
+    rowElement.addEventListener('mousedown', (e: MouseEvent) => {
+      this.onRowDragMouseDown(e, rowIndex, data, rowNode);
+    });
 
     rowElement.addEventListener('click', (e: MouseEvent) => {
       const target = e.target as HTMLElement;
