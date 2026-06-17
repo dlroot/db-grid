@@ -420,29 +420,31 @@ import {
 
     /* ========== Row Drag & Drop ========== */
     .db-grid-row {
-      transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.2s ease;
+      will-change: transform, opacity;
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
     }
     .db-grid-row.dragging {
-      opacity: 0.5;
-      filter: blur(1.5px);
-      transform: scale(0.97);
-      transition: opacity 0.15s ease, filter 0.15s ease, transform 0.15s ease;
+      opacity: 0.3;
+      filter: grayscale(0.7) blur(2px);
+      transform: scale(0.93);
+      will-change: transform, opacity, filter;
+      transition: opacity 0.2s ease, filter 0.2s ease, transform 0.2s ease;
     }
     .db-grid-row.drag-over {
-      box-shadow: inset 0 3px 0 var(--db-grid-accent, #2196f3);
+      box-shadow: inset 0 3px 0 var(--db-grid-accent, #2196f3), 0 0 12px rgba(33,150,243,0.25);
       transition: box-shadow 0.15s ease;
     }
     .db-grid-row.drag-over-bottom {
-      box-shadow: inset 0 -3px 0 var(--db-grid-accent, #2196f3);
+      box-shadow: inset 0 -3px 0 var(--db-grid-accent, #2196f3), 0 0 12px rgba(33,150,243,0.25);
       transition: box-shadow 0.15s ease;
     }
     .db-grid-row.drag-shift-up {
-      transform: translateY(-10px);
-      transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.08s;
+      transform: translateY(-24px);
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) 0.12s;
     }
     .db-grid-row.drag-shift-down {
-      transform: translateY(10px);
-      transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.08s;
+      transform: translateY(24px);
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) 0.12s;
     }
 
     /* ========== Row Drag Ghost ========== */
@@ -450,39 +452,51 @@ import {
       position: fixed;
       pointer-events: none;
       z-index: 9999;
-      background: color-mix(in srgb, var(--db-grid-bg, #fff) 92%, var(--db-grid-accent, #2196f3));
-      border: 1.5px solid var(--db-grid-accent, #2196f3);
-      border-radius: 6px;
-      box-shadow: 0 6px 24px rgba(0,0,0,0.18);
-      padding: 6px 14px;
+      background: linear-gradient(135deg, #f0f6ff 0%, #e8f0fe 100%);
+      border: 2px solid var(--db-grid-accent, #2196f3);
+      border-radius: 8px;
+      box-shadow: 0 8px 32px rgba(33,150,243,0.25), 0 2px 8px rgba(0,0,0,0.1);
+      padding: 8px 16px;
       font-size: 13px;
-      font-weight: 500;
+      font-weight: 600;
+      color: #1a1a2e;
       white-space: nowrap;
-      backdrop-filter: blur(2px);
       opacity: 0;
-      animation: db-grid-ghost-in 0.18s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      animation: db-grid-ghost-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
     }
     @keyframes db-grid-ghost-in {
-      0% { opacity: 0; transform: scale(0.85) translateY(-6px); }
-      60% { opacity: 0.95; transform: scale(1.02) translateY(1px); }
-      100% { opacity: 0.92; transform: scale(1) translateY(0); }
+      0% { opacity: 0; transform: scale(0.7) translateY(-12px) rotateX(10deg); }
+      50% { opacity: 0.9; transform: scale(1.05) translateY(2px) rotateX(-2deg); }
+      100% { opacity: 0.95; transform: scale(1) translateY(0) rotateX(0); }
     }
     @keyframes db-grid-ghost-out {
-      from { opacity: 0.92; transform: scale(1); }
-      to { opacity: 0; transform: scale(0.85) translateY(-6px); }
+      from { opacity: 0.95; transform: scale(1) translateY(0); }
+      to { opacity: 0; transform: scale(0.6) translateY(-16px); }
     }
     @keyframes db-grid-ghost-idle {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-2px); }
+      0%, 100% { transform: translateY(0) rotateX(0); }
+      50% { transform: translateY(-3px) rotateX(2deg); }
     }
 
     /* ========== Row Drop Animation ========== */
     @keyframes db-grid-drop-pulse {
-      0% { background: var(--db-grid-accent-light, rgba(33,150,243,0.2)); }
-      100% { background: transparent; }
+      0% {
+        background: var(--db-grid-accent, #2196f3);
+        transform: scale(1.02);
+        box-shadow: 0 0 20px rgba(33,150,243,0.3);
+      }
+      30% {
+        background: var(--db-grid-accent-light, rgba(33,150,243,0.15));
+        transform: scale(1.01);
+      }
+      100% {
+        background: transparent;
+        transform: scale(1);
+        box-shadow: none;
+      }
     }
     .db-grid-row.drop-flash {
-      animation: db-grid-drop-pulse 0.4s ease-out;
+      animation: db-grid-drop-pulse 0.5s ease-out;
     }
 
     /* ========== Range Border Highlight ========== */
@@ -4928,7 +4942,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     const targetRow = rows[targetIndex];
     if (targetRow) {
       targetRow.classList.add('drop-flash');
-      setTimeout(() => targetRow.classList.remove('drop-flash'), 500);
+      setTimeout(() => targetRow.classList.remove('drop-flash'), 600);
     }
   }
 
