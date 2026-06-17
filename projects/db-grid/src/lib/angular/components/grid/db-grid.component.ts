@@ -739,9 +739,13 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   /** 服务端数据源 */
   @Input() serverSideDatasource: IServerSideDatasource | null = null;
 
-  // ============ 图表 Inputs ============
+  // ============ 图表 & 区域选择 Inputs ============
   /** 启用集成图表功能 */
   @Input() enableCharts: boolean = false;
+  /** 启用区域选择（鼠标拖拽选中单元格范围） */
+  @Input() enableRangeSelection: boolean = false;
+  /** 启用单元格选择 */
+  @Input() enableCellSelection: boolean = false;
 
   // ============ 行固定 Inputs ============
   /** 顶部固定行数据 */
@@ -2930,8 +2934,9 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   /** 初始化区域选择：绑定 DOM 事件和范围变更回调 */
   private initRangeSelection(): void {
     try {
-      const enableRange = this.gridOptions.enableRangeSelection === true;
-      const enableCell = this.gridOptions.enableCellSelection === true;
+      // 优先从 @Input() 读取，其次从 gridOptions 读取
+      const enableRange = this.enableRangeSelection || this.gridOptions.enableRangeSelection === true;
+      const enableCell = this.enableCellSelection || this.gridOptions.enableCellSelection === true;
       const enableCol = this.gridOptions.enableColSelection === true;
       console.log('[DBGrid] initRangeSelection', { enableRange, enableCell, enableCol, hasBodyContainer: !!this.bodyContainer?.nativeElement });
       if (!enableRange && !enableCell && !enableCol) {
@@ -2991,12 +2996,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       const hasRanges = this.rangeSelectionService.getRanges().length > 0;
       const inExistingRange = hasRanges && this.rangeSelectionService.isCellInRange(rowIndex, colId);
       if (!e.shiftKey && !e.ctrlKey && !e.metaKey) {
-        if (hasRanges && !inExistingRange) {
-          // 点击在范围外 → 清空旧范围，开始新范围（当前行为）
-          this.rangeSelectionService.startRangeSelection(rowIndex, colId, e);
-        } else {
-          // 点击在范围内 → 只更新焦点，不清空范围
+        if (hasRanges && inExistingRange) {
+          // 点击在已有范围内 → 只更新焦点，不清空范围
           this.rangeSelectionService.setFocusedCell(rowIndex, colId);
+        } else {
+          // 无已有范围 或 点击在范围外 → 开始新范围（修复：首次点击也要 startRangeSelection）
+          this.rangeSelectionService.startRangeSelection(rowIndex, colId, e);
         }
       } else {
         // Shift / Ctrl / Meta → 正常走 startRangeSelection 逻辑
@@ -3419,7 +3424,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   /** API: 填充手柄 - 沿指定方向填充单元格 */
   fillHandle(direction: 'down' | 'up' | 'left' | 'right', count: number = 1): void {
-    if (!this.enableFillHandle && !this.gridOptions.enableRangeSelection) {
+    if (!this.enableFillHandle && !this.enableRangeSelection && !this.gridOptions.enableRangeSelection) {
       console.warn('[DBGrid] fillHandle requires enableFillHandle or enableRangeSelection');
       return;
     }
