@@ -4042,7 +4042,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       totalColWidth = this.calculateTotalColumnWidth();
     }
 
-    headerElement.style.height = `${this.headerHeight}px`;
+    headerElement.style.minHeight = `${this.headerHeight}px`;
     headerElement.style.width = `${totalColWidth}px`;
     headerElement.style.minWidth = `${totalColWidth}px`;
     container.innerHTML = '';
