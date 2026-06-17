@@ -205,9 +205,15 @@ import {
         </div>
       }
 
-      <!-- 单元格编辑器 -->
+      <!-- 单元格编辑器（绝对定位到当前编辑单元格） -->
       @if (activeCellEditor) {
         <db-cell-editor
+          [style.position]="'absolute'"
+          [style.left.px]="activeCellEditor.cellLeft ?? 0"
+          [style.top.px]="activeCellEditor.cellTop ?? 0"
+          [style.width.px]="activeCellEditor.cellWidth ?? 120"
+          [style.height.px]="activeCellEditor.cellHeight ?? 32"
+          [style.zIndex]="1000"
           [value]="activeCellEditor.value"
           [editorType]="activeCellEditor.editorType"
           [editorParams]="activeCellEditor.editorParams"
@@ -1062,6 +1068,10 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     value: any;
     editorType: any;
     editorParams: any;
+    cellLeft: number;
+    cellTop: number;
+    cellWidth: number;
+    cellHeight: number;
   } | null = null;
 
   constructor(
@@ -5180,10 +5190,39 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       return;
     }
 
+    // 计算编辑单元格的位置和大小，用于绝对定位编辑器
+    let cellLeft = 0, cellTop = 0, cellWidth = 120, cellHeight = 32;
+    try {
+      const gridEl = this.elementRef.nativeElement as HTMLElement;
+      const bodyContainer = this.bodyContainer?.nativeElement as HTMLElement | null;
+      const rowsContainer = this.rowsContainer?.nativeElement as HTMLElement | null;
+      if (gridEl && bodyContainer && rowsContainer) {
+        const gridRect = gridEl.getBoundingClientRect();
+        const rowEl = rowsContainer.querySelector(`.db-grid-row[data-row-index="${rowIndex}"]`) as HTMLElement | null;
+        if (rowEl) {
+          const cellEl = rowEl.querySelector(`[data-col-id="${colDef.colId || colDef.field}"]`) as HTMLElement | null;
+          if (cellEl) {
+            const cellRect = cellEl.getBoundingClientRect();
+            // 相对于 grid 容器定位（用 getBoundingClientRect 抵消滚动影响）
+            cellLeft = cellRect.left - gridRect.left + gridEl.scrollLeft;
+            cellTop = cellRect.top - gridRect.top + gridEl.scrollTop;
+            cellWidth = cellRect.width;
+            cellHeight = cellRect.height;
+          }
+        }
+      }
+    } catch {
+      // 计算出错时用默认值
+    }
+
     this.activeCellEditor = {
       value: session.currentValue,
       editorType: session.editorType,
       editorParams: session.editorParams,
+      cellLeft,
+      cellTop,
+      cellWidth,
+      cellHeight,
     };
     this.activeFilterPopup = null;
     this.cdr.detectChanges();
@@ -5247,14 +5286,18 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     if (event.committed) {
       const commit = this.editorService.commitEdit();
       if (commit) {
+        // 把新值写回 rowData（核心修复：之前只记录 pendingChanges，没写回数据源）
+        const rowData = this.dataService.getRowData(this.editingRowIndex!);
+        if (rowData && this.editingColId) {
+          rowData[this.editingColId] = commit.newValue;
+        }
         // 记录撤销操作
         if (this.editingRowIndex != null && this.editingColId && this.undoRedoService.isEnabled()) {
-          const rowData = this.dataService.getRowData(this.editingRowIndex);
           this.undoRedoService.recordEdit({
             rowIndex: this.editingRowIndex,
             colId: this.editingColId,
             oldValue: this.editingOldValue,
-            newValue: event.value,
+            newValue: commit.newValue,
             rowData: rowData || {},
           });
         }

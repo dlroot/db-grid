@@ -139,7 +139,7 @@ import { EditorService, EditorType } from '../../../core/services';
     }
   `,
   styles: [`
-    :host { display: block; width: 100%; height: 100%; }
+    :host { display: block; }
 
     .db-cell-editor__input,
     .db-cell-editor__select {
