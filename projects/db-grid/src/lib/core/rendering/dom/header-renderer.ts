@@ -73,7 +73,7 @@ export class HeaderRendererService {
       headerElement.style.height = `${(totalDepth + 1) * this.headerHeight}px`;
     } else {
       // ========== 扁平表头：单行渲染 ==========
-      headerElement.style.height = `${this.headerHeight}px`;
+      headerElement.style.minHeight = `${this.headerHeight}px`;
       const headerRow = this.createHeaderRow();
 
       if (columns) {
@@ -265,7 +265,7 @@ export class HeaderRendererService {
       overflow: hidden;
       background: var(--db-grid-header-bg, #f8f9fa);
       border-bottom: 2px solid var(--db-grid-header-border-color, #d9d9d9);
-      height: ${this.headerHeight}px;
+      min-height: ${this.headerHeight}px;
     `;
     return container;
   }
