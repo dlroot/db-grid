@@ -419,14 +419,59 @@ import {
     }
 
     /* ========== Row Drag & Drop ========== */
+    .db-grid-row {
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
     .db-grid-row.dragging {
-      opacity: 0.5;
+      opacity: 0.35;
+      transform: scale(0.98);
     }
     .db-grid-row.drag-over {
       box-shadow: inset 0 3px 0 var(--db-grid-accent, #2196f3);
+      transition: box-shadow 0.12s ease;
     }
     .db-grid-row.drag-over-bottom {
       box-shadow: inset 0 -3px 0 var(--db-grid-accent, #2196f3);
+      transition: box-shadow 0.12s ease;
+    }
+    .db-grid-row.drag-shift-up {
+      transform: translateY(-8px);
+    }
+    .db-grid-row.drag-shift-down {
+      transform: translateY(8px);
+    }
+
+    /* ========== Row Drag Ghost ========== */
+    .db-grid-drag-ghost {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      background: var(--db-grid-bg, #fff);
+      border: 1px solid var(--db-grid-accent, #2196f3);
+      border-radius: 4px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      padding: 4px 12px;
+      font-size: 13px;
+      white-space: nowrap;
+      opacity: 0;
+      animation: db-grid-ghost-in 0.15s ease forwards;
+    }
+    @keyframes db-grid-ghost-in {
+      from { opacity: 0; transform: scale(0.9) translateY(-4px); }
+      to { opacity: 0.92; transform: scale(1) translateY(0); }
+    }
+    @keyframes db-grid-ghost-out {
+      from { opacity: 0.92; transform: scale(1); }
+      to { opacity: 0; transform: scale(0.9) translateY(-4px); }
+    }
+
+    /* ========== Row Drop Animation ========== */
+    @keyframes db-grid-drop-pulse {
+      0% { background: var(--db-grid-accent-light, rgba(33,150,243,0.2)); }
+      100% { background: transparent; }
+    }
+    .db-grid-row.drop-flash {
+      animation: db-grid-drop-pulse 0.4s ease-out;
     }
 
     /* ========== Range Border Highlight ========== */
@@ -945,6 +990,9 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     hoverRowIndex: number;
     dragNodes: any[];
   } | null = null;
+
+  /** 拖拽幽灵元素 */
+  private _dragGhostEl: HTMLElement | null = null;
   private statusBarService: StatusBarService;
   private masterDetailService: MasterDetailService;
   private undoRedoService: UndoRedoService;
@@ -4733,6 +4781,50 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     window.addEventListener('mouseup', this.onRowDragMouseUp);
   };
 
+  /** 创建拖拽幽灵元素 */
+  private createDragGhost(e: MouseEvent): void {
+    // 清除旧幽灵
+    this._dragGhostEl?.remove();
+
+    const ghost = document.createElement('div');
+    ghost.className = 'db-grid-drag-ghost';
+
+    // 获取拖拽行的显示内容
+    const state = this._rowDragState!;
+    const startRowData = this.rowData?.[state.startRowIndex];
+    if (startRowData) {
+      // 显示关键字段
+      const name = startRowData.name || startRowData.productName || startRowData['组织架构'] || '';
+      const dept = startRowData.department || startRowData.category || startRowData['类型'] || '';
+      const count = state.dragNodes.length > 1 ? ` (${state.dragNodes.length} 行)` : '';
+      ghost.textContent = `${name}${dept ? ' · ' + dept : ''}${count}`;
+    } else {
+      ghost.textContent = `行 ${state.startRowIndex + 1}`;
+    }
+
+    ghost.style.left = `${e.clientX + 12}px`;
+    ghost.style.top = `${e.clientY - 8}px`;
+    document.body.appendChild(ghost);
+    this._dragGhostEl = ghost;
+  }
+
+  /** 更新幽灵位置 */
+  private updateDragGhostPosition(e: MouseEvent): void {
+    if (this._dragGhostEl) {
+      this._dragGhostEl.style.left = `${e.clientX + 12}px`;
+      this._dragGhostEl.style.top = `${e.clientY - 8}px`;
+    }
+  }
+
+  /** 销毁幽灵元素 */
+  private destroyDragGhost(): void {
+    if (this._dragGhostEl) {
+      this._dragGhostEl.style.animation = 'db-grid-ghost-out 0.12s ease forwards';
+      setTimeout(() => this._dragGhostEl?.remove(), 150);
+      this._dragGhostEl = null;
+    }
+  }
+
   /** 行拖拽 mousemove：更新拖拽位置 */
   private onRowDragMouseMove = (e: MouseEvent): void => {
     if (!this._rowDragState) return;
@@ -4742,7 +4834,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       const dy = Math.abs(e.clientY - this._rowDragState.startMouseY);
       if (dy < 5) return;
       this._rowDragState.isDragging = true;
+      // 开始拖拽时创建幽灵
+      this.createDragGhost(e);
     }
+
+    // 更新幽灵位置
+    this.updateDragGhostPosition(e);
 
     // 找到鼠标下的行
     const rowsContainer = this.rowsContainer?.nativeElement;
@@ -4766,8 +4863,13 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     const isBottomHalf = e.clientY - rect.top > rect.height / 2;
 
     // 更新拖拽位置
-    this._rowDragState.hoverRowIndex = hoverRowIndex;
-    this.updateRowDragStyles(hoverRowIndex, isBottomHalf);
+    if (this._rowDragState.hoverRowIndex !== hoverRowIndex) {
+      this._rowDragState.hoverRowIndex = hoverRowIndex;
+      this.updateRowDragStyles(hoverRowIndex, isBottomHalf);
+    } else {
+      // 只更新方向变化
+      this.updateRowDragDirection(isBottomHalf);
+    }
   };
 
   /** 行拖拽 mouseup：完成或取消拖拽 */
@@ -4783,6 +4885,9 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     // 清除拖拽样式
     this.clearRowDragStyles();
 
+    // 清除幽灵
+    this.destroyDragGhost();
+
     // 如果没有真正开始拖拽，不执行
     if (!state.isDragging) return;
 
@@ -4792,22 +4897,79 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     // 执行拖拽排序
     this.dragDropService.endRowDrag(targetIndex, e);
     this.reorderRows(state.startRowIndex, targetIndex);
+
+    // 在目标行播放 drop 动画
+    setTimeout(() => this.flashDropTarget(targetIndex), 50);
   };
 
-  /** 更新行拖拽视觉样式 */
-  private updateRowDragStyles(hoverRowIndex: number, isBottomHalf: boolean): void {
-    this.clearRowDragStyles();
+  /** 执行行重排序后，在目标行闪烁动画 */
+  private flashDropTarget(targetIndex: number): void {
+    const rowsContainer = this.rowsContainer?.nativeElement;
+    if (!rowsContainer) return;
+    const rows = rowsContainer.querySelectorAll<HTMLElement>('.db-grid-row');
+    const targetRow = rows[targetIndex];
+    if (targetRow) {
+      targetRow.classList.add('drop-flash');
+      setTimeout(() => targetRow.classList.remove('drop-flash'), 500);
+    }
+  }
+
+  /** 更新行拖拽方向变化 */
+  private updateRowDragDirection(isBottomHalf: boolean): void {
+    const state = this._rowDragState;
+    if (!state) return;
     const rowsContainer = this.rowsContainer?.nativeElement;
     if (!rowsContainer) return;
     const rows = rowsContainer.querySelectorAll<HTMLElement>('.db-grid-row');
     rows.forEach(row => {
       const ri = parseInt(row.dataset['rowIndex'] || '-1', 10);
+      if (ri === state.hoverRowIndex) {
+        row.classList.remove('drag-over', 'drag-over-bottom');
+        row.classList.add(isBottomHalf ? 'drag-over-bottom' : 'drag-over');
+      }
+    });
+  }
+
+  /** 更新行拖拽视觉样式（含邻行偏移效果） */
+  private updateRowDragStyles(hoverRowIndex: number, isBottomHalf: boolean): void {
+    this.clearRowDragStyles();
+    const state = this._rowDragState;
+    if (!state) return;
+    const rowsContainer = this.rowsContainer?.nativeElement;
+    if (!rowsContainer) return;
+    const startIdx = state.startRowIndex;
+    const rows = rowsContainer.querySelectorAll<HTMLElement>('.db-grid-row');
+
+    rows.forEach(row => {
+      const ri = parseInt(row.dataset['rowIndex'] || '-1', 10);
+
+      // 插入指示线
       if (ri === hoverRowIndex) {
         row.classList.add(isBottomHalf ? 'drag-over-bottom' : 'drag-over');
       }
-      // 被拖拽的行半透明
-      if (this._rowDragState?.dragNodes?.some((n: any) => n.rowIndex === ri)) {
+
+      // 被拖拽的行半透明 + 缩小
+      if (state.dragNodes?.some((n: any) => n.rowIndex === ri)) {
         row.classList.add('dragging');
+      }
+
+      // 邻行偏移：在插入位置给即将插入的行腾出空间
+      if (ri === startIdx) return; // 拖拽行本身不偏移
+      if (isBottomHalf) {
+        // 插入位置在 hover 行的下方
+        // hover 行及以上不变，hover 行下方（除拖拽行外）的往下移
+        if (hoverRowIndex < ri && ri < startIdx) {
+          row.classList.add('drag-shift-down');
+        } else if (hoverRowIndex >= ri && ri > startIdx) {
+          row.classList.add('drag-shift-up');
+        }
+      } else {
+        // 插入位置在 hover 行的上方（即 hover 行之前）
+        if (ri < hoverRowIndex && ri > startIdx) {
+          row.classList.add('drag-shift-up');
+        } else if (ri >= hoverRowIndex && ri < startIdx) {
+          row.classList.add('drag-shift-down');
+        }
       }
     });
   }
@@ -4818,7 +4980,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     if (!rowsContainer) return;
     const rows = rowsContainer.querySelectorAll<HTMLElement>('.db-grid-row');
     rows.forEach(row => {
-      row.classList.remove('drag-over', 'drag-over-bottom', 'dragging');
+      row.classList.remove('drag-over', 'drag-over-bottom', 'dragging', 'drag-shift-up', 'drag-shift-down', 'drop-flash');
     });
   }
 
