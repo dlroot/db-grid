@@ -4961,11 +4961,11 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
       // 被拖拽的行：灰色虚化 + 缩小 + 透明（行内 style 保证生效）
       if (isDragRow) {
-        row.style.opacity = '0.2';
-        row.style.filter = 'grayscale(0.8) blur(3px)';
-        row.style.transform = 'scale(0.92)';
+        row.style.opacity = '0.55';
+        row.style.filter = 'grayscale(0.4) blur(1px)';
+        row.style.transform = 'scale(0.96)';
         row.style.willChange = 'transform, opacity, filter';
-        row.style.transition = 'opacity 0.2s ease, filter 0.2s ease, transform 0.2s ease';
+        row.style.transition = 'opacity 0.15s ease, filter 0.15s ease, transform 0.15s ease';
       }
 
       // 插入指示线（box-shadow 通过 CSS class，这个不受影响）
@@ -4977,11 +4977,11 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       if (ri !== startIdx) {
         let shiftY = 0;
         if (isBottomHalf) {
-          if (hoverRowIndex < ri && ri < startIdx) shiftY = 28;
-          else if (hoverRowIndex >= ri && ri > startIdx) shiftY = -28;
+          if (hoverRowIndex < ri && ri < startIdx) shiftY = 18;
+          else if (hoverRowIndex >= ri && ri > startIdx) shiftY = -18;
         } else {
-          if (ri < hoverRowIndex && ri > startIdx) shiftY = -28;
-          else if (ri >= hoverRowIndex && ri < startIdx) shiftY = 28;
+          if (ri < hoverRowIndex && ri > startIdx) shiftY = -18;
+          else if (ri >= hoverRowIndex && ri < startIdx) shiftY = 18;
         }
         if (shiftY !== 0) {
           row.style.transform = `translateY(${shiftY}px)`;
