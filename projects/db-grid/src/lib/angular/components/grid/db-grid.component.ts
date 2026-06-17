@@ -420,31 +420,14 @@ import {
 
     /* ========== Row Drag & Drop ========== */
     .db-grid-row {
-      will-change: transform, opacity;
-      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
+      transition: none;
     }
-    .db-grid-row.dragging {
-      opacity: 0.3;
-      filter: grayscale(0.7) blur(2px);
-      transform: scale(0.93);
-      will-change: transform, opacity, filter;
-      transition: opacity 0.2s ease, filter 0.2s ease, transform 0.2s ease;
-    }
+    /* 以下拖拽样式通过行内 style 直接设置，绕过 Angular 视图封装 */
     .db-grid-row.drag-over {
-      box-shadow: inset 0 3px 0 var(--db-grid-accent, #2196f3), 0 0 12px rgba(33,150,243,0.25);
-      transition: box-shadow 0.15s ease;
+      box-shadow: inset 0 3px 0 #2196f3 !important;
     }
     .db-grid-row.drag-over-bottom {
-      box-shadow: inset 0 -3px 0 var(--db-grid-accent, #2196f3), 0 0 12px rgba(33,150,243,0.25);
-      transition: box-shadow 0.15s ease;
-    }
-    .db-grid-row.drag-shift-up {
-      transform: translateY(-24px);
-      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) 0.12s;
-    }
-    .db-grid-row.drag-shift-down {
-      transform: translateY(24px);
-      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) 0.12s;
+      box-shadow: inset 0 -3px 0 #2196f3 !important;
     }
 
     /* ========== Row Drag Ghost ========== */
@@ -4962,7 +4945,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     });
   }
 
-  /** 更新行拖拽视觉样式（含邻行偏移效果） */
+  /** 更新行拖拽视觉样式（全部用行内 style，绕过 Angular 视图封装） */
   private updateRowDragStyles(hoverRowIndex: number, isBottomHalf: boolean): void {
     this.clearRowDragStyles();
     const state = this._rowDragState;
@@ -4974,45 +4957,55 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
     rows.forEach(row => {
       const ri = parseInt(row.dataset['rowIndex'] || '-1', 10);
+      const isDragRow = state.dragNodes?.some((n: any) => n.rowIndex === ri);
 
-      // 插入指示线
+      // 被拖拽的行：灰色虚化 + 缩小 + 透明（行内 style 保证生效）
+      if (isDragRow) {
+        row.style.opacity = '0.2';
+        row.style.filter = 'grayscale(0.8) blur(3px)';
+        row.style.transform = 'scale(0.92)';
+        row.style.willChange = 'transform, opacity, filter';
+        row.style.transition = 'opacity 0.2s ease, filter 0.2s ease, transform 0.2s ease';
+      }
+
+      // 插入指示线（box-shadow 通过 CSS class，这个不受影响）
       if (ri === hoverRowIndex) {
         row.classList.add(isBottomHalf ? 'drag-over-bottom' : 'drag-over');
       }
 
-      // 被拖拽的行半透明 + 缩小
-      if (state.dragNodes?.some((n: any) => n.rowIndex === ri)) {
-        row.classList.add('dragging');
-      }
-
-      // 邻行偏移：在插入位置给即将插入的行腾出空间
-      if (ri === startIdx) return; // 拖拽行本身不偏移
-      if (isBottomHalf) {
-        // 插入位置在 hover 行的下方
-        // hover 行及以上不变，hover 行下方（除拖拽行外）的往下移
-        if (hoverRowIndex < ri && ri < startIdx) {
-          row.classList.add('drag-shift-down');
-        } else if (hoverRowIndex >= ri && ri > startIdx) {
-          row.classList.add('drag-shift-up');
+      // 邻行偏移（行内 style）
+      if (ri !== startIdx) {
+        let shiftY = 0;
+        if (isBottomHalf) {
+          if (hoverRowIndex < ri && ri < startIdx) shiftY = 28;
+          else if (hoverRowIndex >= ri && ri > startIdx) shiftY = -28;
+        } else {
+          if (ri < hoverRowIndex && ri > startIdx) shiftY = -28;
+          else if (ri >= hoverRowIndex && ri < startIdx) shiftY = 28;
         }
-      } else {
-        // 插入位置在 hover 行的上方（即 hover 行之前）
-        if (ri < hoverRowIndex && ri > startIdx) {
-          row.classList.add('drag-shift-up');
-        } else if (ri >= hoverRowIndex && ri < startIdx) {
-          row.classList.add('drag-shift-down');
+        if (shiftY !== 0) {
+          row.style.transform = `translateY(${shiftY}px)`;
+          row.style.transition = 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) 0.12s';
         }
       }
     });
   }
 
-  /** 清除行拖拽样式 */
+  /** 清除行拖拽样式（同时清除行内 style 和 CSS class） */
   private clearRowDragStyles(): void {
     const rowsContainer = this.rowsContainer?.nativeElement;
     if (!rowsContainer) return;
     const rows = rowsContainer.querySelectorAll<HTMLElement>('.db-grid-row');
     rows.forEach(row => {
-      row.classList.remove('drag-over', 'drag-over-bottom', 'dragging', 'drag-shift-up', 'drag-shift-down', 'drop-flash');
+      // 清除行内样式
+      row.style.opacity = '';
+      row.style.filter = '';
+      row.style.transform = '';
+      row.style.willChange = '';
+      row.style.transition = '';
+      row.style.boxShadow = '';
+      // 清除 CSS class
+      row.classList.remove('drag-over', 'drag-over-bottom', 'drop-flash');
     });
   }
 
