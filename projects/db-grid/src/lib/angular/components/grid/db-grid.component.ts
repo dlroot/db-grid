@@ -2400,6 +2400,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     const currentScrollTop = this.bodyContainer?.nativeElement?.scrollTop || 0;
     let targetScrollTop: number;
 
+    console.log('[KB] ensureIndexVisible', { index, align, rowHeight, viewportHeight, currentScrollTop });
+
     switch (align) {
       case 'top': targetScrollTop = index * rowHeight; break;
       case 'bottom': targetScrollTop = index * rowHeight - viewportHeight + rowHeight; break;
@@ -2411,10 +2413,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         } else if (currentScrollTop + viewportHeight < (index + 1) * rowHeight) {
           targetScrollTop = (index + 1) * rowHeight - viewportHeight;
         } else {
+          console.log('[KB] ensureIndexVisible: already visible, no scroll');
           return; // 目标行已可见，不滚动
         }
     }
     const newScrollTop = Math.max(0, Math.round(targetScrollTop));
+    console.log('[KB] ensureIndexVisible: setting scrollTop', { newScrollTop });
     // 直接设置 scrollTop，onScroll 会负责重新渲染行
     this.bodyContainer.nativeElement.scrollTop = newScrollTop;
   }
@@ -3986,6 +3990,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       return;
     }
 
+    console.log('[KB] onKeyDown', event.key, { scrollTop: this.bodyContainer?.nativeElement?.scrollTop });
+
     // ========== 方向键：无条件阻止原生滚动 ==========
     // 必须在 handleKeyDown 之前就 preventDefault，否则滚动已发生
     const interceptedKeys = ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','PageUp','PageDown','Home','End'];
@@ -4763,12 +4769,13 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   // ============ 事件 ============
 
   onScroll(event: Event): void {
-    // Hide tooltip on scroll
     this.tooltipService.hideTooltip();
 
     const target = event.target as HTMLElement;
     const newScrollTop = target.scrollTop;
     const newScrollLeft = target.scrollLeft;
+
+    console.log('[KB] onScroll', { newScrollTop, oldScrollTop: this.scrollTop, newScrollLeft, oldScrollLeft: this.scrollLeft });
 
     // 同步表头横向滚动
     if (newScrollLeft !== this.scrollLeft) {
