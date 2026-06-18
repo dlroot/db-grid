@@ -706,25 +706,9 @@ export class KeyboardNavigationService {
 
   /** 高亮焦点单元格 */
   private highlightFocusedCell(rowIndex: number, colId: string): void {
-    if (!this.gridElement) return;
-
-    // Use requestAnimationFrame to ensure the target row is in the DOM
-    // after scroll (ensureIndexVisible) has completed.
-    const grid = this.gridElement;
-    const apply = () => {
-      grid.querySelectorAll('.db-grid-cell-focused').forEach(el => {
-        el.classList.remove('db-grid-cell-focused');
-      });
-      const selector = `.db-grid-row[data-row-index="${rowIndex}"] .db-grid-cell[data-col-id="${colId}"]`;
-      const target = grid.querySelector(selector);
-      if (target) {
-        target.classList.add('db-grid-cell-focused');
-      } else {
-        // Row not yet rendered — retry once
-        requestAnimationFrame(apply);
-      }
-    };
-    requestAnimationFrame(apply);
+    // Highlighting is now handled by the component's applyFocusHighlight(),
+    // which is called at the end of renderRows() (after DOM is updated).
+    // This method is kept as a no-op for API compatibility.
   }
 
   // ========== 行高（用于 Page 计算）==========

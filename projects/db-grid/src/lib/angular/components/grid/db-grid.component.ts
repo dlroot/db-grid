@@ -4607,6 +4607,9 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.updateSelectionStyles();
     this.updateSelectAllCheckboxState();
     this.cdr.detectChanges();
+
+    // 重新应用键盘焦点高亮（虚拟滚动后行被重新渲染，需要重新添加 class）
+    this.applyFocusHighlight();
   }
 
   /** 应用单元格合并 */
@@ -5362,24 +5365,31 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
 
   /** 焦点单元格变化回调 */
   onFocusChanged(cell: { rowIndex: number; colId: string }): void {
-    // 通知 rowRenderer 高亮焦点单元格
-    // Use requestAnimationFrame to wait for scroll + re-render to complete
-    // before querying the DOM for the target cell element.
+    // 直接应用高亮（renderRows 每次重绘后也会调用 applyFocusHighlight）
+    this.applyFocusHighlight();
+  }
+
+  /** 应用键盘焦点高亮（在 renderRows 末尾调用，确保行已在 DOM 中） */
+  private applyFocusHighlight(): void {
     const bodyContainer = this.bodyContainer?.nativeElement;
     if (!bodyContainer) return;
 
-    const applyHighlight = () => {
+    const focused = this.keyboardNavigationService.getFocusedCell();
+    if (!focused) {
+      // 没有焦点单元格，清除所有高亮
       bodyContainer.querySelectorAll('.db-grid-cell-focused').forEach(el => el.classList.remove('db-grid-cell-focused'));
-      const selector = `.db-grid-row[data-row-index="${cell.rowIndex}"] > [data-col-id="${cell.colId}"]`;
-      const target = bodyContainer.querySelector(selector);
-      if (target) {
-        target.classList.add('db-grid-cell-focused');
-      } else {
-        // Row not yet in DOM (virtual scroll) — retry once after next animation frame
-        requestAnimationFrame(applyHighlight);
-      }
-    };
-    requestAnimationFrame(applyHighlight);
+      return;
+    }
+
+    // 清除旧高亮
+    bodyContainer.querySelectorAll('.db-grid-cell-focused').forEach(el => el.classList.remove('db-grid-cell-focused'));
+
+    // 应用新高亮
+    const selector = `.db-grid-row[data-row-index="${focused.rowIndex}"] > [data-col-id="${focused.colId}"]`;
+    const target = bodyContainer.querySelector(selector);
+    if (target) {
+      target.classList.add('db-grid-cell-focused');
+    }
   }
 
   /** 编辑器值变化 */
