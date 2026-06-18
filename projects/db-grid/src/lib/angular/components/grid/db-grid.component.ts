@@ -124,7 +124,7 @@ import { SparklineService } from '../../../core/services/sparkline.service';
   styleUrls: ['./db-grid-high-contrast.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div #gridContainer class="db-grid-container" [class]="themeClass()" (keydown)="onKeyDown($event)"
+    <div #gridContainer class="db-grid-container" [class]="themeClass()" (keydown.capture)="onKeyDown($event)" (click)="onGridContainerClick($event)"
          tabindex="0" style="outline: none; user-select: none; -webkit-user-select: none;">
       @if (showQuickFilter) {
         <div class="db-grid-quick-filter">
@@ -5439,6 +5439,13 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   onEditorNavigate(direction: { direction: 'up' | 'down' | 'left' | 'right' }): void {
     // TODO: 实现编辑器键盘导航
     // 方向键移动到相邻单元格
+  }
+
+  /** 点击网格容器时，确保它获得焦点，以便键盘导航事件被正确捕获 */
+  onGridContainerClick(event: MouseEvent): void {
+    if (this.gridContainer?.nativeElement && document.activeElement !== this.gridContainer.nativeElement) {
+      this.gridContainer.nativeElement.focus({ preventScroll: true });
+    }
   }
 
   /** 在列头右键打开筛选器（可由外部或 cellRenderer 调用） */
