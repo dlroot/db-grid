@@ -226,6 +226,53 @@ body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'S
   align-items: center;
   gap: 6px;
   &:hover { border-color: #667eea; color: #667eea; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(102,126,234,0.15); }
+  &:disabled, &.btn-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+    &:hover {
+      border-color: #e8ecf0;
+      color: #333;
+      transform: none;
+      box-shadow: none;
+    }
+  }
+}
+.btn-danger {
+  border-color: #dc3545;
+  color: #dc3545;
+  &:hover { border-color: #c82333; color: #c82333; background: #fff5f5; }
+  &:disabled {
+    border-color: #f5c6cb;
+    color: #f5c6cb;
+    background: white;
+  }
+}
+
+/* 撤销重做状态显示 */
+.undo-redo-status {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  
+  .status-badge {
+    padding: 5px 12px;
+    background: #e8ecf0;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #666;
+    transition: all 0.2s;
+    
+    &.active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+  }
 }
 .btn-export {
   padding: 9px 18px;

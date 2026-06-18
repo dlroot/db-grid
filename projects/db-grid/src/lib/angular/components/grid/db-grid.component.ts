@@ -3662,6 +3662,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   }
 
   private applyUndoAction(action: any): void {
+    console.log('[DBGrid] applyUndoAction:', action.type, action);
 
     switch (action.type) {
       case 'edit':
@@ -3672,24 +3673,69 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         }
         break;
       case 'rowAdd':
-        // 撤销添加 = 删除最后一行
+        // 撤销添加 = 删除指定位置的行（修复：之前错误地删除最后一行）
         const currentData = this.getRowData();
-        if (currentData.length > 0) {
-          currentData.pop();
+        if (action.rowIndex !== undefined && action.rowIndex < currentData.length) {
+          currentData.splice(action.rowIndex, 1);
           this.setRowData(currentData);
+          console.log('[DBGrid] Undo rowAdd: removed row at index', action.rowIndex);
         }
         break;
       case 'rowDelete':
         // 撤销删除 = 恢复行
         const allData = this.getRowData();
-        const insertIdx = Math.min(action.rowIndex, allData.length);
+        const insertIdx = Math.min(action.rowIndex ?? 0, allData.length);
         allData.splice(insertIdx, 0, action.rowData);
         this.setRowData(allData);
+        console.log('[DBGrid] Undo rowDelete: restored row at index', insertIdx);
+        break;
+      case 'columnResize':
+        // 撤销列宽变更
+        if (action.colId && action.oldWidth !== undefined) {
+          const colDef = this.columnService.getColumn(action.colId);
+          if (colDef) {
+            colDef.width = action.oldWidth;
+            this.refreshView();
+            console.log('[DBGrid] Undo columnResize:', action.colId, '->', action.oldWidth);
+          }
+        }
+        break;
+      case 'columnMove':
+        // 撤销列移动
+        if (action.colId && action.fromIndex !== undefined) {
+          // TODO: 实现列移动撤销
+          console.log('[DBGrid] Undo columnMove: move', action.colId, 'to', action.fromIndex);
+        }
+        break;
+      case 'sortChange':
+        // 撤销排序变更
+        if (action.colId) {
+          this.columnService.setColumnSort(action.colId, action.oldSort ?? null);
+          this.dataService.sort(this.columnService.getColumnDefs());
+          this.refreshView();
+          console.log('[DBGrid] Undo sortChange:', action.colId, '->', action.oldSort);
+        }
+        break;
+      case 'filterChange':
+        // 撤销筛选变更
+        if (action.colId && action.oldFilter !== undefined) {
+          const filterModel = this.filterService.getFilterModel();
+          if (action.oldFilter === null) {
+            delete filterModel[action.colId];
+          } else {
+            filterModel[action.colId] = action.oldFilter;
+          }
+          this.filterService.setFilterModel(filterModel);
+          this.refreshView();
+          console.log('[DBGrid] Undo filterChange:', action.colId, '->', action.oldFilter);
+        }
         break;
     }
   }
 
   private applyRedoAction(action: any): void {
+    console.log('[DBGrid] applyRedoAction:', action.type, action);
+    
     switch (action.type) {
       case 'edit':
         // 重做新值
@@ -3700,17 +3746,61 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         }
         break;
       case 'rowAdd':
-        // 重做添加 = 重新添加行
+        // 重做添加 = 在指定位置重新添加行（修复：之前错误地追加到末尾）
         const rdData = this.getRowData();
-        rdData.push(action.rowData);
+        const insertIdx = action.rowIndex ?? rdData.length;
+        rdData.splice(insertIdx, 0, action.rowData);
         this.setRowData(rdData);
+        console.log('[DBGrid] Redo rowAdd: inserted row at index', insertIdx);
         break;
       case 'rowDelete':
         // 重做删除 = 重新删除行
         const ddData = this.getRowData();
-        const delIdx = Math.min(action.rowIndex, ddData.length - 1);
+        const delIdx = Math.min(action.rowIndex ?? 0, ddData.length - 1);
         ddData.splice(delIdx, 1);
         this.setRowData(ddData);
+        console.log('[DBGrid] Redo rowDelete: removed row at index', delIdx);
+        break;
+      case 'columnResize':
+        // 重做列宽变更
+        if (action.colId && action.newWidth !== undefined) {
+          const colDef = this.columnService.getColumn(action.colId);
+          if (colDef) {
+            colDef.width = action.newWidth;
+            this.refreshView();
+            console.log('[DBGrid] Redo columnResize:', action.colId, '->', action.newWidth);
+          }
+        }
+        break;
+      case 'columnMove':
+        // 重做列移动
+        if (action.colId && action.toIndex !== undefined) {
+          // TODO: 实现列移动重做
+          console.log('[DBGrid] Redo columnMove: move', action.colId, 'to', action.toIndex);
+        }
+        break;
+      case 'sortChange':
+        // 重做排序变更
+        if (action.colId) {
+          this.columnService.setColumnSort(action.colId, action.newSort ?? null);
+          this.dataService.sort(this.columnService.getColumnDefs());
+          this.refreshView();
+          console.log('[DBGrid] Redo sortChange:', action.colId, '->', action.newSort);
+        }
+        break;
+      case 'filterChange':
+        // 重做筛选变更
+        if (action.colId && action.newFilter !== undefined) {
+          const filterModel = this.filterService.getFilterModel();
+          if (action.newFilter === null) {
+            delete filterModel[action.colId];
+          } else {
+            filterModel[action.colId] = action.newFilter;
+          }
+          this.filterService.setFilterModel(filterModel);
+          this.refreshView();
+          console.log('[DBGrid] Redo filterChange:', action.colId, '->', action.newFilter);
+        }
         break;
     }
   }

@@ -493,12 +493,20 @@
     <div class="demo-panel">
       <div class="demo-header">
         <h2>撤销重做</h2>
-        <p class="demo-desc">支持编辑、添加行、删除行的撤销重做操作</p>
+        <p class="demo-desc">支持编辑、添加行、删除行的撤销重做操作。快捷键：Ctrl+Z 撤销，Ctrl+Y / Ctrl+Shift+Z 重做</p>
         <div class="demo-actions">
-          <button class="btn" (click)="undo()">↩️ 撤销</button>
-          <button class="btn" (click)="redo()">↪️ 重做</button>
+          <button class="btn" (click)="undo()" [disabled]="!canUndo()" [class.btn-disabled]="!canUndo()">
+            ↩️ 撤销 ({{ undoStackSize() }})
+          </button>
+          <button class="btn" (click)="redo()" [disabled]="!canRedo()" [class.btn-disabled]="!canRedo()">
+            ↪️ 重做 ({{ redoStackSize() }})
+          </button>
           <button class="btn" (click)="addRow()">➕ 添加行</button>
-          <button class="btn" (click)="deleteRow()">🗑️ 删除选中</button>
+          <button class="btn btn-danger" (click)="deleteRow()" [disabled]="selectedCount() === 0">🗑️ 删除选中</button>
+        </div>
+        <div class="undo-redo-status">
+          <span class="status-badge" [class.active]="canUndo()">撤销栈: {{ undoStackSize() }}</span>
+          <span class="status-badge" [class.active]="canRedo()">重做栈: {{ redoStackSize() }}</span>
         </div>
       </div>
       <db-grid
