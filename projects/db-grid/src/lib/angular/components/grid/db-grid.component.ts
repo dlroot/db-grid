@@ -2396,8 +2396,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   // --- 滚动 ---
   ensureIndexVisible(index: number, align: string = 'auto'): void {
     const rowHeight = this.dataService.getRowHeight();
-    const viewportHeight = this.bodyContainer.nativeElement.clientHeight;
-    const currentScrollTop = this.bodyContainer.nativeElement.scrollTop;
+    const viewportHeight = this.bodyContainer?.nativeElement?.clientHeight || 400;
+    const currentScrollTop = this.bodyContainer?.nativeElement?.scrollTop || 0;
     let targetScrollTop: number;
 
     switch (align) {
@@ -2409,7 +2409,16 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         else if (currentScrollTop + viewportHeight < (index + 1) * rowHeight) targetScrollTop = (index + 1) * rowHeight - viewportHeight;
         else return;
     }
-    this.bodyContainer.nativeElement.scrollTop = Math.max(0, targetScrollTop);
+    const newScrollTop = Math.max(0, Math.round(targetScrollTop));
+    this.bodyContainer.nativeElement.scrollTop = newScrollTop;
+
+    // 立即更新 viewport 并重新渲染（不依赖 scroll 事件）
+    this.scrollTop = newScrollTop;
+    this.dataService.setScrollTop(newScrollTop);
+    if (!this.enableServerSide) {
+      this.viewportInfo.set(this.dataService.getViewportInfo());
+    }
+    this.renderRows();
   }
 
   ensureNodeVisible(node: any, align: string = 'auto'): void {
