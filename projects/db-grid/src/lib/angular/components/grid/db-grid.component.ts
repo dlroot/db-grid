@@ -2405,9 +2405,15 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       case 'bottom': targetScrollTop = index * rowHeight - viewportHeight + rowHeight; break;
       case 'middle': targetScrollTop = index * rowHeight - viewportHeight / 2; break;
       default:
-        if (currentScrollTop > index * rowHeight) targetScrollTop = index * rowHeight;
-        else if (currentScrollTop + viewportHeight < (index + 1) * rowHeight) targetScrollTop = (index + 1) * rowHeight - viewportHeight;
-        else return;
+        // 始终滚动到让目标行可见（即使用户没要求也对）
+        if (currentScrollTop > index * rowHeight) {
+          targetScrollTop = index * rowHeight;
+        } else if (currentScrollTop + viewportHeight < (index + 1) * rowHeight) {
+          targetScrollTop = (index + 1) * rowHeight - viewportHeight;
+        } else {
+          // 目标行已在可视区域内，但仍需更新 viewport 并重新渲染
+          targetScrollTop = currentScrollTop;
+        }
     }
     const newScrollTop = Math.max(0, Math.round(targetScrollTop));
     this.bodyContainer.nativeElement.scrollTop = newScrollTop;
@@ -3986,6 +3992,14 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     // 如果正在编辑单元格，不处理快捷键
     if (this.isCellEditing()) {
       return;
+    }
+
+    // ========== 方向键：无条件阻止原生滚动 ==========
+    // 必须在 handleKeyDown 之前就 preventDefault，否则滚动已发生
+    const interceptedKeys = ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','PageUp','PageDown','Home','End'];
+    if (interceptedKeys.includes(event.key)) {
+      event.preventDefault();
+      event.stopPropagation();
     }
 
     const ctrlKey = event.ctrlKey || event.metaKey;
