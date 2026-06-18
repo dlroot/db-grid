@@ -404,12 +404,15 @@ import { SparklineService } from '../../../core/services/sparkline.service';
     }
 
     /* ========== Keyboard Focus Styles ========== */
-    .db-grid-cell-focused {
+    /* Note: ::ng-deep needed because cells are created dynamically by
+       document.createElement() and don't have the _ngcontent-xxx
+       encapsulation attribute (see ViewEncapsulation.Emulated default). */
+    :host ::ng-deep .db-grid-cell-focused {
       background: var(--db-grid-range-selection-background, rgba(33, 150, 243, 0.15)) !important;
       outline: 2px solid var(--db-grid-range-selection-border-color, #2196f3);
       outline-offset: -2px;
     }
-    .db-grid-cell-focused.db-grid-cell-editing {
+    :host ::ng-deep .db-grid-cell-focused.db-grid-cell-editing {
       outline: 2px solid var(--db-grid-cell-editing-border-color, #ff9800);
       background: rgba(255, 152, 0, 0.08);
     }
