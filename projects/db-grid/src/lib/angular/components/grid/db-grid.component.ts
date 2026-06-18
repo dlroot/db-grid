@@ -1561,6 +1561,15 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
           this.gridContainer?.nativeElement.focus({ preventScroll: true });
         }
       });
+      // 原生 keydown 监听（绕过 Angular 模板绑定的潜在问题）
+      this.gridContainer.nativeElement.addEventListener('keydown', (e: KeyboardEvent) => {
+        const interceptedKeys = ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','PageUp','PageDown','Home','End'];
+        if (interceptedKeys.includes(e.key)) {
+          console.log('[KB native] keydown', e.key, { activeElement: document.activeElement?.tagName, scrollTop: this.bodyContainer?.nativeElement?.scrollTop });
+          e.preventDefault();
+          this.onKeyDown(e);
+        }
+      });
     }
 
     this.ngZone.runOutsideAngular(() => {
