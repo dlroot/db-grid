@@ -2411,26 +2411,12 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         } else if (currentScrollTop + viewportHeight < (index + 1) * rowHeight) {
           targetScrollTop = (index + 1) * rowHeight - viewportHeight;
         } else {
-          // 目标行已可见，不滚动
-          this.renderRows();
-          return;
+          return; // 目标行已可见，不滚动
         }
     }
     const newScrollTop = Math.max(0, Math.round(targetScrollTop));
+    // 直接设置 scrollTop，onScroll 会负责重新渲染行
     this.bodyContainer.nativeElement.scrollTop = newScrollTop;
-
-    // 用 requestAnimationFrame 等待浏览器实际完成滚动，再重新渲染行
-    // 否则 renderRows 会用旧的 scrollTop 计算可见行，导致白屏
-    requestAnimationFrame(() => {
-      // 再次确认 scrollTop（可能被浏览器修正过）
-      const actualScrollTop = this.bodyContainer.nativeElement.scrollTop;
-      this.scrollTop = actualScrollTop;
-      this.dataService.setScrollTop(actualScrollTop);
-      if (!this.enableServerSide) {
-        this.viewportInfo.set(this.dataService.getViewportInfo());
-      }
-      this.renderRows();
-    });
   }
 
   ensureNodeVisible(node: any, align: string = 'auto'): void {
