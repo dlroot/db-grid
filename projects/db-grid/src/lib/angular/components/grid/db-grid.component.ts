@@ -135,8 +135,8 @@ import { SparklineService } from '../../../core/services/sparkline.service';
         </div>
       }
       <div #headerContainer class="db-grid-header-container"></div>
-      <div #bodyContainer class="db-grid-body-container" (scroll)="onScroll($event)">
-        <div #virtualScroll class="db-grid-virtual-scroll">
+      <div #bodyContainer tabindex="-1" class="db-grid-body-container" (scroll)="onScroll($event)">
+        <div #virtualScroll tabindex="-1" class="db-grid-virtual-scroll">
           <!-- Pinned Top Rows -->
           @if (hasPinnedTopRows()) {
             <div #pinnedTopContainer class="db-grid-pinned-top"></div>
@@ -5375,20 +5375,24 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     if (!bodyContainer) return;
 
     const focused = this.keyboardNavigationService.getFocusedCell();
-    if (!focused) {
-      // 没有焦点单元格，清除所有高亮
-      bodyContainer.querySelectorAll('.db-grid-cell-focused').forEach(el => el.classList.remove('db-grid-cell-focused'));
-      return;
-    }
 
     // 清除旧高亮
     bodyContainer.querySelectorAll('.db-grid-cell-focused').forEach(el => el.classList.remove('db-grid-cell-focused'));
 
-    // 应用新高亮
-    const selector = `.db-grid-row[data-row-index="${focused.rowIndex}"] > [data-col-id="${focused.colId}"]`;
+    if (!focused) return;
+
+    // 先用 .db-grid-cell 类匹配（更可靠）
+    const selector = `.db-grid-row[data-row-index="${focused.rowIndex}"] .db-grid-cell[data-col-id="${focused.colId}"]`;
     const target = bodyContainer.querySelector(selector);
     if (target) {
       target.classList.add('db-grid-cell-focused');
+    } else {
+      // Fallback: 尝试用 data 属性匹配（可能 row 没有 db-grid-row 类的情况）
+      const altSelector = `[data-row-index="${focused.rowIndex}"] > [data-col-id="${focused.colId}"]`;
+      const altTarget = bodyContainer.querySelector(altSelector);
+      if (altTarget) {
+        altTarget.classList.add('db-grid-cell-focused');
+      }
     }
   }
 
