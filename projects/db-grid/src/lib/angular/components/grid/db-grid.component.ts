@@ -124,7 +124,7 @@ import { SparklineService } from '../../../core/services/sparkline.service';
   styleUrls: ['./db-grid-high-contrast.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div #gridContainer class="db-grid-container" [class]="themeClass()" (keydown.capture)="onKeyDown($event)" (click)="onGridContainerClick($event)"
+    <div #gridContainer class="db-grid-container" [class]="themeClass()" (keydown)="onKeyDown($event)" (click)="onGridContainerClick($event)"
          tabindex="0" style="outline: none; user-select: none; -webkit-user-select: none;">
       @if (showQuickFilter) {
         <div class="db-grid-quick-filter">
@@ -1544,6 +1544,23 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       });
       // 默认聚焦第一个单元格
       setTimeout(() => this.keyboardNavigationService.focusFirstCell(), 0);
+    }
+
+    // ========== 确保 gridContainer 始终有焦点（防止滚动条接收方向键）==========
+    if (this.gridContainer?.nativeElement) {
+      // 初始聚焦
+      setTimeout(() => {
+        if (this.gridContainer?.nativeElement) {
+          this.gridContainer.nativeElement.focus({ preventScroll: true });
+        }
+      }, 100);
+      // 点击网格容器时重新聚焦（排除输入框等）
+      this.gridContainer.nativeElement.addEventListener('mousedown', (e: MouseEvent) => {
+        const target = e.target as HTMLElement;
+        if (!target.closest('input, textarea, select, [contenteditable="true"]')) {
+          this.gridContainer?.nativeElement.focus({ preventScroll: true });
+        }
+      });
     }
 
     this.ngZone.runOutsideAngular(() => {
