@@ -148,7 +148,8 @@ export class KeyboardNavigationService {
     this._focusedColId = colId;
 
     if (scrollIntoView) {
-      this.gridApi?.ensureIndexVisible(rowIndex, 'middle');
+      // 使用 'auto' 对齐：仅在目标行不可见时才滚动
+      this.gridApi?.ensureIndexVisible(rowIndex, 'auto');
       this.gridApi?.ensureColumnVisible(colId);
     }
 

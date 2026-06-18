@@ -2405,26 +2405,32 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       case 'bottom': targetScrollTop = index * rowHeight - viewportHeight + rowHeight; break;
       case 'middle': targetScrollTop = index * rowHeight - viewportHeight / 2; break;
       default:
-        // 始终滚动到让目标行可见（即使用户没要求也对）
+        // auto：只在目标行不可见时才滚动
         if (currentScrollTop > index * rowHeight) {
           targetScrollTop = index * rowHeight;
         } else if (currentScrollTop + viewportHeight < (index + 1) * rowHeight) {
           targetScrollTop = (index + 1) * rowHeight - viewportHeight;
         } else {
-          // 目标行已在可视区域内，但仍需更新 viewport 并重新渲染
-          targetScrollTop = currentScrollTop;
+          // 目标行已可见，不滚动
+          this.renderRows();
+          return;
         }
     }
     const newScrollTop = Math.max(0, Math.round(targetScrollTop));
     this.bodyContainer.nativeElement.scrollTop = newScrollTop;
 
-    // 立即更新 viewport 并重新渲染（不依赖 scroll 事件）
-    this.scrollTop = newScrollTop;
-    this.dataService.setScrollTop(newScrollTop);
-    if (!this.enableServerSide) {
-      this.viewportInfo.set(this.dataService.getViewportInfo());
-    }
-    this.renderRows();
+    // 用 requestAnimationFrame 等待浏览器实际完成滚动，再重新渲染行
+    // 否则 renderRows 会用旧的 scrollTop 计算可见行，导致白屏
+    requestAnimationFrame(() => {
+      // 再次确认 scrollTop（可能被浏览器修正过）
+      const actualScrollTop = this.bodyContainer.nativeElement.scrollTop;
+      this.scrollTop = actualScrollTop;
+      this.dataService.setScrollTop(actualScrollTop);
+      if (!this.enableServerSide) {
+        this.viewportInfo.set(this.dataService.getViewportInfo());
+      }
+      this.renderRows();
+    });
   }
 
   ensureNodeVisible(node: any, align: string = 'auto'): void {
