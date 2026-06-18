@@ -55,9 +55,8 @@
 /* 焦点单元格 */
 :host-context(.db-grid-theme-high-contrast) ::ng-deep .db-grid-cell-focused,
 .db-grid-theme-high-contrast ::ng-deep .db-grid-cell-focused {
-  outline: 3px solid #ff0 !important;
-  outline-offset: -1px;
-  background: rgba(255, 255, 0, 0.2) !important;
+  font-weight: 700 !important;
+  color: #fff !important;
 }
 
 /* 区域选择 */

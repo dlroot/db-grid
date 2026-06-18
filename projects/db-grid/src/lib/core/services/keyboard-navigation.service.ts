@@ -708,14 +708,23 @@ export class KeyboardNavigationService {
   private highlightFocusedCell(rowIndex: number, colId: string): void {
     if (!this.gridElement) return;
 
-    // 移除旧高亮
-    this.gridElement.querySelectorAll('.db-grid-cell-focused').forEach(el => {
-      el.classList.remove('db-grid-cell-focused');
-    });
-
-    // 添加新高亮
-    const selector = `.db-grid-row[data-row-index="${rowIndex}"] .db-grid-cell[data-col-id="${colId}"]`;
-    this.gridElement.querySelector(selector)?.classList.add('db-grid-cell-focused');
+    // Use requestAnimationFrame to ensure the target row is in the DOM
+    // after scroll (ensureIndexVisible) has completed.
+    const grid = this.gridElement;
+    const apply = () => {
+      grid.querySelectorAll('.db-grid-cell-focused').forEach(el => {
+        el.classList.remove('db-grid-cell-focused');
+      });
+      const selector = `.db-grid-row[data-row-index="${rowIndex}"] .db-grid-cell[data-col-id="${colId}"]`;
+      const target = grid.querySelector(selector);
+      if (target) {
+        target.classList.add('db-grid-cell-focused');
+      } else {
+        // Row not yet rendered — retry once
+        requestAnimationFrame(apply);
+      }
+    };
+    requestAnimationFrame(apply);
   }
 
   // ========== 行高（用于 Page 计算）==========

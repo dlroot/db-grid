@@ -408,9 +408,8 @@ import { SparklineService } from '../../../core/services/sparkline.service';
        document.createElement() and don't have the _ngcontent-xxx
        encapsulation attribute (see ViewEncapsulation.Emulated default). */
     :host ::ng-deep .db-grid-cell-focused {
-      background: var(--db-grid-range-selection-background, rgba(33, 150, 243, 0.15)) !important;
-      outline: 2px solid var(--db-grid-range-selection-border-color, #2196f3);
-      outline-offset: -2px;
+      font-weight: 700 !important;
+      color: #000 !important;
     }
     :host ::ng-deep .db-grid-cell-focused.db-grid-cell-editing {
       outline: 2px solid var(--db-grid-cell-editing-border-color, #ff9800);
@@ -5364,12 +5363,23 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   /** 焦点单元格变化回调 */
   onFocusChanged(cell: { rowIndex: number; colId: string }): void {
     // 通知 rowRenderer 高亮焦点单元格
+    // Use requestAnimationFrame to wait for scroll + re-render to complete
+    // before querying the DOM for the target cell element.
     const bodyContainer = this.bodyContainer?.nativeElement;
-    if (bodyContainer) {
+    if (!bodyContainer) return;
+
+    const applyHighlight = () => {
       bodyContainer.querySelectorAll('.db-grid-cell-focused').forEach(el => el.classList.remove('db-grid-cell-focused'));
       const selector = `.db-grid-row[data-row-index="${cell.rowIndex}"] > [data-col-id="${cell.colId}"]`;
-      bodyContainer.querySelector(selector)?.classList.add('db-grid-cell-focused');
-    }
+      const target = bodyContainer.querySelector(selector);
+      if (target) {
+        target.classList.add('db-grid-cell-focused');
+      } else {
+        // Row not yet in DOM (virtual scroll) — retry once after next animation frame
+        requestAnimationFrame(applyHighlight);
+      }
+    };
+    requestAnimationFrame(applyHighlight);
   }
 
   /** 编辑器值变化 */
