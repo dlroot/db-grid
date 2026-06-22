@@ -425,9 +425,11 @@ export class HeaderRendererService {
     if (colDef.pinnedLeft) {
       styles.push(`left: 0`);
       styles.push(`z-index: 1`);
+      styles.push(`position: sticky`);
     } else if (colDef.pinnedRight) {
       styles.push(`right: 0`);
       styles.push(`z-index: 1`);
+      styles.push(`position: sticky`);
     }
 
     return styles.join('; ');

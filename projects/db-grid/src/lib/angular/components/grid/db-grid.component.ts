@@ -295,9 +295,9 @@ import { SparklineService } from '../../../core/services/sparkline.service';
     .db-grid-body-container { flex: 1; overflow-y: auto; overflow-x: auto; position: relative; box-sizing: border-box; width: 100%; }
     .db-grid-virtual-scroll { position: relative; min-width: 100%; }
     .db-grid-rows { display: flex; flex-direction: column; position: absolute; left: 0; min-width: 100%; }
-    .db-grid-pinned-left { position: absolute; left: 0; top: 0; z-index: 2; overflow: hidden; }
+    .db-grid-pinned-left { position: absolute; left: 0; top: 0; z-index: 2; overflow: hidden; background: var(--db-grid-bg, #fff); }
     .db-grid-pinned-left .db-grid-row { position: sticky; left: 0; }
-    .db-grid-pinned-center { position: absolute; top: 0; z-index: 2; overflow: hidden; }
+    .db-grid-pinned-center { position: absolute; top: 0; z-index: 2; overflow: hidden; background: var(--db-grid-bg, #fff); }
     .db-grid-pinned-center .db-grid-row { position: sticky; left: 0; }
     .db-grid-footer-container { flex-shrink: 0; border-top: 1px solid var(--db-grid-border-color, #ddd); }
     .db-grid-overlay {
@@ -742,6 +742,22 @@ import { SparklineService } from '../../../core/services/sparkline.service';
     }
     .db-grid-row-pinned-bottom:hover {
       background: var(--db-grid-pinned-row-hover-bg, #e3f2fd) !important;
+    }
+
+    /* ========== Pinned Columns ========== */
+    .db-grid-header-pinned-left,
+    .db-grid-header-pinned-right {
+      background: var(--db-grid-header-bg, #f5f7fa) !important;
+      z-index: 2 !important;
+    }
+    .db-grid-pinned-left .db-grid-cell,
+    .db-grid-pinned-center .db-grid-cell {
+      background: var(--db-grid-bg, #fff) !important;
+      border-right: 2px solid var(--db-grid-border-color, #ddd);
+    }
+    .db-grid-pinned-left .db-grid-row:hover .db-grid-cell,
+    .db-grid-pinned-center .db-grid-row:hover .db-grid-cell {
+      background: var(--db-grid-row-hover-bg, #f0f4ff) !important;
     }
   `],
 })
@@ -4514,6 +4530,18 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         rowsContainer.style.width = `${totalW}px`;
         // 设置 pinned left 容器宽度（容器可能不存在，需要防御性检查）
         if (this.pinnedLeftContainer?.nativeElement) {
+          this.pinnedLeftContainer.nativeElement.style.width = `${pinnedLeftWidth}px`;
+          this.pinnedLeftContainer.nativeElement.style.height = `${totalHeight}px`;
+        }
+      }
+    }
+
+    // 非列虚拟化模式下，确保 pinned left/center 容器尺寸正确
+    if (!colRange) {
+      if (this.pinnedLeftContainer?.nativeElement && this.pinnedLeftColumnIds().length > 0) {
+        const pinnedCols = this.columnService.getVisibleColumns().filter(c => c.pinnedLeft);
+        const pinnedLeftWidth = pinnedCols.reduce((t, c) => t + (this.columnService.getColumnState(c)?.width || c.width || 200), 0);
+        if (pinnedLeftWidth > 0) {
           this.pinnedLeftContainer.nativeElement.style.width = `${pinnedLeftWidth}px`;
           this.pinnedLeftContainer.nativeElement.style.height = `${totalHeight}px`;
         }
