@@ -2391,48 +2391,63 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     const rowHeight = this.dataService.getRowHeight();
     const viewportHeight = this.bodyContainer?.nativeElement?.clientHeight || 400;
     const currentScrollTop = this.bodyContainer?.nativeElement?.scrollTop || 0;
-    const bufferSize = 5; // 与 DataService 的 bufferSize 一致
     let targetScrollTop: number;
 
     console.log('[KB] ensureIndexVisible', { index, align, rowHeight, viewportHeight, currentScrollTop });
 
+    // 计算目标行的像素位置
+    const targetRowTop = index * rowHeight;
+    const targetRowBottom = targetRowTop + rowHeight;
+    const viewportTop = currentScrollTop;
+    const viewportBottom = currentScrollTop + viewportHeight;
+
     switch (align) {
-      case 'top': targetScrollTop = index * rowHeight; break;
-      case 'bottom': targetScrollTop = index * rowHeight - viewportHeight + rowHeight; break;
-      case 'middle': targetScrollTop = index * rowHeight - viewportHeight / 2; break;
+      case 'top': 
+        targetScrollTop = targetRowTop; 
+        break;
+      case 'bottom': 
+        targetScrollTop = targetRowTop - viewportHeight + rowHeight; 
+        break;
+      case 'middle': 
+        targetScrollTop = targetRowTop - viewportHeight / 2 + rowHeight / 2; 
+        break;
       default:
-        // auto：只在目标行不可见时才滚动（考虑 buffer）
-        // 目标行在当前 viewport + buffer 范围内才算可见
-        const firstVisibleIndex = Math.floor(currentScrollTop / rowHeight) - bufferSize;
-        const lastVisibleIndex = Math.floor((currentScrollTop + viewportHeight) / rowHeight) + bufferSize;
-        if (index >= firstVisibleIndex && index <= lastVisibleIndex) {
-          console.log('[KB] ensureIndexVisible: already visible (with buffer), no scroll');
-          // 即使不需要滚动，也需要确保焦点高亮被应用
+        // auto：确保目标行完全在视口内可见（不留 buffer，严格可见）
+        if (targetRowTop >= viewportTop && targetRowBottom <= viewportBottom) {
+          // 目标行已完全可见，不需要滚动
+          console.log('[KB] ensureIndexVisible: already fully visible, no scroll');
           this.applyFocusHighlight();
           return;
         }
-        // 目标行不可见，滚动使其可见
-        targetScrollTop = index * rowHeight - Math.floor(viewportHeight / 2) + Math.floor(rowHeight / 2);
-        targetScrollTop = Math.max(0, targetScrollTop);
+        
+        // 目标行不可见，计算最小滚动量使其可见
+        if (targetRowTop < viewportTop) {
+          // 目标行在视口上方，滚动到使其刚好可见
+          targetScrollTop = targetRowTop;
+        } else {
+          // 目标行在视口下方，滚动到使其刚好可见
+          targetScrollTop = targetRowBottom - viewportHeight;
+        }
     }
-    const newScrollTop = Math.max(0, Math.round(targetScrollTop));
-    console.log('[KB] ensureIndexVisible: setting scrollTop', { newScrollTop });
-    // 直接设置 scrollTop，onScroll 会负责重新渲染行
+    
+    const maxScrollTop = Math.max(0, this.dataService.getTotalHeight() - viewportHeight);
+    const newScrollTop = Math.max(0, Math.min(Math.round(targetScrollTop), maxScrollTop));
+    
+    console.log('[KB] ensureIndexVisible: setting scrollTop', { newScrollTop, maxScrollTop });
+    
+    // 直接设置 scrollTop
     this.bodyContainer.nativeElement.scrollTop = newScrollTop;
     
-    // 如果滚动位置发生变化，需要等待 onScroll 触发 renderRows 后再应用焦点高亮
-    // 但如果 scrollTop 相同（例如目标行刚好在边界），onScroll 不会触发，需要手动渲染
-    if (newScrollTop !== currentScrollTop) {
-      // onScroll 会触发 renderRows，renderRows 末尾会调用 applyFocusHighlight
-      // 但为了确保焦点高亮在滚动后立即应用，我们在下一个微任务中也调用一次
-      requestAnimationFrame(() => {
-        this.renderRows();
-        this.applyFocusHighlight();
-      });
-    } else {
-      // scrollTop 没变化，直接应用焦点高亮
+    // 更新 viewportInfo 并重新渲染
+    this.scrollTop = newScrollTop;
+    this.dataService.setScrollTop(newScrollTop);
+    this.viewportInfo.set(this.dataService.getViewportInfo());
+    
+    // 渲染并应用焦点高亮
+    requestAnimationFrame(() => {
+      this.renderRows();
       this.applyFocusHighlight();
-    }
+    });
   }
 
   ensureNodeVisible(node: any, align: string = 'auto'): void {
