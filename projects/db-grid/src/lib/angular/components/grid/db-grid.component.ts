@@ -2411,17 +2411,28 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
           this.applyFocusHighlight();
           return;
         }
-        // 目标行不可见，滚动使其居中或靠近视口边缘
-        if (currentScrollTop > index * rowHeight) {
-          targetScrollTop = Math.max(0, index * rowHeight - bufferSize * rowHeight);
-        } else {
-          targetScrollTop = (index + 1) * rowHeight - viewportHeight + bufferSize * rowHeight;
-        }
+        // 目标行不可见，滚动使其可见
+        targetScrollTop = index * rowHeight - Math.floor(viewportHeight / 2) + Math.floor(rowHeight / 2);
+        targetScrollTop = Math.max(0, targetScrollTop);
     }
     const newScrollTop = Math.max(0, Math.round(targetScrollTop));
     console.log('[KB] ensureIndexVisible: setting scrollTop', { newScrollTop });
     // 直接设置 scrollTop，onScroll 会负责重新渲染行
     this.bodyContainer.nativeElement.scrollTop = newScrollTop;
+    
+    // 如果滚动位置发生变化，需要等待 onScroll 触发 renderRows 后再应用焦点高亮
+    // 但如果 scrollTop 相同（例如目标行刚好在边界），onScroll 不会触发，需要手动渲染
+    if (newScrollTop !== currentScrollTop) {
+      // onScroll 会触发 renderRows，renderRows 末尾会调用 applyFocusHighlight
+      // 但为了确保焦点高亮在滚动后立即应用，我们在下一个微任务中也调用一次
+      requestAnimationFrame(() => {
+        this.renderRows();
+        this.applyFocusHighlight();
+      });
+    } else {
+      // scrollTop 没变化，直接应用焦点高亮
+      this.applyFocusHighlight();
+    }
   }
 
   ensureNodeVisible(node: any, align: string = 'auto'): void {
