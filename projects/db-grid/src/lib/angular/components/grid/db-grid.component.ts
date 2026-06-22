@@ -2435,19 +2435,9 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     
     console.log('[KB] ensureIndexVisible: setting scrollTop', { newScrollTop, maxScrollTop });
     
-    // 直接设置 scrollTop
+    // 重要：先设置 DOM 的 scrollTop，这会触发 onScroll 事件
+    // onScroll 会更新 this.scrollTop, dataService.scrollTop, viewportInfo 并调用 renderRows
     this.bodyContainer.nativeElement.scrollTop = newScrollTop;
-    
-    // 更新 viewportInfo 并重新渲染
-    this.scrollTop = newScrollTop;
-    this.dataService.setScrollTop(newScrollTop);
-    this.viewportInfo.set(this.dataService.getViewportInfo());
-    
-    // 渲染并应用焦点高亮
-    requestAnimationFrame(() => {
-      this.renderRows();
-      this.applyFocusHighlight();
-    });
   }
 
   ensureNodeVisible(node: any, align: string = 'auto'): void {
