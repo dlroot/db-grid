@@ -124,7 +124,7 @@ import { SparklineService } from '../../../core/services/sparkline.service';
   styleUrls: ['./db-grid-high-contrast.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div #gridContainer class="db-grid-container" [class]="themeClass()" (keydown)="onKeyDown($event)" (click)="onGridContainerClick($event)"
+    <div #gridContainer class="db-grid-container" [class]="themeClass()" (click)="onGridContainerClick($event)"
          tabindex="0" style="outline: none; user-select: none; -webkit-user-select: none;">
       @if (showQuickFilter) {
         <div class="db-grid-quick-filter">
@@ -1506,18 +1506,6 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     // ========== 初始化 Accessibility Service ==========
     if (this.gridContainer?.nativeElement) {
       this.accessibilityService.setGridElement(this.gridContainer.nativeElement);
-
-      // 订阅焦点变化事件，播报焦点位置
-      this.keyboardNavigationService.onFocusChange.subscribe(event => {
-        this.ngZone.run(() => {
-          this.onFocusChanged(event.current);
-          const colIndex = this.columnService.getVisibleColumns().findIndex(
-            c => (c.colId || c.field) === event.current.colId
-          );
-          const value = this.dataService.getRowData(event.current.rowIndex)?.[event.current.colId];
-          this.accessibilityService.announceFocus(event.current.rowIndex, event.current.colId, value);
-        });
-      });
     }
 
     // ========== 初始化 Keyboard Navigation Service ==========
@@ -1563,12 +1551,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       });
       // 原生 keydown 监听（绕过 Angular 模板绑定的潜在问题）
       this.gridContainer.nativeElement.addEventListener('keydown', (e: KeyboardEvent) => {
-        const interceptedKeys = ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','PageUp','PageDown','Home','End'];
-        if (interceptedKeys.includes(e.key)) {
-          console.log('[KB native] keydown', e.key, { activeElement: document.activeElement?.tagName, scrollTop: this.bodyContainer?.nativeElement?.scrollTop });
-          e.preventDefault();
-          this.onKeyDown(e);
-        }
+        console.log('[KB native] keydown', e.key, { activeElement: document.activeElement?.tagName, scrollTop: this.bodyContainer?.nativeElement?.scrollTop });
+        this.onKeyDown(e);
       });
     }
 
@@ -2407,6 +2391,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     const rowHeight = this.dataService.getRowHeight();
     const viewportHeight = this.bodyContainer?.nativeElement?.clientHeight || 400;
     const currentScrollTop = this.bodyContainer?.nativeElement?.scrollTop || 0;
+    const bufferSize = 5; // 与 DataService 的 bufferSize 一致
     let targetScrollTop: number;
 
     console.log('[KB] ensureIndexVisible', { index, align, rowHeight, viewportHeight, currentScrollTop });
@@ -2416,14 +2401,21 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       case 'bottom': targetScrollTop = index * rowHeight - viewportHeight + rowHeight; break;
       case 'middle': targetScrollTop = index * rowHeight - viewportHeight / 2; break;
       default:
-        // auto：只在目标行不可见时才滚动
+        // auto：只在目标行不可见时才滚动（考虑 buffer）
+        // 目标行在当前 viewport + buffer 范围内才算可见
+        const firstVisibleIndex = Math.floor(currentScrollTop / rowHeight) - bufferSize;
+        const lastVisibleIndex = Math.floor((currentScrollTop + viewportHeight) / rowHeight) + bufferSize;
+        if (index >= firstVisibleIndex && index <= lastVisibleIndex) {
+          console.log('[KB] ensureIndexVisible: already visible (with buffer), no scroll');
+          // 即使不需要滚动，也需要确保焦点高亮被应用
+          this.applyFocusHighlight();
+          return;
+        }
+        // 目标行不可见，滚动使其居中或靠近视口边缘
         if (currentScrollTop > index * rowHeight) {
-          targetScrollTop = index * rowHeight;
-        } else if (currentScrollTop + viewportHeight < (index + 1) * rowHeight) {
-          targetScrollTop = (index + 1) * rowHeight - viewportHeight;
+          targetScrollTop = Math.max(0, index * rowHeight - bufferSize * rowHeight);
         } else {
-          console.log('[KB] ensureIndexVisible: already visible, no scroll');
-          return; // 目标行已可见，不滚动
+          targetScrollTop = (index + 1) * rowHeight - viewportHeight + bufferSize * rowHeight;
         }
     }
     const newScrollTop = Math.max(0, Math.round(targetScrollTop));
