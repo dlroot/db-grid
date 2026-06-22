@@ -421,13 +421,15 @@ export class HeaderRendererService {
       styles.push(`justify-content: ${this.getFlexAlign(colDef.headerAlign)}`);
     }
 
-    // 固定列定位
+    // 固定列定位（计算累积偏移）
     if (colDef.pinnedLeft) {
-      styles.push(`left: 0`);
+      const pinnedOffset = this.calcPinnedLeftOffset(colDef);
+      styles.push(`left: ${pinnedOffset}px`);
       styles.push(`z-index: 1`);
       styles.push(`position: sticky`);
     } else if (colDef.pinnedRight) {
-      styles.push(`right: 0`);
+      const pinnedOffset = this.calcPinnedRightOffset(colDef);
+      styles.push(`right: ${pinnedOffset}px`);
       styles.push(`z-index: 1`);
       styles.push(`position: sticky`);
     }
@@ -448,6 +450,33 @@ export class HeaderRendererService {
         return 'flex-start';
     }
   }
+
+    /** 计算 pinned left 列的累积 left 偏移 */
+    private calcPinnedLeftOffset(colDef: ColDef): number {
+      const visibleCols = this.columnService.getVisibleColumns();
+      let offset = 0;
+      for (const col of visibleCols) {
+        if (col === colDef) break;
+        if (col.pinnedLeft) {
+          offset += this.columnService.getColumnState(col)?.width || col.width || 200;
+        }
+      }
+      return offset;
+    }
+
+    /** 计算 pinned right 列的累积 right 偏移 */
+    private calcPinnedRightOffset(colDef: ColDef): number {
+      const visibleCols = this.columnService.getVisibleColumns();
+      let offset = 0;
+      for (let i = visibleCols.length - 1; i >= 0; i--) {
+        const col = visibleCols[i];
+        if (col === colDef) break;
+        if (col.pinnedRight) {
+          offset += this.columnService.getColumnState(col)?.width || col.width || 200;
+        }
+      }
+      return offset;
+    }
 
   /** 创建全选 checkbox */
   private createSelectAllCheckbox(): HTMLElement {

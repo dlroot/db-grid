@@ -4640,19 +4640,33 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
             }
           }
         } else {
-          // 非列虚拟化模式：渲染全部列（pinned 列的 sticky 样式会生效）
-          const { rowElement } = this.rowRenderer.render(rowIndex, data, rowNode);
-          rowsContainer.appendChild(rowElement);
-          this.setupRowEvents(rowElement, rowIndex, data, rowNode);
+          // 非列虚拟化模式：
+          // 当有 pinned 列时，主行只渲染非 pinned 列，pinned 列在独立层渲染
+          const pinnedLeftCols = this.pinnedLeftColumnIds().length > 0
+            ? this.columnService.getVisibleColumns().filter(c => c.pinnedLeft) : [];
+          const pinnedRightCols = this.columnService.getVisibleColumns().filter(c => c.pinnedRight);
+          const nonPinnedCols = this.columnService.getVisibleColumns().filter(c => !c.pinnedLeft && !c.pinnedRight);
 
-          // pinned left 独立层渲染（当有 pinned 列时）
-          if (this.pinnedLeftColumnIds().length > 0) {
-            const pinnedCols = this.columnService.getVisibleColumns().filter(c => c.pinnedLeft);
-            if (pinnedCols.length > 0) {
+          if (pinnedLeftCols.length > 0 || pinnedRightCols.length > 0) {
+            // 有固定列时，主行只渲染非固定列
+            const { rowElement } = this.rowRenderer.render(rowIndex, data, rowNode);
+            rowElement.innerHTML = '';
+            this.rowRenderer.renderCellsForColumns(rowElement, rowIndex, data, rowNode, nonPinnedCols);
+
+            // 设置左偏移（避开 pinned left 宽度）
+            const pinnedLeftWidth = pinnedLeftCols.reduce((t, c) => t + (this.columnService.getColumnState(c)?.width || c.width || 200), 0);
+            if (pinnedLeftWidth > 0) {
+              rowElement.style.paddingLeft = `${pinnedLeftWidth}px`;
+            }
+            rowsContainer.appendChild(rowElement);
+            this.setupRowEvents(rowElement, rowIndex, data, rowNode);
+
+            // pinned left 独立层渲染
+            if (pinnedLeftCols.length > 0) {
               const pinnedRowEl = document.createElement('div');
               pinnedRowEl.className = 'db-grid-row';
               pinnedRowEl.style.cssText = `display: flex; position: absolute; left: 0; transform: translateY(${viewport.offsetY + (viewport.startIndex + i) * this.rowHeight}px); z-index: 2;`;
-              this.rowRenderer.renderCellsForColumns(pinnedRowEl, rowIndex, data, rowNode, pinnedCols);
+              this.rowRenderer.renderCellsForColumns(pinnedRowEl, rowIndex, data, rowNode, pinnedLeftCols);
               if (this.pinnedLeftContainer?.nativeElement) {
                 this.pinnedLeftContainer.nativeElement.appendChild(pinnedRowEl);
               }
