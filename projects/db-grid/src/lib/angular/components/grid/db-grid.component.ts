@@ -136,6 +136,9 @@ import { SparklineService } from '../../../core/services/sparkline.service';
       }
       <div #headerContainer class="db-grid-header-container"></div>
       <div #bodyContainer tabindex="-1" class="db-grid-body-container" (scroll)="onScroll($event)">
+          @if (pinnedLeftColumnIds.length > 0) {
+          <div #pinnedLeftContainer class="db-grid-pinned-left"></div>
+        }
         <div #virtualScroll tabindex="-1" class="db-grid-virtual-scroll">
           <!-- Pinned Top Rows -->
           @if (hasPinnedTopRows()) {
@@ -148,11 +151,10 @@ import { SparklineService } from '../../../core/services/sparkline.service';
           @if (hasPinnedBottomRows()) {
             <div #pinnedBottomContainer class="db-grid-pinned-bottom"></div>
           }
-          
-          @if (pinnedLeftColumnIds.length > 0) {
-            <div #pinnedLeftContainer class="db-grid-pinned-left"></div>
-          }
         </div>
+        @if (pinnedCenterColumnIds().length > 0) {
+          <div #pinnedCenterContainer class="db-grid-pinned-center"></div>
+        }
       </div>
       <div #footerContainer class="db-grid-footer-container"></div>
       <!-- Loading Overlay (向后兼容 @Input loading + OverlayService) -->
@@ -295,9 +297,9 @@ import { SparklineService } from '../../../core/services/sparkline.service';
     .db-grid-body-container { flex: 1; overflow-y: auto; overflow-x: auto; position: relative; box-sizing: border-box; width: 100%; }
     .db-grid-virtual-scroll { position: relative; min-width: 100%; }
     .db-grid-rows { display: flex; flex-direction: column; position: absolute; left: 0; min-width: 100%; }
-    .db-grid-pinned-left { position: absolute; left: 0; top: 0; z-index: 2; overflow: hidden; background: var(--db-grid-bg, #fff); }
+    .db-grid-pinned-left { position: sticky; left: 0; top: 0; z-index: 2; overflow: hidden; background: var(--db-grid-bg, #fff); }
     .db-grid-pinned-left .db-grid-row { position: sticky; left: 0; }
-    .db-grid-pinned-center { position: absolute; top: 0; z-index: 2; overflow: hidden; background: var(--db-grid-bg, #fff); }
+    .db-grid-pinned-center { position: sticky; top: 0; z-index: 2; overflow: hidden; background: var(--db-grid-bg, #fff); }
     .db-grid-pinned-center .db-grid-row { position: sticky; left: 0; }
     .db-grid-footer-container { flex-shrink: 0; border-top: 1px solid var(--db-grid-border-color, #ddd); }
     .db-grid-overlay {
@@ -1609,24 +1611,20 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   // ============ 动态创建中间固定列容器 ============
   private createPinnedCenterContainer(): void {
     if (!this.bodyContainer?.nativeElement) return;
-    const virtualScroll = this.bodyContainer.nativeElement.querySelector('.db-grid-virtual-scroll') as HTMLElement;
-    if (!virtualScroll) return;
     if (this.pinnedCenterContainerEl) return; // 已创建
     const el = document.createElement('div');
     el.id = 'pinnedCenterContainer';
     el.className = 'db-grid-pinned-center';
-    el.style.position = 'absolute';
+    el.style.position = 'sticky';
     el.style.top = '0px';
     el.style.zIndex = '2';
     el.style.overflow = 'hidden';
-    // 插入到 pinnedLeftContainer 之后（或 rowsContainer 之后）
-    const pinnedLeft = virtualScroll.querySelector('.db-grid-pinned-left') as HTMLElement;
-    if (pinnedLeft) {
-      pinnedLeft.after(el);
+    // 插入到 bodyContainer 内、virtualScroll 后面
+    const virtualScroll = this.bodyContainer.nativeElement.querySelector('.db-grid-virtual-scroll') as HTMLElement;
+    if (virtualScroll) {
+      virtualScroll.after(el);
     } else {
-      const rowsContainer = virtualScroll.querySelector('.db-grid-rows') as HTMLElement;
-      if (rowsContainer) rowsContainer.after(el);
-      else virtualScroll.appendChild(el);
+      this.bodyContainer.nativeElement.appendChild(el);
     }
     this.pinnedCenterContainerEl = el;
   }
