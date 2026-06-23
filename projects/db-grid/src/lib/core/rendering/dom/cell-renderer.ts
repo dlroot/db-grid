@@ -716,14 +716,16 @@ export class CellRendererService {
     styles.push(`flex: none`);
     styles.push(`box-sizing: border-box`); // 与 header 一致，padding 包含在 width 内
 
-    // 固定列样式
+    // 固定列样式 - 计算累积偏移量
     if (colDef.pinnedLeft) {
+      const pinnedOffset = this.calcPinnedLeftOffset(colDef);
       styles.push(`position: sticky`);
-      styles.push(`left: 0`);
+      styles.push(`left: ${pinnedOffset}px`);
       styles.push(`z-index: 1`);
     } else if (colDef.pinnedRight) {
+      const pinnedOffset = this.calcPinnedRightOffset(colDef);
       styles.push(`position: sticky`);
-      styles.push(`right: 0`);
+      styles.push(`right: ${pinnedOffset}px`);
       styles.push(`z-index: 1`);
     }
 
@@ -1098,5 +1100,32 @@ export class CellRendererService {
       width,
       height,
     });
+  }
+
+  /** 计算 pinned left 列的累积 left 偏移 */
+  private calcPinnedLeftOffset(colDef: ColDef): number {
+    const visibleCols = this.columnService.getVisibleColumns();
+    let offset = 0;
+    for (const col of visibleCols) {
+      if (col === colDef) break;
+      if (col.pinnedLeft) {
+        offset += col.width || 200;
+      }
+    }
+    return offset;
+  }
+
+  /** 计算 pinned right 列的累积 right 偏移 */
+  private calcPinnedRightOffset(colDef: ColDef): number {
+    const visibleCols = this.columnService.getVisibleColumns();
+    let offset = 0;
+    for (let i = visibleCols.length - 1; i >= 0; i--) {
+      const col = visibleCols[i];
+      if (col === colDef) break;
+      if (col.pinnedRight) {
+        offset += col.width || 200;
+      }
+    }
+    return offset;
   }
 }
