@@ -2089,18 +2089,41 @@ export class AppComponent implements OnInit {
   addPinnedTopRow() {
     const current = this.pinnedTopRowData();
     const totalSalary = this.pinRowData.reduce((s, r) => s + r.salary, 0);
+    const avgAge = Math.round(this.pinRowData.reduce((s, r) => s + r.age, 0) / this.pinRowData.length);
     this.pinnedTopRowData.set([
       ...current,
-      { id: current.length, name: `动态汇总 #${current.length + 1}`, department: '—', salary: totalSalary, status: '自动' }
+      { 
+        id: current.length,
+        name: `汇总 #${current.length + 1}`,
+        age: avgAge,
+        email: `—`,
+        department: '全部',
+        position: '—',
+        salary: totalSalary,
+        startDate: '—',
+        status: '自动'
+      }
     ]);
   }
 
   addPinnedBottomRow() {
     const current = this.pinnedBottomRowData();
     const avgSalary = Math.round(this.pinRowData.reduce((s, r) => s + r.salary, 0) / this.pinRowData.length);
+    const minSalary = Math.min(...this.pinRowData.map(r => r.salary));
+    const maxSalary = Math.max(...this.pinRowData.map(r => r.salary));
     this.pinnedBottomRowData.set([
       ...current,
-      { id: current.length, name: `统计 #${current.length + 1}`, department: '—', salary: avgSalary, status: '平均' }
+      { 
+        id: current.length,
+        name: `统计 #${current.length + 1}`,
+        age: `—`,
+        email: `—`,
+        department: '—',
+        position: '—',
+        salary: avgSalary,
+        startDate: `范围: ${minSalary}-${maxSalary}`,
+        status: '平均'
+      }
     ]);
   }
 
