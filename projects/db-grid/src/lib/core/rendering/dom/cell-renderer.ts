@@ -721,12 +721,16 @@ export class CellRendererService {
       const pinnedOffset = this.calcPinnedLeftOffset(colDef);
       styles.push(`position: sticky`);
       styles.push(`left: ${pinnedOffset}px`);
-      styles.push(`z-index: 1`);
+      styles.push(`z-index: 2`);
+      styles.push(`background: var(--db-grid-pinned-left-bg, var(--db-grid-odd-row-bg, #ffffff))`);
+      styles.push(`box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1)`);
     } else if (colDef.pinnedRight) {
       const pinnedOffset = this.calcPinnedRightOffset(colDef);
       styles.push(`position: sticky`);
       styles.push(`right: ${pinnedOffset}px`);
-      styles.push(`z-index: 1`);
+      styles.push(`z-index: 2`);
+      styles.push(`background: var(--db-grid-pinned-right-bg, var(--db-grid-odd-row-bg, #ffffff))`);
+      styles.push(`box-shadow: -2px 0 4px rgba(0, 0, 0, 0.1)`);
     }
 
     if (colDef.cellStyle) {

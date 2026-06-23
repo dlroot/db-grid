@@ -425,13 +425,17 @@ export class HeaderRendererService {
     if (colDef.pinnedLeft) {
       const pinnedOffset = this.calcPinnedLeftOffset(colDef);
       styles.push(`left: ${pinnedOffset}px`);
-      styles.push(`z-index: 1`);
+      styles.push(`z-index: 3`);
       styles.push(`position: sticky`);
+      styles.push(`background: var(--db-grid-header-bg, #f8f9fa)`);
+      styles.push(`box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1)`);
     } else if (colDef.pinnedRight) {
       const pinnedOffset = this.calcPinnedRightOffset(colDef);
       styles.push(`right: ${pinnedOffset}px`);
-      styles.push(`z-index: 1`);
+      styles.push(`z-index: 3`);
       styles.push(`position: sticky`);
+      styles.push(`background: var(--db-grid-header-bg, #f8f9fa)`);
+      styles.push(`box-shadow: -2px 0 4px rgba(0, 0, 0, 0.1)`);
     }
 
     return styles.join('; ');
