@@ -293,7 +293,7 @@ import { SparklineService } from '../../../core/services/sparkline.service';
       font-size: var(--db-grid-font-size, 14px);
       user-select: none; -webkit-user-select: none; -ms-user-select: none;
     }
-    .db-grid-header-container { flex-shrink: 0; overflow-x: hidden; box-sizing: border-box; width: 100%; }
+    .db-grid-header-container { flex-shrink: 0; overflow: visible; box-sizing: border-box; width: 100%; position: relative; }
     .db-grid-body-container { flex: 1; overflow-y: auto; overflow-x: auto; position: relative; box-sizing: border-box; width: 100%; }
     .db-grid-virtual-scroll { position: relative; min-width: 100%; }
     .db-grid-rows { display: flex; flex-direction: column; position: absolute; left: 0; min-width: 100%; }
