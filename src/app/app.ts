@@ -2067,14 +2067,19 @@ export class AppComponent implements OnInit {
 
   generatePinData() {
     const depts = ['工程', '产品', '设计', '运营'];
+    const positions = ['工程师', '产品经理', '设计师', '运营专员'];
     const statuses = ['在职', '休假', '离职'];
     const data = [];
     for (let i = 1; i <= 30; i++) {
       data.push({
         id: i,
         name: `员工${i}`,
+        age: 25 + Math.floor(Math.random() * 20),
+        email: `employee${i}@example.com`,
         department: depts[i % depts.length],
+        position: positions[i % positions.length],
         salary: 3000 + Math.floor(Math.random() * 12000),
+        startDate: `202${Math.floor(Math.random() * 4)}-0${1 + Math.floor(Math.random() * 9)}-0${1 + Math.floor(Math.random() * 8)}`,
         status: statuses[i % statuses.length],
       });
     }
