@@ -2090,18 +2090,21 @@ export class AppComponent implements OnInit {
     const current = this.pinnedTopRowData();
     const totalSalary = this.pinRowData.reduce((s, r) => s + r.salary, 0);
     const avgAge = Math.round(this.pinRowData.reduce((s, r) => s + r.age, 0) / this.pinRowData.length);
+    const avgSalary = Math.round(totalSalary / this.pinRowData.length);
+    const departments = [...new Set(this.pinRowData.map(r => r.department))];
+    const positions = [...new Set(this.pinRowData.map(r => r.position))];
     this.pinnedTopRowData.set([
       ...current,
       { 
-        id: current.length,
-        name: `汇总 #${current.length + 1}`,
+        id: `T${current.length + 1}`,
+        name: `顶部汇总 #${current.length + 1}`,
         age: avgAge,
-        email: `—`,
-        department: '全部',
-        position: '—',
+        email: `summary@company.com`,
+        department: departments.join('/'),
+        position: positions.join('/'),
         salary: totalSalary,
-        startDate: '—',
-        status: '自动'
+        startDate: `共${this.pinRowData.length}人`,
+        status: '汇总'
       }
     ]);
   }
@@ -2111,18 +2114,19 @@ export class AppComponent implements OnInit {
     const avgSalary = Math.round(this.pinRowData.reduce((s, r) => s + r.salary, 0) / this.pinRowData.length);
     const minSalary = Math.min(...this.pinRowData.map(r => r.salary));
     const maxSalary = Math.max(...this.pinRowData.map(r => r.salary));
+    const avgAge = Math.round(this.pinRowData.reduce((s, r) => s + r.age, 0) / this.pinRowData.length);
     this.pinnedBottomRowData.set([
       ...current,
       { 
-        id: current.length,
-        name: `统计 #${current.length + 1}`,
-        age: `—`,
-        email: `—`,
-        department: '—',
-        position: '—',
+        id: `B${current.length + 1}`,
+        name: `底部统计 #${current.length + 1}`,
+        age: avgAge,
+        email: `stats@company.com`,
+        department: `薪资范围`,
+        position: `￥${minSalary}-${maxSalary}`,
         salary: avgSalary,
-        startDate: `范围: ${minSalary}-${maxSalary}`,
-        status: '平均'
+        startDate: `平均`,
+        status: '统计'
       }
     ]);
   }
