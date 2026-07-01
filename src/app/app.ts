@@ -2000,7 +2000,7 @@ export class AppComponent implements OnInit {
     setTimeout(() => this.renderChart(), 100);
   }
 
-  renderChart(): void {
+  async renderChart(): Promise<void> {
     const canvas = document.getElementById('mainChart') as HTMLCanvasElement;
     if (!canvas) return;
 
@@ -2012,6 +2012,10 @@ export class AppComponent implements OnInit {
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    // Dynamic import Chart.js
+    const { Chart, registerables } = await import('chart.js');
+    Chart.register(...registerables);
 
     this.chartInstance = new Chart(ctx, {
       type: this.chartsType() === 'area' ? 'line' : this.chartsType() as any,
