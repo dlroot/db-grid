@@ -178,11 +178,20 @@
           <button class="btn" (click)="hideOverlay()">✖ 隐藏 Overlay</button>
         </div>
       </div>
-      <db-grid
-        #myGrid
-        [columnDefs]="basicColumnDefs"
-        [rowData]="basicRowData"
-        [gridOptions]="basicOptions"
+      
+      <!-- db-grid 调试 -->
+      <div style="background: #f0f0f0; padding: 10px; margin-bottom: 10px;">
+        <p><strong>db-grid 加载测试:</strong></p>
+        <p>columnDefs: {{basicColumnDefs?.length}} 列</p>
+        <p>rowData: {{basicRowData?.length}} 行</p>
+      </div>
+      
+      @try {
+        <db-grid
+          #myGrid
+          [columnDefs]="basicColumnDefs"
+          [rowData]="basicRowData"
+          [gridOptions]="basicOptions"
         [rowHeight]="40"
         [headerHeight]="40"
         [theme]="currentTheme()"
@@ -196,6 +205,12 @@
         (selectionChanged)="onSelectionChanged()"
         (cellClicked)="onCellClicked($event)"
       />
+      } @catch (e) {
+        <div style="background: #fee; padding: 20px; border: 1px solid #c00; margin: 10px;">
+          <h3>db-grid 组件错误</h3>
+          <pre>{{e}}</pre>
+        </div>
+      }
     </div>
   }
 
