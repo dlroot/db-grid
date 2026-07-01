@@ -73,10 +73,7 @@
               ],
               "outputHashing": "all",
               "baseHref": "/db-grid/",
-              "deployUrl": "/db-grid/",
-              "ssr": {
-                "entry": "server.ts"
-              }
+              "deployUrl": "/db-grid/"
             },
             "development": {
               "optimization": false,
