@@ -182,28 +182,36 @@
       <!-- db-grid 调试 -->
       <div style="background: #f0f0f0; padding: 10px; margin-bottom: 10px;">
         <p><strong>db-grid 加载测试:</strong></p>
-        <p>columnDefs: {{basicColumnDefs?.length}} 列</p>
-        <p>rowData: {{basicRowData?.length}} 行</p>
+        <p>columnDefs: {{basicColumnDefs?.length}} 列 ({{basicColumnDefs ? '有数据' : '无数据'}})</p>
+        <p>rowData: {{basicRowData?.length}} 行 ({{basicRowData ? '有数据' : '无数据'}})</p>
+        <p>gridOptions: {{basicOptions ? '已设置' : '未设置'}}</p>
+        <p>第一列: {{basicColumnDefs?.[0]?.headerName || 'N/A'}}</p>
+        <p>第一行: {{basicRowData?.[0] ? '有' : '无'}}</p>
       </div>
       
-      <db-grid
-        #myGrid
-        [columnDefs]="basicColumnDefs"
-        [rowData]="basicRowData"
-        [gridOptions]="basicOptions"
-        [rowHeight]="40"
-        [headerHeight]="40"
-        [theme]="currentTheme()"
-        [enableSorting]="true"
-        [enableFilter]="true"
-        [pagination]="true"
-        [paginationPageSize]="20"
-        [showQuickFilter]="true"
-        [quickFilterText]="quickFilterText()"
-        (gridReady)="onGridReady($event)"
-        (selectionChanged)="onSelectionChanged()"
-        (cellClicked)="onCellClicked($event)"
-      />
+      <!-- db-grid 开始 -->
+      <div style="border: 2px dashed #2196f3; padding: 5px;">
+        <p style="color: #2196f3; margin: 0;">db-grid 组件区域开始</p>
+        <db-grid
+          #myGrid
+          [columnDefs]="basicColumnDefs"
+          [rowData]="basicRowData"
+          [gridOptions]="basicOptions"
+          [rowHeight]="40"
+          [headerHeight]="40"
+          [theme]="currentTheme()"
+          [enableSorting]="true"
+          [enableFilter]="true"
+          [pagination]="true"
+          [paginationPageSize]="20"
+          [showQuickFilter]="true"
+          [quickFilterText]="quickFilterText()"
+          (gridReady)="onGridReady($event)"
+          (selectionChanged)="onSelectionChanged()"
+          (cellClicked)="onCellClicked($event)"
+        />
+        <p style="color: #2196f3; margin: 0;">db-grid 组件区域结束</p>
+      </div>
     </div>
   }
 
