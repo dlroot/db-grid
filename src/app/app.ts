@@ -1,7 +1,6 @@
 import { Component, OnInit, signal, ViewChild } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { Chart, registerables } from 'chart.js';
-Chart.register(...registerables);
+// Chart.js 注册移到 ChartsService 中统一管理，避免顶层副作用
 import { DbGridComponent } from "../../projects/db-grid/src/lib/angular/components/grid/db-grid.component";
 import { ExcelImportService, ImportResult } from "../../projects/db-grid/src/lib/core/services";
 
