@@ -43,6 +43,7 @@ import {
   ColumnResizedEvent,
   RowNode,
   GridApi,
+  GridState,
   DetailChartConfig,
   CellEditingStartedEvent,
   CellEditingStoppedEvent,
@@ -100,6 +101,7 @@ import {
   ExternalFilterService,
   ValueMappingService,
   AdvancedFilterService,
+  GridStateService,
   RowPinningService,
   TransactionService,
   TransactionResult,
@@ -109,6 +111,7 @@ import {
 import { DbCellEditorComponent } from '../cell-editor/db-cell-editor.component';
 import { DbFilterPopupComponent } from '../filter-popup/db-filter-popup.component';
 import { DbChartPanelComponent } from '../chart-panel/db-chart-panel.component';
+import { AdvancedFilterComponent } from '../advanced-filter/advanced-filter.component';
 
 import {
   CellRendererService,
@@ -120,7 +123,7 @@ import { SparklineService } from '../../../core/services/sparkline.service';
 @Component({
   selector: 'db-grid',
   standalone: true,
-  imports: [CommonModule, DbCellEditorComponent, DbFilterPopupComponent, DbChartPanelComponent],
+  imports: [CommonModule, DbCellEditorComponent, DbFilterPopupComponent, DbChartPanelComponent, AdvancedFilterComponent],
   styleUrls: ['./db-grid-high-contrast.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -134,6 +137,18 @@ import { SparklineService } from '../../../core/services/sparkline.service';
                  (input)="onQuickFilterInput($event)" />
         </div>
       }
+      <!-- 高级过滤按钮 -->
+      <button class="advanced-filter-btn" (click)="toggleAdvancedFilter()">
+        🔍 高级过滤
+      </button>
+
+      <!-- 高级过滤侧边栏 -->
+      <db-advanced-filter
+        [isOpen]="isAdvancedFilterOpen"
+        [columns]="columnDefs"
+        (closeSidebar)="toggleAdvancedFilter()"
+      ></db-advanced-filter>
+
       <div #headerContainer class="db-grid-header-container"></div>
       <div #bodyContainer tabindex="-1" class="db-grid-body-container" (scroll)="onScroll($event)">
           @if (pinnedLeftColumnIds.length > 0) {
@@ -761,6 +776,29 @@ import { SparklineService } from '../../../core/services/sparkline.service';
     .db-grid-pinned-center .db-grid-row:hover .db-grid-cell {
       background: var(--db-grid-row-hover-bg, #f0f4ff) !important;
     }
+
+    .advanced-filter-btn {
+      position: absolute;
+      top: 8px;
+      right: 16px;
+      padding: 6px 12px;
+      background: #2196f3;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      z-index: 10;
+    }
+
+    .advanced-filter-btn:hover {
+      background: #1976d2;
+    }
+
+    .advanced-filter-btn:active {
+      background: #1565c0;
+    }
+
   `],
 })
 export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewInit {
@@ -795,6 +833,8 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   quickFilterText = input<string>('');
   /** 是否显示内置快速筛选输入框 */
   showQuickFilter = input<boolean>(false);
+  /** 是否显示高级过滤侧边栏 */
+  isAdvancedFilterOpen = false;
 
   // ============ Tree Data Inputs ============
   /** 启用树形数据模式 */
@@ -1041,6 +1081,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   private tooltipService: TooltipService;
   private externalFilterService: ExternalFilterService;
   private advancedFilterService: AdvancedFilterService;
+  private gridStateService: GridStateService;
   private valueMappingService: ValueMappingService;
   private rowPinningService: RowPinningService;
   private transactionService: TransactionService;
@@ -1152,6 +1193,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.externalFilterService = new ExternalFilterService();
     this.valueMappingService = new ValueMappingService();
     this.advancedFilterService = new AdvancedFilterService();
+    this.gridStateService = new GridStateService();
     this.rowPinningService = new RowPinningService();
     this.transactionService = new TransactionService();
     // 初始化行固定数据（从 @Input）
@@ -1339,6 +1381,23 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     }
 
     this.rowCount.set(this.dataService.getRowCount());
+
+    // 初始化 GridStateService（注入依赖服务）
+    if (this.gridStateService) {
+      this.gridStateService.setServices({
+        columnService: this.columnService,
+        dataService: this.dataService,
+        filterService: this.filterService,
+        groupService: this.groupService,
+        selectionService: this.selectionService,
+        sidebarService: this.sidebarService,
+        pivotService: this.pivotService,
+        advancedFilterService: this.advancedFilterService,
+        undoRedoService: this.undoRedoService,
+      });
+      console.log('[DBGrid] GridStateService initialized with dependent services');
+    }
+
     this.createGridApi();
   
     // 设置 selectionService 的回调，用于 isAllSelected 模式获取所有行ID
@@ -1442,7 +1501,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
           this.isPivotMode = false;
           this.columnDefs = this.originalColumnDefs || this.columnDefs;
           this.initializeColumns();
-          this.pivotService.disablePivotMode();
+          this.pivotService.setPivotMode(false);
           this.setRowData(this.rowData);
         }
       }
@@ -1905,6 +1964,18 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       canRedo: () => this.undoRedoService.canRedo(),
       getUndoRedoService: () => this.undoRedoService,
 
+      // ========== 状态持久化 ==========
+      getState: () => this.gridStateService?.getState(),
+      setState: (state: GridState) => this.gridStateService?.setState(state),
+      saveStateToLocalStorage: (key?: string) => this.gridStateService?.saveStateToLocalStorage(key),
+      loadStateFromLocalStorage: (key?: string) => this.gridStateService?.loadStateFromLocalStorage(key),
+      clearStateFromLocalStorage: (key?: string) => this.gridStateService?.clearStateFromLocalStorage(key),
+      saveAsPreset: (name: string) => this.gridStateService?.saveAsPreset(name),
+      loadPreset: (name: string) => this.gridStateService?.loadPreset(name),
+      getPresetNames: () => this.gridStateService?.getPresetNames(),
+      deletePreset: (name: string) => this.gridStateService?.deletePreset(name),
+      getGridStateService: () => this.gridStateService,
+
       // ========== 拖拽排序 ==========
       startDrag: (rowNodes: any[], event: MouseEvent) => this.startDrag(rowNodes, event),
       endDrag: (targetIndex: number, event: MouseEvent) => this.endDrag(targetIndex, event),
@@ -2049,21 +2120,21 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       }
       this.dataService.setOriginalRowData(rowData);
       this.pivotService.initialize({
-        enabled: true,
         pivotMode: true,
-        pivotColumns: [this.pivotColumn],
-        rowGroupColumns: this.pivotRowGroupColumns,
-        valueColumns: this.pivotValueColumns.map(v => ({ field: v.field, aggFunc: v.aggFunc as any })),
+        pivotColumnFields: [this.pivotColumn],
+        pivotRowFields: this.pivotRowGroupColumns,
+        valueFields: this.pivotValueColumns.map(v => ({ field: v.field, aggregation: v.aggFunc as any })),
       });
-      const pivotResult = this.pivotService.compute(rowData);
+      const pivotNodes = this.pivotService.generatePivotData(rowData);
       // 生成透视后的列定义
-      const pivotColDefs = this.pivotService.getPivotColumnDefs();
+      const pivotColDefs = this.pivotService.generatePivotColumnDefs(rowData);
       // 使用展平的透视结果初始化数据服务
-      this.dataService.initialize(pivotResult.flatRows, this.gridOptions, pivotColDefs);
+      const flatRows = this.pivotService.getFlattenedPivotData(pivotNodes);
+      this.dataService.initialize(flatRows, this.gridOptions, pivotColDefs);
       // 更新 columnDefs 和 columnService，使 header 和 body 列定义一致
       this.columnDefs = pivotColDefs as any;
       this.initializeColumns();
-      this.rowCount.set(pivotResult.flatRows.length);
+      this.rowCount.set(flatRows.length);
     } else {
       this.isPivotMode = false;
       // 透视清除时恢复原始列定义
@@ -2519,7 +2590,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   removePivotMode(): void {
     this.pivotMode = false;
     this.isPivotMode = false;
-    this.pivotService.disablePivotMode();
+    this.pivotService.setPivotMode(false);
     // 恢复原始数据
     const original = this.dataService.getOriginalRowData();
     if (original && original.length > 0) {
@@ -2529,7 +2600,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     this.refreshView();
   }
 
-  getPivotResult(): any { return this.pivotService.getResult(); }
+  getPivotResult(): any { return this.pivotService.generatePivotData(this.rowData || []); }
 
   // ========== 单元格合并 API ==========
 
@@ -3494,7 +3565,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
     const totalCols = visibleColumns.length;
 
     // 逐行逐列写入数据
-    const undoEdits: Array<{ rowIndex: number; colId: string; oldValue: any; newValue: any; rowData: any }> = [];
+    const undoEdits: Array<{ type: 'edit' | 'filter' | 'sort' | 'columnResize' | 'rowAdd' | 'rowDelete'; rowIndex: number; colId: string; oldValue: any; newValue: any; rowData: any }> = [];
     for (let r = 0; r < parsedData.length; r++) {
       const targetRowIndex = startRowIndex + r;
       if (targetRowIndex >= totalRows) break;
@@ -3517,6 +3588,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         // 记录撤销操作
         if (this.undoRedoService.isEnabled()) {
           undoEdits.push({
+            type: 'edit',
             rowIndex: targetRowIndex,
             colId: field,
             oldValue,
@@ -5398,6 +5470,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
           const rowData = this.dataService.getRowData(this.editingRowIndex);
           const newValue = rowData?.[this.editingColId] ?? null;
           this.undoRedoService.recordEdit({
+            type: 'edit',
             rowIndex: this.editingRowIndex,
             colId: this.editingColId,
             oldValue: this.editingOldValue,
@@ -5470,6 +5543,7 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
         // 记录撤销操作
         if (this.editingRowIndex != null && this.editingColId && this.undoRedoService.isEnabled()) {
           this.undoRedoService.recordEdit({
+            type: 'edit',
             rowIndex: this.editingRowIndex,
             colId: this.editingColId,
             oldValue: this.editingOldValue,
@@ -5559,6 +5633,13 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
   }
 
   /** 切换图表类型 */
+  /** 切换高级过滤侧边栏 */
+  toggleAdvancedFilter(): void {
+    this.isAdvancedFilterOpen = !this.isAdvancedFilterOpen;
+    this.cdr.markForCheck();
+    console.log('🔍 高级过滤侧边栏:', this.isAdvancedFilterOpen ? '打开' : '关闭');
+  }
+
   setChartType(type: 'bar' | 'line' | 'pie' | 'doughnut' | 'area'): void {
     this.currentChartType = type;
     if (!this.chartPanelVisible()) return;
@@ -5637,4 +5718,19 @@ export class DbGridComponent implements OnInit, OnChanges, OnDestroy, AfterViewI
       panel.updateChart(rangeData, cols);
     }
   }
+
+  /** 刷新网格数据视图 */
+  refreshData(): void {
+    this.setRowData(this.rowData ?? []);
+  }
+
+  /** 重置网格状态（列宽、排序、过滤等） */
+  resetState(): void {
+    (this.columnService as any)?.resetColumnState?.();
+    (this.filterService as any)?.clearAllFilters?.();
+    (this.selectionService as any)?.clearSelection?.();
+    (this.groupService as any)?.collapseAll?.();
+    (this.undoRedoService as any)?.clearHistory?.();
+  }
+
 }

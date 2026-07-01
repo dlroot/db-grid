@@ -54,7 +54,8 @@
             ],
             "styles": [
               "src/styles.scss"
-            ]
+            ],
+            "server": "src/main.server.ts"
           },
           "configurations": {
             "production": {
@@ -72,7 +73,10 @@
               ],
               "outputHashing": "all",
               "baseHref": "/db-grid/",
-              "deployUrl": "/db-grid/"
+              "deployUrl": "/db-grid/",
+              "ssr": {
+                "entry": "server.ts"
+              }
             },
             "development": {
               "optimization": false,
@@ -93,6 +97,24 @@
             }
           },
           "defaultConfiguration": "development"
+        },
+        "serve-ssr": {
+          "builder": "@angular/build:ssr-dev-server",
+          "configurations": {
+            "development": {
+              "buildTarget": "db-grid:build:development"
+            },
+            "production": {
+              "buildTarget": "db-grid:build:production"
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "prerender": {
+          "builder": "@angular/build:prerender",
+          "options": {
+            "browserTarget": "db-grid:build"
+          }
         },
         "build-storybook-browser": {
           "builder": "@angular-devkit/build-angular:browser",

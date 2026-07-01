@@ -1,10 +1,12 @@
 /**
  * Excel 导出服务
  * 支持 CSV 导出（自动识别 UTF-8 BOM，兼容 Excel 中文显示）
+ * 支持真实的 XLSX 导出（基于 SheetJS xlsx 库）
  */
 
 import { Injectable } from '@angular/core';
 import { ColDef } from '../models';
+import * as XLSX from 'xlsx';
 
 export interface CsvExportOptions {
   fileName?: string;
@@ -33,6 +35,24 @@ export interface ExcelExportOptions {
   fileName?: string;
   sheetName?: string;
   exportMode?: 'xlsx' | 'csv';
+  /** 指定导出列（按 field 筛选） */
+  columnKeys?: string[];
+  /** 空值替换文本 */
+  emptyValue?: string;
+  /** 只导出选中行 */
+  onlySelected?: boolean;
+  /** 跳过分组行 */
+  skipGroups?: boolean;
+  /** 跳过行号列 */
+  skipRowIndex?: boolean;
+  /** 是否包含表头，默认 true */
+  includeHeaders?: boolean;
+  /** 列宽模式：auto（自动适配）, fixed（固定）, none（不设置） */
+  columnWidthMode?: 'auto' | 'fixed' | 'none';
+  /** 固定列宽（像素近似值，columnWidthMode=fixed 时生效） */
+  fixedColumnWidth?: number;
+  /** 是否自动识别数字类型（数字存为 number 而非 string），默认 true */
+  autoDetectNumbers?: boolean;
 }
 
 /**
@@ -99,14 +119,100 @@ export class ExcelExportService {
     this.downloadFile(fileName, csv, 'text/csv;charset=utf-8');
   }
 
+  /**
+   * 使用 SheetJS 导出真实的 XLSX 文件（二进制 OpenXML 格式）
+   * 支持列宽自适应、数字类型自动识别、自定义表头等
+   */
   exportAsXlsx(columnDefs: ColDef[], rowData: any[], options: ExcelExportOptions = {}): Blob {
-    const csv = this.exportAsCsv(columnDefs, rowData, { ...options, includeHeaders: true });
-    return new Blob([csv], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8' });
+    const {
+      sheetName = 'Sheet1',
+      columnKeys,
+      emptyValue = '',
+      includeHeaders = true,
+      columnWidthMode = 'auto',
+      fixedColumnWidth = 12,
+      autoDetectNumbers = true,
+    } = options;
+
+    // 筛选导出列
+    let exportCols = columnDefs.filter(c => !c.hide && c.field);
+    if (columnKeys && columnKeys.length > 0) {
+      exportCols = exportCols.filter(c => columnKeys!.includes(c.field!));
+    }
+
+    // 构建二维数据
+    const wsData: any[][] = [];
+
+    // 表头行
+    if (includeHeaders) {
+      wsData.push(exportCols.map(c => c.headerName || c.field || ''));
+    }
+
+    // 数据行
+    rowData.forEach(row => {
+      const values = exportCols.map(col => {
+        let value = this.getNestedValue(row, col.field!);
+        if (col.valueFormatter) {
+          try {
+            value = col.valueFormatter({ value, data: row, colDef: col, column: col, api: null, columnApi: null, context: {} });
+          } catch (e) { /* ignore */ }
+        }
+        if (value == null || value === '') return emptyValue || null;
+        // 如果启用数字自动识别，将纯数字字符串转为 number
+        if (autoDetectNumbers && typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) {
+          const num = Number(value);
+          if (isFinite(num)) return num;
+        }
+        return value;
+      });
+      wsData.push(values);
+    });
+
+    // 创建工作表
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // 设置列宽
+    if (columnWidthMode !== 'none' && wsData.length > 0) {
+      const colWidths = exportCols.map((col, i) => {
+        if (columnWidthMode === 'fixed') {
+          return { wch: fixedColumnWidth };
+        }
+        // auto：根据内容自适应
+        let maxLen = (col.headerName || col.field || '').length;
+        for (let r = 0; r < wsData.length; r++) {
+          const cellVal = wsData[r][i];
+          const strLen = cellVal != null ? String(cellVal).length : 0;
+          // 中文字符宽度约2倍
+          const chineseCount = (String(cellVal ?? '').match(/[\u4e00-\u9fff\u3000-\u30ff\uff00-\uffef]/g) || []).length;
+          maxLen = Math.max(maxLen, strLen + chineseCount);
+        }
+        return { wch: Math.min(Math.max(maxLen + 2, 8), 80) };
+      });
+      ws['!cols'] = colWidths;
+    }
+
+    // 创建工作簿
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+    // 生成 xlsx 二进制数组
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array', bookSST: false });
+    return new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   }
 
+  /**
+   * 下载为 XLSX 文件（真实 Excel 格式）
+   */
   downloadAsXlsx(columnDefs: ColDef[], rowData: any[], options: ExcelExportOptions = {}): void {
     const fileName = options.fileName || 'export.xlsx';
     const blob = this.exportAsXlsx(columnDefs, rowData, options);
+    this.saveBlob(blob, fileName);
+  }
+
+  /**
+   * 统一 Blob 下载方法
+   */
+  private saveBlob(blob: Blob, fileName: string): void {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;

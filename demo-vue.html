@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DbGrid Angular Elements - Vue 3 示例</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 20px;
+      background: #f5f5f5;
+    }
+    #app {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h1 { color: #333; }
+    button {
+      padding: 8px 16px;
+      margin-right: 10px;
+      border: none;
+      border-radius: 4px;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover { background: #0056b3; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <h1>📊 DbGrid Vue 3 示例</h1>
+
+    <div style="margin-bottom: 20px;">
+      <button @click="addRow">➕ 添加行</button>
+      <button @click="exportExcel" class="secondary">📊 导出 Excel</button>
+      <button @click="resetState" class="secondary">🔄 重置状态</button>
+    </div>
+
+    <!-- DbGrid Web Component -->
+    <db-grid-element
+      ref="gridRef"
+      :row-data="rowData"
+      :column-defs="columnDefs"
+      @grid-ready="onGridReady"
+      @cell-click="onCellClick"
+      style="width: 100%; height: 500px; display: block;"
+    ></db-grid-element>
+
+    <div style="margin-top: 20px; padding: 10px; background: #f0f0f0; border-radius: 4px;">
+      <strong>日志:</strong>
+      <div v-for="(log, idx) in logs" :key="idx" style="font-family: monospace; font-size: 12px;">
+        {{ log }}
+      </div>
+    </div>
+  </div>
+
+  <!-- 加载 DbGrid Angular Elements -->
+  <script src="./db-grid-elements.js"></script>
+
+  <script>
+    const { createApp, ref, onMounted } = Vue;
+
+    createApp({
+      setup() {
+        const gridRef = ref(null);
+        const gridApi = ref(null);
+        const logs = ref([]);
+
+        // 列定义
+        const columnDefs = ref([
+          { field: 'id', headerName: 'ID', width: 80 },
+          { field: 'name', headerName: '姓名', width: 150 },
+          { field: 'age', headerName: '年龄', width: 100 },
+          { field: 'email', headerName: '邮箱', width: 200 },
+          { field: 'department', headerName: '部门', width: 150 }
+        ]);
+
+        // 行数据
+        const rowData = ref([
+          { id: 1, name: '张三', age: 28, email: 'zhangsan@example.com', department: '工程' },
+          { id: 2, name: '李四', age: 32, email: 'lisi@example.com', department: '销售' },
+          { id: 3, name: '王五', age: 25, email: 'wangwu@example.com', department: '市场' }
+        ]);
+
+        // 日志函数
+        const log = (msg) => {
+          const time = new Date().toLocaleTimeString();
+          logs.value.push(`[${time}] ${msg}`);
+        };
+
+        // Grid 就绪
+        const onGridReady = (event) => {
+          log(`✅ Grid API 就绪`);
+          gridApi.value = event.api;
+        };
+
+        // 单元格点击
+        const onCellClick = (event) => {
+          log(`🖱️ 单元格点击: 行=${event.rowIndex}, 列=${event.colKey}`);
+        };
+
+        // 添加行
+        const addRow = () => {
+          const newRow = {
+            id: Date.now(),
+            name: `新员工_${Math.floor(Math.random() * 100)}`,
+            age: Math.floor(Math.random() * 30) + 20,
+            email: `new${Date.now()}@example.com`,
+            department: ['工程', '销售', '市场', '设计'][Math.floor(Math.random() * 4)]
+          };
+          rowData.value = [...rowData.value, newRow];
+          log(`➕ 已添加新行: ${newRow.name}`);
+        };
+
+        // 导出 Excel
+        const exportExcel = () => {
+          if (gridApi.value) {
+            gridApi.value.exportToExcel('vue-export.xlsx');
+            log('📊 正在导出 Excel...');
+          }
+        };
+
+        // 重置状态
+        const resetState = () => {
+          if (gridRef.value) {
+            gridRef.value.resetState();
+            log('🔄 状态已重置');
+          }
+        };
+
+        // 初始化
+        onMounted(() => {
+          log('🚀 Vue 3 应用已挂载');
+          
+          // 等待 Web Component 注册
+          if (customElements.get('db-grid-element')) {
+            log('✅ <db-grid-element> 已注册');
+          } else {
+            customElements.whenDefined('db-grid-element').then(() => {
+              log('✅ <db-grid-element> 已注册 (异步)');
+            });
+          }
+        });
+
+        return {
+          gridRef,
+          columnDefs,
+          rowData,
+          logs,
+          onGridReady,
+          onCellClick,
+          addRow,
+          exportExcel,
+          resetState
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>

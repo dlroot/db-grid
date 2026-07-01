@@ -53,3 +53,4 @@ export * from './transaction.service';
 export * from './angular-component-renderer.service';
 export * from './event-bus.service';
 export * from './viewport-row-model.service';
+export * from './grid-state.service';

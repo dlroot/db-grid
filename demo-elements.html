@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DbGrid Angular Elements 演示</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+    .controls {
+      margin-bottom: 20px;
+      padding: 15px;
+      background: #f0f0f0;
+      border-radius: 4px;
+    }
+    button {
+      padding: 8px 16px;
+      margin-right: 10px;
+      border: none;
+      border-radius: 4px;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    button.secondary {
+      background: #6c757d;
+    }
+    button.secondary:hover {
+      background: #545b62;
+    }
+    .log {
+      margin-top: 20px;
+      padding: 10px;
+      background: #000;
+      color: #0f0;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+      border-radius: 4px;
+    }
+    db-grid-element {
+      width: 100%;
+      height: 500px;
+      display: block;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📊 DbGrid Angular Elements 演示</h1>
+    
+    <div class="controls">
+      <button onclick="loadData()">📥 加载数据</button>
+      <button onclick="addRow()" class="secondary">➕ 添加行</button>
+      <button onclick="exportExcel()" class="secondary">📊 导出 Excel</button>
+      <button onclick="undo()" class="secondary">↶ 撤销</button>
+      <button onclick="redo()" class="secondary">↷ 重做</button>
+      <button onclick="resetState()" class="secondary">🔄 重置状态</button>
+    </div>
+
+    <div>
+      <h3>网格:</h3>
+      <!-- DbGrid Web Component -->
+      <db-grid-element 
+        id="myGrid"
+        style="width: 100%; height: 500px;"
+      ></db-grid-element>
+    </div>
+
+    <div class="log" id="log">
+      <div>🚀 等待加载 db-grid-elements.js...</div>
+    </div>
+  </div>
+
+  <!-- 加载 DbGrid Angular Elements -->
+  <script src="./db-grid-elements.js"></script>
+
+  <script>
+    // ========== 日志函数 ==========
+    function log(msg) {
+      const logDiv = document.getElementById('log');
+      const time = new Date().toLocaleTimeString();
+      logDiv.innerHTML += `<div>[${time}] ${msg}</div>`;
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    // ========== 等待组件注册 ==========
+    function waitForElement() {
+      return new Promise((resolve) => {
+        if (customElements.get('db-grid-element')) {
+          resolve();
+        } else {
+          customElements.whenDefined('db-grid-element').then(resolve);
+        }
+      });
+    }
+
+    // ========== 初始化 ==========
+    async function init() {
+      log('✅ db-grid-elements.js 已加载');
+      
+      // 等待自定义元素注册
+      await waitForElement();
+      log('✅ <db-grid-element> 已注册');
+
+      const grid = document.getElementById('myGrid');
+
+      // 监听事件
+      grid.addEventListener('gridReady', (e) => {
+        log(`✅ Grid API 就绪`);
+        log(`   API: ${e.detail.api ? '可用' : '不可用'}`);
+      });
+
+      grid.addEventListener('cellClick', (e) => {
+        log(`🖱️ 单元格点击: 行=${e.detail.rowIndex}, 列=${e.detail.colKey}`);
+      });
+
+      grid.addEventListener('selectionChanged', (e) => {
+        log(`🔍 选择变化: ${e.detail.selectedRows.length} 行被选中`);
+      });
+
+      // 加载初始数据
+      loadData();
+    }
+
+    // ========== 加载数据 ==========
+    function loadData() {
+      const grid = document.getElementById('myGrid');
+      
+      // 列定义
+      grid.columnDefs = [
+        { field: 'id', headerName: 'ID', width: 80 },
+        { field: 'name', headerName: '姓名', width: 150 },
+        { field: 'age', headerName: '年龄', width: 100 },
+        { field: 'email', headerName: '邮箱', width: 200 },
+        { field: 'department', headerName: '部门', width: 150 },
+        { field: 'salary', headerName: '薪资', width: 120, type: 'number' }
+      ];
+
+      // 行数据
+      grid.rowData = [
+        { id: 1, name: '张三', age: 28, email: 'zhangsan@example.com', department: '工程', salary: 80000 },
+        { id: 2, name: '李四', age: 32, email: 'lisi@example.com', department: '销售', salary: 65000 },
+        { id: 3, name: '王五', age: 25, email: 'wangwu@example.com', department: '市场', salary: 55000 },
+        { id: 4, name: '赵六', age: 35, email: 'zhaoliu@example.com', department: '工程', salary: 95000 },
+        { id: 5, name: '钱七', age: 29, email: 'qianqi@example.com', department: '设计', salary: 70000 }
+      ];
+
+      log('📥 数据已加载 (5 行)');
+    }
+
+    // ========== 添加行 ==========
+    function addRow() {
+      const grid = document.getElementById('myGrid');
+      const newRow = {
+        id: Date.now(),
+        name: `新员工_${Math.floor(Math.random() * 100)}`,
+        age: Math.floor(Math.random() * 30) + 20,
+        email: `new${Date.now()}@example.com`,
+        department: ['工程', '销售', '市场', '设计'][Math.floor(Math.random() * 4)],
+        salary: Math.floor(Math.random() * 50000) + 30000
+      };
+
+      const currentData = grid.rowData || [];
+      grid.rowData = [...currentData, newRow];
+      
+      log(`➕ 已添加新行: ${newRow.name}`);
+    }
+
+    // ========== 导出 Excel ==========
+    function exportExcel() {
+      const grid = document.getElementById('myGrid');
+      grid.exportToExcel('demo-export.xlsx');
+      log('📊 正在导出 Excel...');
+    }
+
+    // ========== 撤销 ==========
+    function undo() {
+      const grid = document.getElementById('myGrid');
+      grid.undo();
+      log('↶ 撤销');
+    }
+
+    // ========== 重做 ==========
+    function redo() {
+      const grid = document.getElementById('myGrid');
+      grid.redo();
+      log('↷ 重做');
+    }
+
+    // ========== 重置状态 ==========
+    function resetState() {
+      const grid = document.getElementById('myGrid');
+      grid.resetState();
+      log('🔄 状态已重置');
+    }
+
+    // ========== 启动 ==========
+    init();
+  </script>
+</body>
+</html>

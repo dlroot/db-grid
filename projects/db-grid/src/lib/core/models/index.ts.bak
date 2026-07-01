@@ -8,10 +8,6 @@ import { GridState, StatePersistenceConfig, DEFAULT_STATE_CONFIG } from './grid-
 
 export { GridState, StatePersistenceConfig, DEFAULT_STATE_CONFIG } from './grid-state.model';
 
-// ============ 通用类型别名 ============
-/** 网格行数据类型（任意行数据对象） */
-export type GridRow = Record<string, any>;
-
 // ============ 列定义 ============
 
 export type ColDefLike = ColDef | ColGroupDef;
@@ -401,21 +397,17 @@ export interface SortModelItem {
   index?: number;
 }
 
-export interface FilterCondition {
-  field: string;
-  filterType: string;
-  type: string;
-  filter?: string | number;
-  filterTo?: string | number;
-  values?: any[];
-  dateFrom?: string;
-  dateTo?: string;
+export interface FilterModel {
+  [field: string]: {
+    filterType: string;
+    type: string;
+    filter?: string | number;
+    filterTo?: string | number;
+    values?: any[];
+    dateFrom?: string;
+    dateTo?: string;
+  };
 }
-
-export type FilterModel = Record<string, FilterCondition>;
-
-/** A single filter condition or a map of conditions (used in filter evaluation) */
-export type FilterModelLike = FilterCondition | FilterModel;
 
 // ============ Grid API ============
 

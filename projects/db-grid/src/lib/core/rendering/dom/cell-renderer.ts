@@ -298,7 +298,7 @@ export class CellRendererService {
     }
 
     // 如果是 sparkline 迷你图渲染器
-    if (colDef.cellRenderer === 'sparkline' || (colDef as any).sparklineType) {
+    if (colDef.cellRenderer === 'sparkline' || (colDef as any).sparklineType || colDef.type === 'sparkline') {
       this.renderSparklineCell(container, colDef, value, data);
       return;
     }
@@ -1078,11 +1078,13 @@ export class CellRendererService {
     let sparkType: SparklineType = 'line';
     if ((colDef as any).sparklineType) {
       const t = String((colDef as any).sparklineType).toLowerCase();
-      if (t === 'area') sparkType = 'area';
-      else if (t === 'bar') sparkType = 'bar';
+      if (t === 'bar') sparkType = 'bar';
+      else if (t === 'pie') sparkType = 'pie';
+      else if (t === 'stacked') sparkType = 'stacked';
+      else if (t === 'normalized') sparkType = 'normalized';
     }
 
-    const color = (colDef as any).sparklineColor || '#2196f3';
+    const lineColor = (colDef as any).sparklineColor || '#2196f3';
     const width = (colDef as any).sparklineWidth || (colDef.width ? colDef.width - 20 : 120);
     const height = (colDef as any).sparklineHeight || 28;
 
@@ -1097,10 +1099,9 @@ export class CellRendererService {
     canvas.style.cssText = `display:block;width:${width}px;height:${height}px;`;
     wrapper.appendChild(canvas);
 
-    service.render(canvas, {
+    service.render(canvas, sparkData, {
       type: sparkType,
-      data: sparkData,
-      color,
+      lineColor,
       width,
       height,
     });

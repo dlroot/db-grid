@@ -14,6 +14,9 @@ import {
   NumberFilterCondition,
   DateFilterCondition,
 } from './filter.service';
+
+// Re-export JoinOperator for convenience
+export { JoinOperator } from './filter.service';
 import { ColDef } from '../models';
 
 // ─── 高级筛选条件（单个条件） ──────────────────────────────────────────────
@@ -127,6 +130,23 @@ export class AdvancedFilterService {
   clearAdvancedFilter(): void {
     this.advancedModel = null;
     this.onFilterChanged.next(null);
+  }
+
+  // ── 别名方法（兼容调用方） ───────────────────────────────────────────────
+
+  /** 兼容别名 */
+  getCurrentModel(): AdvancedFilterModel | null {
+    return this.getAdvancedFilterModel();
+  }
+
+  /** 兼容别名 */
+  applyFilterModel(model: AdvancedFilterModel | null): void {
+    this.setAdvancedFilterModel(model);
+  }
+
+  /** 兼容别名 */
+  clearFilter(): void {
+    this.clearAdvancedFilter();
   }
 
   /**
