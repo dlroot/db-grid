@@ -8,6 +8,32 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
 <body>
-  <app-root></app-root>
+  <!-- 静态测试：如果看到这个说明 HTML 加载正常 -->
+  <div id="static-test" style="padding: 20px; background: #ffeb3b; margin: 10px; border: 2px solid #f00;">
+    <h2>静态 HTML 测试</h2>
+    <p>如果你能看到这个黄色框，说明 GitHub Pages 已经部署成功。</p>
+    <p>如果下面没有 Angular 内容，说明 JavaScript 没有正确执行。</p>
+  </div>
+  
+  <app-root>
+    <!-- Angular 加载中提示 -->
+    <div style="padding: 20px; text-align: center;">
+      <p>Angular 应用加载中...</p>
+    </div>
+  </app-root>
+  
+  <!-- JavaScript 错误捕获 -->
+  <script>
+    window.onerror = function(msg, url, line, col, error) {
+      document.getElementById('static-test').innerHTML += 
+        '<div style="background: #f00; color: #fff; padding: 10px; margin-top: 10px;">' +
+        '<h3>JavaScript 错误:</h3>' +
+        '<p>' + msg + '</p>' +
+        '<p>File: ' + url + '</p>' +
+        '<p>Line: ' + line + '</p>' +
+        '</div>';
+      return false;
+    };
+  </script>
 </body>
 </html>
