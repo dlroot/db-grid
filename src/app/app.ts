@@ -804,8 +804,6 @@ export class AppComponent implements OnInit {
   currentPage = signal<number>(1);
   totalPages = signal<number>(5);
 
-  ngOnInit(): void {}
-
   onGridReady(event: any): void {
     this.gridApi = event.api;
     this.apiStatus.set("已连接");
