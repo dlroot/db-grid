@@ -13,6 +13,8 @@
     <h2>静态 HTML 测试</h2>
     <p>如果你能看到这个黄色框，说明 GitHub Pages 已经部署成功。</p>
     <p>如果下面没有 Angular 内容，说明 JavaScript 没有正确执行。</p>
+    <button onclick="checkAngular()" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">检查 Angular 状态</button>
+    <div id="angular-status" style="margin-top: 10px;"></div>
   </div>
   
   <app-root>
@@ -34,6 +36,21 @@
         '</div>';
       return false;
     };
+    
+    function checkAngular() {
+      const appRoot = document.querySelector('app-root');
+      const status = document.getElementById('angular-status');
+      status.innerHTML = '<pre style="background: #fff; padding: 10px;">' +
+        'app-root 存在: ' + !!appRoot + '\n' +
+        'app-root 内容: ' + (appRoot ? appRoot.innerHTML.length + ' chars' : 'N/A') + '\n' +
+        'app-root 子节点: ' + (appRoot ? appRoot.childNodes.length : 'N/A') + '\n' +
+        'Angular 全局对象: ' + !!window.ng + '\n' +
+        'Zone.js: ' + !!window.Zone + '\n' +
+        '</pre>';
+    }
+    
+    // 5秒后自动检查
+    setTimeout(checkAngular, 5000);
   </script>
 </body>
 </html>
