@@ -33,6 +33,12 @@ jobs:
       - name: Build demo app
         run: npm run build:demo
 
+      - name: Rename index.csr.html to index.html for GitHub Pages
+        run: |
+          if [ -f dist/db-grid/browser/index.csr.html ]; then
+            mv dist/db-grid/browser/index.csr.html dist/db-grid/browser/index.html
+          fi
+
       - name: Build Storybook
         run: npm run build-storybook
 
