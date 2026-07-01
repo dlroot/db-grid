@@ -16,9 +16,17 @@ export class AppComponent implements OnInit {
   currentDemo = signal<string>("basic");
   selectedCount = signal<number>(0);
   apiStatus = signal<string>("未连接");
-  quickFilter = signal<string>("");
-  quickFilterText = signal<string>("");
+  quickFilter = signal<string>("" );
+  quickFilterText = signal<string>("" );
   rowCount = signal<number>(0);
+
+  constructor() {
+    console.log('[AppComponent] Constructor called');
+  }
+
+  ngOnInit(): void {
+    console.log('[AppComponent] ngOnInit called, currentDemo:', this.currentDemo());
+  }
 
   @ViewChild("myGrid") myGrid!: DbGridComponent;
 
